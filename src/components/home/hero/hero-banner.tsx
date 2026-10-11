@@ -8,7 +8,7 @@ interface HeroBannerProps {
 }
 
 export const HeroBanner: React.FC<HeroBannerProps> = ({
-  quote = "“Tâm an thì cảnh an.”",
+  quote = "“Pháp môn tâm linh - Quảng Độ Chúng Sanh Hữu Duyên.”",
   author = "— Đức Phật —",
   bannerImage = "/images/home-hero-banner.jpg",
 }) => {
