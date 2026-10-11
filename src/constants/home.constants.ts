@@ -191,7 +191,7 @@ export const CONTINUE_LISTENING_DATA = {
 };
 
 export const HERO_BANNER_DATA = {
-  quote: "“Tâm an thì cảnh an.”",
-  author: "— Đức Phật —",
+  quote: "“Pháp môn tâm linh - Quảng Độ Chúng Sanh Hữu Duyên.”",
+  author: "",
   bannerImage: "/images/home-hero-banner.jpg",
 };
