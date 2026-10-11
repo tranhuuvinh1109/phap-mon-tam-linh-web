@@ -6,7 +6,9 @@ import React, { useMemo, useState } from "react";
 
 import { useGetCategories } from "@/api/category";
 import { ContentType } from "@/enums";
+import { slugify } from "@/lib/utils";
 import { CreatePostFormValues, PostFormStep } from "../../types/post-form.type";
+import { isBachThoaiPhatPhap } from "../../utils/content-type";
 import { StepPostDetails } from "./step-post-details";
 import { StepSelectCategory } from "./step-select-category";
 
@@ -47,10 +49,29 @@ export const CreatePostForm: React.FC = () => {
   };
 
   const handleUpdateFormValues = (updates: Partial<CreatePostFormValues>) => {
-    setFormValues((prev: CreatePostFormValues) => ({
-      ...prev,
-      ...updates,
-    }));
+    setFormValues((prev: CreatePostFormValues) => {
+      const nextValues = {
+        ...prev,
+        ...updates,
+      };
+
+      // Tự động lấy tên file làm tiêu đề bài viết khi đẩy file mp3 lên (cho bài viết Bạch Thoại Phật Pháp)
+      const isBachThoai = isBachThoaiPhatPhap(
+        nextValues.categoryId,
+        selectedCategory?.slug,
+        selectedCategory?.name
+      );
+
+      if (updates.audioFile && isBachThoai && updates.title === undefined) {
+        const autoTitle = updates.audioFile.name.replace(/\.[^/.]+$/, "").trim();
+        if (autoTitle) {
+          nextValues.title = autoTitle;
+          nextValues.slug = slugify(autoTitle);
+        }
+      }
+
+      return nextValues;
+    });
   };
 
   const handleCancel = () => {
