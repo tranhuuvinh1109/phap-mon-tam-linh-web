@@ -17,9 +17,10 @@ import { useCreatePost } from "@/api/post";
 import { CreatePostPayloadType, PostItemType } from "@/api/post/post.type";
 import { Button } from "@/components/ui";
 import { ContentType } from "@/enums";
-import { getAudioDuration } from "@/lib/utils";
+import { getAudioDuration, slugify } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { CreatePostFormValues } from "../../types/post-form.type";
+import { isBachThoaiPhatPhap } from "../../utils/content-type";
 import { AudioUpload } from "./audio-upload";
 import { PostBasicFields } from "./post-basic-fields";
 import { RichTextEditor } from "./rich-text-editor";
@@ -203,6 +204,41 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
     }
   };
 
+  /**
+   * Handles audio file selection/removal.
+   * If the post belongs to the "Bach Thoai Phat Phap" category, automatically
+   * extracts the file name (excluding the extension) and populates the post title and slug.
+   *
+   * @param audioFile - The selected audio File or null if removed
+   */
+  const handleUpload = (audioFile: File | null) => {
+    const updates: Partial<CreatePostFormValues> = {
+      audioFile,
+      audioUrl: null,
+      audioKey: null,
+    };
+
+    // Determine if the current category is "Bach Thoai Phat Phap"
+    const isBachThoai = isBachThoaiPhatPhap(
+      formValues.categoryId,
+      category?.slug,
+      category?.name
+    );
+
+    // Auto-generate title and slug from the file name when an audio file is selected
+    if (audioFile && isBachThoai) {
+      const autoTitle = audioFile.name.replace(/\.[^/.]+$/, "").trim();
+      if (autoTitle) {
+        updates.title = autoTitle;
+        updates.slug = slugify(autoTitle);
+      }
+    }
+
+    onChangeFormValues(updates);
+    setValidationSuccess(null);
+    setSubmitError(null);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       {/* Category & Content Type Summary Bar */}
@@ -324,15 +360,7 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
             uploadProgress={audioProgress}
             isUploadSuccess={Boolean(formValues.audioUrl)}
             error={errors.audioFile}
-            onChange={(audioFile) => {
-              onChangeFormValues({
-                audioFile,
-                audioUrl: null,
-                audioKey: null,
-              });
-              setValidationSuccess(null);
-              setSubmitError(null);
-            }}
+            onChange={handleUpload}
             onDurationChange={(audioDuration) => {
               onChangeFormValues({ audioDuration });
             }}
