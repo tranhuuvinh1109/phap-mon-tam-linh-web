@@ -40,7 +40,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
 
-  const MAX_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
+  const MAX_SIZE_BYTES = 30 * 1024 * 1024; // 30 MB
 
   const validateAndSelectFile = (file: File) => {
     setInternalError(null);
