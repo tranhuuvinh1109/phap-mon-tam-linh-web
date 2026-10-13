@@ -19,6 +19,7 @@ import { Button } from "@/components/ui";
 import { ContentType } from "@/enums";
 import { getAudioDuration, slugify } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { CreatePostFormValues } from "../../types/post-form.type";
 import { isBachThoaiPhatPhap } from "../../utils/content-type";
 import { AudioUpload } from "./audio-upload";
@@ -57,6 +58,8 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
       setValidationSuccess(
         `Bài viết "${post.title}" đã được tạo thành công trên hệ thống!`
       );
+      toast.success(`Tạo bài viết "${post.title}" thành công!`);
+      router.push("/admin/post");
     },
     onError: (err) => {
       const errorMsg =
@@ -64,7 +67,11 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
           ?.response?.data?.message ||
         err.message ||
         "Đã có lỗi xảy ra khi tạo bài viết.";
-      setSubmitError(Array.isArray(errorMsg) ? errorMsg.join(", ") : errorMsg);
+      const formattedError = Array.isArray(errorMsg)
+        ? errorMsg.join(", ")
+        : errorMsg;
+      setSubmitError(formattedError);
+      toast.error(formattedError);
     },
   });
 
@@ -195,8 +202,9 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
         (err as { response?: { data?: { message?: string } } })?.response?.data
           ?.message ||
         (err as Error).message ||
-        "Đã xảy ra lỗi khi tải tệp lên AWS S3. Vui lòng thử lại.";
+        "Đã xảy ra lỗi khi tải tệp lên. Vui lòng thử lại.";
       setSubmitError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
       setIsAudioUploading(false);

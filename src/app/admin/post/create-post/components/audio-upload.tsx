@@ -172,7 +172,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               <div className="flex items-center justify-between text-xs text-amber-900">
                 <span className="flex items-center gap-1.5 font-medium">
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" />
-                  <span>Đang tải lên AWS S3...</span>
+                  <span>Đang tải tệp âm thanh lên...</span>
                 </span>
                 <span className="font-semibold font-mono">{uploadProgress}%</span>
               </div>
@@ -190,7 +190,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200/80 px-3 py-2 text-xs text-emerald-800">
               <span className="flex items-center gap-1.5 font-semibold">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                <span>Đã lưu trữ an toàn trên AWS S3</span>
+                <span>Đã lưu trữ an toàn trên bộ nhớ</span>
               </span>
               {audioKey && (
                 <span className="max-w-[180px] truncate text-[11px] text-emerald-700/80 font-mono">
@@ -200,7 +200,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             </div>
           ) : !isUploading && (
             <p className="text-xs text-neutral-400 italic">
-              * Tệp sẽ được tự động tải lên AWS S3 khi bạn bấm nút &quot;Tạo bài viết&quot;.
+              * Tệp sẽ được tự động tải lên khi bạn bấm nút &quot;Tạo bài viết&quot;.
             </p>
           )}
 

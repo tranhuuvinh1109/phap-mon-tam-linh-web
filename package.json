@@ -8,9 +8,9 @@
     "url": "https://github.com/tranhuuvinh1109"
   },
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
+    "dev": "dotenv -e .env.local -- next dev --turbopack",
+    "build": "dotenv -e .env.prod -- next build",
+    "start": "dotenv -e .env.prod -- next start",
     "lint": "next lint",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
     "lint:fix": "next lint --fix",
@@ -50,6 +50,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "^16.3.0",
     "lint-staged": "^15.2.2",
