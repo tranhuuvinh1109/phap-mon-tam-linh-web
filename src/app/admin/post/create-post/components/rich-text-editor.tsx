@@ -22,11 +22,15 @@ interface RichTextEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   error?: string | null;
+  label?: string;
+  hideHeader?: boolean;
+  minHeight?: string;
 }
 
 const QUILL_MODULES = {
   toolbar: [
     [{ header: [1, 2, 3, false] }],
+    [{ color: [] }, { background: [] }],
     ["bold", "italic", "underline", "strike"],
     [{ list: "ordered" }, { list: "bullet" }],
     ["blockquote", "code-block"],
@@ -38,6 +42,8 @@ const QUILL_MODULES = {
 
 const QUILL_FORMATS = [
   "header",
+  "color",
+  "background",
   "bold",
   "italic",
   "underline",
@@ -55,6 +61,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   onChange,
   placeholder = "Nhập nội dung bài viết tại đây...",
   error,
+  label = "Nội dung bài viết",
+  hideHeader = false,
+  minHeight = "220px",
 }) => {
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
 
@@ -69,39 +78,41 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="block text-sm font-semibold text-neutral-800">
-          Nội dung bài viết <span className="text-amber-700">*</span>
-        </label>
+      {!hideHeader && (
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-semibold text-neutral-800">
+            {label} <span className="text-amber-700">*</span>
+          </label>
 
-        {/* Mode switch */}
-        <div className="flex items-center rounded-lg border border-neutral-200 bg-neutral-100 p-0.5 text-xs font-medium">
-          <button
-            type="button"
-            onClick={() => setActiveTab("edit")}
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 transition-colors ${
-              activeTab === "edit"
-                ? "bg-white text-neutral-900 shadow-2xs font-semibold"
-                : "text-neutral-500 hover:text-neutral-900"
-            }`}
-          >
-            <PenLine className="h-3 w-3" />
-            <span>Soạn thảo</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("preview")}
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 transition-colors ${
-              activeTab === "preview"
-                ? "bg-white text-neutral-900 shadow-2xs font-semibold"
-                : "text-neutral-500 hover:text-neutral-900"
-            }`}
-          >
-            <Eye className="h-3 w-3" />
-            <span>Xem trước</span>
-          </button>
+          {/* Mode switch */}
+          <div className="flex items-center rounded-lg border border-neutral-200 bg-neutral-100 p-0.5 text-xs font-medium">
+            <button
+              type="button"
+              onClick={() => setActiveTab("edit")}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 transition-colors ${
+                activeTab === "edit"
+                  ? "bg-white text-neutral-900 shadow-2xs font-semibold"
+                  : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              <PenLine className="h-3 w-3" />
+              <span>Soạn thảo</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("preview")}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 transition-colors ${
+                activeTab === "preview"
+                  ? "bg-white text-neutral-900 shadow-2xs font-semibold"
+                  : "text-neutral-500 hover:text-neutral-900"
+              }`}
+            >
+              <Eye className="h-3 w-3" />
+              <span>Xem trước</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div
         className={`rounded-2xl border transition-colors overflow-hidden ${

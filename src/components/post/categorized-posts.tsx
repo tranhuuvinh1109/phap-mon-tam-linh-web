@@ -24,6 +24,7 @@ import { formatTime, stripHtml } from "@/lib/utils";
 
 import { PostContentRenderer } from "./post-content-renderer";
 import { BACH_THOAI_PHAT_PHAP_ID } from "@/constants";
+import { isNiemKinh } from "@/app/admin/post/utils/content-type";
 
 interface CategoryGroup {
   id: string;
@@ -258,7 +259,17 @@ export const CategorizedPosts: React.FC<CategorizedPostsProps> = ({
               const isNormal = post.type === ContentType.NORMAL || (!hasAudio && !!post.content);
               const isExpanded = expandedPostIds.has(post.id);
               const plainContentSnippet = post.content ? stripHtml(post.content) : "";
-              const postUrl = `/post/${encodeURIComponent(post.slug || post.id)}`;
+              const postCategorySlug = post.category?.slug;
+              const isNiemKinhPost = isNiemKinh(
+                post.categoryId || post.category?.id,
+                postCategorySlug,
+                post.category?.name
+              );
+              const postUrl = isNiemKinhPost
+                ? `/niem-kinh/${encodeURIComponent(post.slug || post.id)}`
+                : postCategorySlug === "bach-thoai-phat-phap"
+                ? `/bach-thoai-phat-phap/${encodeURIComponent(post.slug || post.id)}`
+                : `/khai-thi/${encodeURIComponent(post.slug || post.id)}`;
 
               return (
                 <div

@@ -1,6 +1,6 @@
-"use client";
-
 import React, { useMemo } from "react";
+import { parseNiemKinhContent } from "@/app/admin/post/types";
+import { NiemKinhAccordion } from "./niem-kinh-accordion";
 
 interface PostContentRendererProps {
   content?: unknown;
@@ -11,7 +11,13 @@ export const PostContentRenderer: React.FC<PostContentRendererProps> = ({
   content,
   className = "",
 }) => {
+  // Check if content is Niem Kinh steps data
+  const niemKinhData = useMemo(() => {
+    return parseNiemKinhContent(content);
+  }, [content]);
+
   const htmlString = useMemo(() => {
+    if (niemKinhData) return "";
     if (content === null || content === undefined) {
       return "";
     }
@@ -82,6 +88,12 @@ export const PostContentRenderer: React.FC<PostContentRendererProps> = ({
       .replace(/&ZeroWidthSpace;/g, "")
       .replace(/\u200B/g, "");
   }, [htmlString]);
+
+  if (niemKinhData) {
+    return (
+      <NiemKinhAccordion data={niemKinhData} className={className} />
+    );
+  }
 
   if (!cleanHtml || !cleanHtml.trim()) {
     return (

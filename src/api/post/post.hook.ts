@@ -5,17 +5,27 @@ import {
   useQuery,
   type UseQueryOptions,
   type UseQueryResult,
+  useInfiniteQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 
 import { QueryKeyEnum } from "@/enums";
-import { createPost, getPostBySlug, getPosts, getPostsByCategory } from "./post.api";
+import {
+  createPost,
+  getPostBySlug,
+  getPosts,
+  getPostsByCategory,
+  searchPostBySlug,
+  searchPosts,
+} from "./post.api";
 import {
   CreatePostPayloadType,
   GetPostsByCategoryParams,
   GetPostsResponse,
   PostItemType,
+  SearchPostsParams,
+  SearchPostsResponse,
 } from "./post.type";
 
 export type UseCreatePostOptions = Omit<
@@ -101,4 +111,69 @@ export const useGetPostsByCategory = (
     ...options,
   });
 };
+
+export type UseSearchPostBySlugOptions = Omit<
+  UseQueryOptions<PostItemType, AxiosError>,
+  "queryKey" | "queryFn"
+>;
+
+/**
+ * Query hook to search post by slug via GET /posts/search?slug=:slug
+ */
+export const useSearchPostBySlug = (
+  slug: string,
+  options?: UseSearchPostBySlugOptions
+): UseQueryResult<PostItemType, AxiosError> => {
+  return useQuery({
+    queryKey: ["posts-search-slug", slug],
+    queryFn: () => searchPostBySlug(slug),
+    enabled: !!slug,
+    ...options,
+  });
+};
+
+export type UseSearchPostsOptions = Omit<
+  UseQueryOptions<SearchPostsResponse, AxiosError>,
+  "queryKey" | "queryFn"
+>;
+
+/**
+ * Query hook to search posts with filters (slug, category, id, keyword) via GET /posts/search
+ */
+export const useSearchPosts = (
+  params?: SearchPostsParams,
+  options?: UseSearchPostsOptions
+): UseQueryResult<SearchPostsResponse, AxiosError> => {
+  return useQuery({
+    queryKey: ["posts-search", params],
+    queryFn: () => searchPosts(params),
+    ...options,
+  });
+};
+
+/**
+ * Infinite Query hook with cursor pagination for search posts via GET /posts/search
+ */
+export const useInfiniteSearchPosts = (
+  params?: Omit<SearchPostsParams, "cursor">,
+  options?: any
+) => {
+  return useInfiniteQuery<SearchPostsResponse, AxiosError>({
+    queryKey: ["posts-search-infinite", params],
+    queryFn: ({ pageParam }) =>
+      searchPosts({
+        ...params,
+        cursor: pageParam as string | undefined,
+      }),
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.meta?.hasNextPage && lastPage.meta?.nextCursor) {
+        return lastPage.meta.nextCursor;
+      }
+      return undefined;
+    },
+    ...options,
+  });
+};
+
 

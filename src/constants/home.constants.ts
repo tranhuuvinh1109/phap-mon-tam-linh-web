@@ -42,7 +42,7 @@ export const QUICK_PRACTICE_ITEMS: QuickPracticeItem[] = [
     bgClass: "bg-[#FFF6E3]",
     borderClass: "border-[#FFE5B4]",
     textClass: "text-[#B46A10]",
-    href: "#kinh",
+    href: "/niem-kinh",
   },
   {
     id: "ngoi-nha-nho",

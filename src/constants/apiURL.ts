@@ -14,5 +14,6 @@ export const API_URL = {
   userPermissions: (userId: string) => `/users/${userId}/permissions`,
   analyticsEvents: "/analytics/posts/events",
   analyticsTopPosts: "/analytics/posts/top",
+  postsSearch: "/posts/search",
 };
 

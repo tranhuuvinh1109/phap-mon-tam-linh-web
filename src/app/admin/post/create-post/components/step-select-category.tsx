@@ -3,6 +3,7 @@
 import {
   AlertCircle,
   ArrowRight,
+  BookOpen,
   CheckCircle2,
   FileAudio,
   FileText,
@@ -15,7 +16,7 @@ import React, { useId, useState } from "react";
 import { useGetCategories } from "@/api/category";
 import { Button } from "@/components/ui";
 import { ContentType } from "@/enums";
-import { getContentTypeByCategory } from "../../utils/content-type";
+import { getContentTypeByCategory, isNiemKinh } from "../../utils/content-type";
 
 interface StepSelectCategoryProps {
   selectedCategoryId: string;
@@ -60,8 +61,19 @@ export const StepSelectCategory: React.FC<StepSelectCategoryProps> = ({
     onNext(categoryId, contentType);
   };
 
+  const selectedCategoryObj = activeCategories.find((cat) => cat.id === categoryId);
+
   const renderContentTypeBadge = () => {
     if (!determinedContentType) return null;
+
+    if (isNiemKinh(categoryId, selectedCategoryObj?.slug, selectedCategoryObj?.name)) {
+      return (
+        <div className="flex items-center gap-2 rounded-xl border border-amber-300/80 bg-amber-50/80 px-3.5 py-2 text-xs font-semibold text-amber-900">
+          <BookOpen className="h-4 w-4 text-amber-700" />
+          <span>Loại bài viết tự động gán: <strong>Niệm Kinh (Nội dung theo từng bước tụng niệm)</strong></span>
+        </div>
+      );
+    }
 
     if (determinedContentType === ContentType.AUDIO) {
       return (

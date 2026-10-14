@@ -5,6 +5,8 @@ import {
   GetPostsByCategoryParams,
   GetPostsResponse,
   PostItemType,
+  SearchPostsParams,
+  SearchPostsResponse,
 } from "./post.type";
 
 /**
@@ -116,6 +118,43 @@ export const getPostBySlug = async (slug: string): Promise<PostItemType> => {
     }
     throw error;
   }
+};
+
+/**
+ * API call to search post by slug via GET /posts/search?slug=:slug
+ */
+export const searchPostBySlug = async (slug: string): Promise<PostItemType> => {
+  const response = await apiClient.get<any>(
+    API_URL.postsSearch,
+    { params: { slug } }
+  );
+
+  const resData = response.data;
+  if (resData && typeof resData === "object") {
+    if (Array.isArray(resData.data)) {
+      const items = resData.data as PostItemType[];
+      const exact = items.find((p) => p.slug === slug);
+      return exact || items[0] || (null as unknown as PostItemType);
+    }
+    if ("data" in resData && resData.data) {
+      return resData.data as PostItemType;
+    }
+  }
+
+  return resData as PostItemType;
+};
+
+/**
+ * API call to search posts with filters (slug, category, id, keyword) and cursor pagination via GET /posts/search
+ */
+export const searchPosts = async (
+  params: SearchPostsParams = {}
+): Promise<SearchPostsResponse> => {
+  const response = await apiClient.get<SearchPostsResponse>(
+    API_URL.postsSearch,
+    { params }
+  );
+  return response.data;
 };
 
 

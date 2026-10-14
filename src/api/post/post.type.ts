@@ -122,4 +122,23 @@ export interface GetPostsByCategoryParams {
 
 export type GetPostsByCategoryResponse = GetPostsResponse;
 
+export interface SearchPostsParams {
+  id?: string;
+  slug?: string;
+  category?: string;
+  categoryId?: string;
+  category_id?: string;
+  category_name?: string;
+  categoryName?: string;
+  search?: string;
+  q?: string;
+  cursor?: string | null;
+  limit?: number;
+  page?: number;
+  publishedOnly?: boolean;
+  type?: ContentType;
+}
+
+export type SearchPostsResponse = GetPostsResponse;
+
 export type CreatePostResponseType = PostItemType;

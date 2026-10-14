@@ -3,6 +3,7 @@
 import {
   AlertCircle,
   ArrowLeft,
+  BookOpen,
   CheckCircle2,
   FileAudio,
   FileText,
@@ -21,8 +22,9 @@ import { getAudioDuration, slugify } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { CreatePostFormValues } from "../../types/post-form.type";
-import { isBachThoaiPhatPhap } from "../../utils/content-type";
+import { isBachThoaiPhatPhap, isNiemKinh } from "../../utils/content-type";
 import { AudioUpload } from "./audio-upload";
+import { NiemKinhStepEditor } from "./niem-kinh-step-editor";
 import { PostBasicFields } from "./post-basic-fields";
 import { RichTextEditor } from "./rich-text-editor";
 import { ThumbnailUpload } from "./thumbnail-upload";
@@ -50,6 +52,12 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
   const [validationSuccess, setValidationSuccess] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [createdPost, setCreatedPost] = useState<PostItemType | null>(null);
+
+  const isNiemKinhPost = isNiemKinh(
+    formValues.categoryId,
+    category?.slug,
+    category?.name
+  );
 
   // TanStack Query Create Post Mutation
   const createPostMutation = useCreatePost({
@@ -100,7 +108,9 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
       formValues.contentType === ContentType.NORMAL &&
       !formValues.content.trim()
     ) {
-      errors.content = "Nội dung bài viết không được để trống.";
+      errors.content = isNiemKinhPost
+        ? "Vui lòng nhập nội dung cho các bước Niệm Kinh."
+        : "Nội dung bài viết không được để trống.";
     }
   }
 
@@ -260,7 +270,12 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {formValues.contentType === ContentType.AUDIO ? (
+          {isNiemKinhPost ? (
+            <span className="flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-900 border border-amber-300">
+              <BookOpen className="h-3.5 w-3.5 text-amber-700" />
+              <span>Niệm Kinh (Các bước tụng niệm)</span>
+            </span>
+          ) : formValues.contentType === ContentType.AUDIO ? (
             <span className="flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-900 border border-amber-300">
               <FileAudio className="h-3.5 w-3.5 text-amber-700" />
               <span>Âm thanh (AUDIO)</span>
@@ -378,16 +393,27 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
 
       {formValues.contentType === ContentType.NORMAL && (
         <div className="pt-2">
-          <RichTextEditor
-            value={formValues.content}
-            error={errors.content}
-            onChange={(content) => {
-              onChangeFormValues({ content });
-              setValidationSuccess(null);
-              setSubmitError(null);
-              console.log({content})
-            }}
-          />
+          {isNiemKinhPost ? (
+            <NiemKinhStepEditor
+              value={formValues.content}
+              error={errors.content}
+              onChange={(content) => {
+                onChangeFormValues({ content });
+                setValidationSuccess(null);
+                setSubmitError(null);
+              }}
+            />
+          ) : (
+            <RichTextEditor
+              value={formValues.content}
+              error={errors.content}
+              onChange={(content) => {
+                onChangeFormValues({ content });
+                setValidationSuccess(null);
+                setSubmitError(null);
+              }}
+            />
+          )}
         </div>
       )}
 
