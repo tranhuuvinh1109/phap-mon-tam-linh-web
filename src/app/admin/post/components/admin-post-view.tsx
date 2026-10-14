@@ -13,6 +13,7 @@ import {
   Volume2,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import React, { useMemo, useState } from "react";
 
 import { useGetPosts } from "@/api/post";
@@ -20,12 +21,15 @@ import type { PostItemType } from "@/api/post/post.type";
 import { CategorizedPosts } from "@/components/post";
 import { Button } from "@/components/ui";
 import { ContentType } from "@/enums";
-import { formatTime, stripHtml } from "@/lib/utils";
+import { formatTime, slugify, stripHtml } from "@/lib/utils";
 
 export const AdminPostView: React.FC = () => {
   const [viewMode, setViewMode] = useState<"categorized" | "table">("categorized");
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"ALL" | ContentType>("ALL");
+
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get("category");
 
   const { data, isLoading } = useGetPosts();
   const posts: PostItemType[] = useMemo(() => data?.data || [], [data]);
@@ -33,6 +37,21 @@ export const AdminPostView: React.FC = () => {
   // Filter posts
   const filteredPosts = useMemo(() => {
     return posts.filter((p) => {
+      // Filter by category if categoryParam is present
+      if (categoryParam) {
+        const catTarget = categoryParam.toLowerCase().trim();
+        const pCatSlug = p.category?.slug?.toLowerCase().trim() || "";
+        const pCatName = p.category?.name?.toLowerCase().trim() || "";
+        const pCatId = p.category?.id || p.categoryId || "";
+        const matchCategory =
+          pCatSlug === catTarget ||
+          pCatName === catTarget ||
+          pCatId === catTarget ||
+          slugify(pCatName) === catTarget;
+
+        if (!matchCategory) return false;
+      }
+
       const matchType =
         typeFilter === "ALL" ? true : p.type === typeFilter;
       const q = searchQuery.toLowerCase().trim();
@@ -45,7 +64,7 @@ export const AdminPostView: React.FC = () => {
 
       return matchType && matchQuery;
     });
-  }, [posts, searchQuery, typeFilter]);
+  }, [posts, searchQuery, typeFilter, categoryParam]);
 
   return (
     <div className="space-y-6">
@@ -93,7 +112,13 @@ export const AdminPostView: React.FC = () => {
             </button>
           </div>
 
-          <Link href="/admin/post/create-post">
+          <Link
+            href={
+              categoryParam
+                ? `/admin/post/create-post?category=${encodeURIComponent(categoryParam)}`
+                : "/admin/post/create-post"
+            }
+          >
             <Button
               variant="golden"
               className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold shadow-sm transition-all"
@@ -105,10 +130,31 @@ export const AdminPostView: React.FC = () => {
         </div>
       </div>
 
+      {/* Category Filter Banner */}
+      {categoryParam && (
+        <div className="flex items-center justify-between rounded-2xl border border-amber-300 bg-[#FFFDF8] p-3 sm:px-4 sm:py-3 shadow-2xs">
+          <div className="flex items-center gap-2 text-xs sm:text-sm">
+            <span className="text-neutral-500 font-medium">Đang xem chuyên mục:</span>
+            <span className="font-bold text-amber-900 bg-amber-100/80 px-2.5 py-0.5 rounded-lg">
+              {categoryParam}
+            </span>
+          </div>
+          <Link
+            href="/admin/post"
+            className="text-xs font-semibold text-amber-800 hover:text-amber-950 underline transition"
+          >
+            Xem tất cả bài viết
+          </Link>
+        </div>
+      )}
+
       {/* Main Content Area */}
       {viewMode === "categorized" ? (
         <div className="max-w-3xl">
-          <CategorizedPosts isAdmin={true} />
+          <CategorizedPosts
+            isAdmin={true}
+            filterCategory={categoryParam || undefined}
+          />
         </div>
       ) : (
         <div className="space-y-4">

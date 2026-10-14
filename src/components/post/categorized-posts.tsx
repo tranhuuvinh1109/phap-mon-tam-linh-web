@@ -20,7 +20,7 @@ import React, { useMemo, useRef, useState } from "react";
 import { useGetPosts } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
 import { ContentType } from "@/enums";
-import { formatTime, stripHtml } from "@/lib/utils";
+import { formatTime, slugify, stripHtml } from "@/lib/utils";
 
 import { PostContentRenderer } from "./post-content-renderer";
 import { BACH_THOAI_PHAT_PHAP_ID } from "@/constants";
@@ -40,12 +40,14 @@ interface CategorizedPostsProps {
   isAdmin?: boolean;
   excludeBachThoai?: boolean;
   hideIfEmpty?: boolean;
+  filterCategory?: string;
 }
 
 export const CategorizedPosts: React.FC<CategorizedPostsProps> = ({
   className = "",
   excludeBachThoai = false,
   hideIfEmpty = false,
+  filterCategory,
 }) => {
   const router = useRouter();
   const { data, isLoading, isError, error, refetch } = useGetPosts();
@@ -90,12 +92,25 @@ export const CategorizedPosts: React.FC<CategorizedPostsProps> = ({
     });
 
     // Sort to place "Bạch thoại Phật pháp" at the top if present
-    return Array.from(groupMap.values()).sort((a, b) => {
+    const sorted = Array.from(groupMap.values()).sort((a, b) => {
       if (a.isBachThoai && !b.isBachThoai) return -1;
       if (!a.isBachThoai && b.isBachThoai) return 1;
       return a.name.localeCompare(b.name, "vi");
     });
-  }, [posts, excludeBachThoai]);
+
+    if (filterCategory) {
+      const target = filterCategory.toLowerCase().trim();
+      return sorted.filter(
+        (g) =>
+          g.slug.toLowerCase() === target ||
+          g.name.toLowerCase() === target ||
+          g.id === target ||
+          slugify(g.name).toLowerCase() === target
+      );
+    }
+
+    return sorted;
+  }, [posts, excludeBachThoai, filterCategory]);
 
   // Play / Pause Audio Handler
   const handleTogglePlay = (post: PostItemType, e?: React.MouseEvent) => {

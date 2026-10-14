@@ -21,25 +21,11 @@ import { LotusLogo } from "@/components/shared/lotus-logo";
 import { getAuthToken } from "@/lib/axios";
 import { useAuthStore } from "@/stores/auth-store";
 import { AdminUserProfile } from "./components/admin-user-profile";
+import { AdminSidebarNav } from "./components/admin-sidebar-nav";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
-
-interface AdminNavItem {
-  id: string;
-  label: string;
-  href: string;
-  icon: React.ElementType;
-}
-
-const ADMIN_NAV_ITEMS: AdminNavItem[] = [
-  { id: "dashboard", label: "Tổng quan", href: "/admin", icon: LayoutDashboard },
-  { id: "post", label: "Bài viết", href: "/admin/post", icon: FileText },
-  { id: "category", label: "Danh mục", href: "/admin/category", icon: FolderTree },
-  { id: "users", label: "Người dùng", href: "/admin/users", icon: Users },
-  { id: "settings", label: "Cài đặt", href: "/admin/settings", icon: Settings },
-];
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
@@ -82,45 +68,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  const renderNavLinks = () => (
-    <nav className="space-y-1">
-      {ADMIN_NAV_ITEMS.map((item) => {
-        const Icon = item.icon;
-        const isActive =
-          item.href === "/admin"
-            ? pathname === "/admin"
-            : pathname.startsWith(item.href);
-
-        return (
-          <Link
-            key={item.id}
-            href={item.href}
-            onClick={() => setIsMobileOpen(false)}
-            className={`group flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
-              isActive
-                ? "bg-[#F3E8D8] text-[#9C5812] font-semibold shadow-xs"
-                : "text-[#6C6356] hover:bg-[#F8F2E8] hover:text-[#9C5812]"
-            }`}
-          >
-            <Icon
-              className={`h-4.5 w-4.5 shrink-0 ${
-                isActive ? "text-[#9C5812]" : "text-[#7D7364] group-hover:text-[#9C5812]"
-              }`}
-            />
-            <span>{item.label}</span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
-
   return (
     <div className="flex min-h-screen w-full bg-[#FAF7F0] text-neutral-800">
       {/* Desktop Admin Sidebar */}
       <aside className="hidden lg:flex w-64 shrink-0 flex-col justify-between border-r border-[#EDE5D8] bg-[#FBF9F4] p-5 sticky top-0 h-screen select-none">
-        <div>
+        <div className="flex flex-col h-full min-h-0">
           {/* Logo & Portal Title */}
-          <div className="flex items-center gap-3 px-2 pb-6 border-b border-[#EDE5D8]/80">
+          <div className="flex items-center gap-3 px-2 pb-5 border-b border-[#EDE5D8]/80 shrink-0">
             <LotusLogo size={36} />
             <div>
               <h2
@@ -135,12 +89,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <div className="pt-6">{renderNavLinks()}</div>
+          {/* Navigation Links with smooth scroll */}
+          <div className="flex-1 overflow-y-auto pt-5 pr-1 space-y-1">
+            <React.Suspense
+              fallback={
+                <div className="space-y-3 p-2">
+                  <div className="h-8 rounded-xl bg-neutral-200/50 animate-pulse" />
+                  <div className="h-8 rounded-xl bg-neutral-200/50 animate-pulse" />
+                  <div className="h-8 rounded-xl bg-neutral-200/50 animate-pulse" />
+                </div>
+              }
+            >
+              <AdminSidebarNav onItemClick={() => setIsMobileOpen(false)} />
+            </React.Suspense>
+          </div>
         </div>
 
         {/* Back to Home Link */}
-        <div className="pt-4 border-t border-[#EDE5D8]/80">
+        <div className="pt-4 border-t border-[#EDE5D8]/80 shrink-0">
           <Link
             href="/"
             className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-neutral-600 hover:text-amber-800 transition-colors"
@@ -159,8 +125,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             onClick={() => setIsMobileOpen(false)}
           />
           <aside className="fixed inset-y-0 left-0 w-72 max-w-[80vw] bg-[#FBF9F4] p-5 shadow-2xl z-10 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between pb-6 border-b border-[#EDE5D8]">
+            <div className="flex flex-col h-full min-h-0">
+              <div className="flex items-center justify-between pb-5 border-b border-[#EDE5D8] shrink-0">
                 <div className="flex items-center gap-2.5">
                   <LotusLogo size={32} />
                   <span className="font-bold text-amber-950">Quản trị</span>
@@ -172,10 +138,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <div className="pt-6">{renderNavLinks()}</div>
+              <div className="flex-1 overflow-y-auto pt-5 pr-1">
+                <React.Suspense fallback={null}>
+                  <AdminSidebarNav onItemClick={() => setIsMobileOpen(false)} />
+                </React.Suspense>
+              </div>
             </div>
 
-            <div className="pt-4 border-t border-[#EDE5D8]">
+            <div className="pt-4 border-t border-[#EDE5D8] shrink-0">
               <Link
                 href="/"
                 className="flex items-center gap-2 text-xs font-semibold text-neutral-600"

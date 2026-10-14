@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import React from "react";
+import React, { Suspense } from "react";
 
 import { AdminPostView } from "./components/admin-post-view";
 
@@ -11,7 +11,15 @@ export const metadata: Metadata = {
 export default function AdminPostPage() {
   return (
     <main>
-      <AdminPostView />
+      <Suspense
+        fallback={
+          <div className="flex min-h-[300px] items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-3 border-amber-800 border-t-transparent" />
+          </div>
+        }
+      >
+        <AdminPostView />
+      </Suspense>
     </main>
   );
 }
