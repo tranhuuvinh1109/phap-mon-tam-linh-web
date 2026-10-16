@@ -3,6 +3,7 @@
 import React, { useMemo } from "react";
 
 import { useGetPosts } from "@/api/post";
+import { useGetSettingById } from "@/api/setting";
 import { isBachThoaiPhatPhapCategory } from "@/app/admin/post/utils/content-type";
 import {
   BachThoaiSection,
@@ -14,6 +15,7 @@ import {
 import { MainLayout } from "@/components/layout";
 import {
   BACH_THOAI_PHAT_PHAP_ID,
+  FEATURE_FLAG_BACH_THOAI_PHAT_PHAP_WEB_ID,
   KHAI_THI_ID,
 } from "@/constants";
 import {
@@ -24,6 +26,11 @@ import {
 
 export function HomeView() {
   const { data: postsData, isLoading } = useGetPosts();
+  const { data: bachThoaiSetting } = useGetSettingById(
+    FEATURE_FLAG_BACH_THOAI_PHAT_PHAP_WEB_ID
+  );
+
+  const isBachThoaiEnabled = bachThoaiSetting ? bachThoaiSetting.isEnabled : true;
 
   const posts = useMemo(() => postsData?.data || [], [postsData]);
 
@@ -56,8 +63,10 @@ export function HomeView() {
           {/* 2. Quick Practice 5 Pastel Category Cards */}
           <QuickPractice items={QUICK_PRACTICE_ITEMS} />
 
-          {/* 3. Bạch thoại phật pháp */}
-          <BachThoaiSection posts={bachThoaiPosts} isLoading={isLoading} />
+          {/* 3. Bạch thoại phật pháp (ẩn/hiện theo setting) */}
+          {isBachThoaiEnabled && (
+            <BachThoaiSection posts={bachThoaiPosts} isLoading={isLoading} />
+          )}
 
           {/* 4. Khai thị */}
           <KhaiThiList posts={khaiThiPosts} isLoading={isLoading} />

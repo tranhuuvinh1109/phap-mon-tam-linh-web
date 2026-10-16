@@ -18,3 +18,8 @@ export const DEFAULT_CATEGORY_NAMES = [
 
 export const DEFAULT_CATEGORIES = DEFAULT_CATEGORY_NAMES;
 
+/**
+ * Feature flag for Bach thoai phat phap web
+ */
+export const FEATURE_FLAG_BACH_THOAI_PHAT_PHAP_WEB_ID = 'fd794735-a5c8-49c6-b622-8a899eb85480'
+

@@ -38,6 +38,39 @@ export const getSettings = async (
 };
 
 /**
+ * Fetch a single setting by ID or Key
+ */
+export const getSettingById = async (
+  idOrKey: string
+): Promise<SettingItemType | null> => {
+  try {
+    const response = await apiClient.get<
+      { data: SettingItemType } | SettingItemType
+    >(API_URL.settingById(idOrKey));
+
+    if (response.data && "data" in response.data && response.data.data) {
+      return response.data.data;
+    }
+
+    return (response.data as SettingItemType) || null;
+  } catch (error) {
+    try {
+      const fallback = await apiClient.get<
+        { data: SettingItemType } | SettingItemType
+      >(API_URL.settingByKey(idOrKey));
+
+      if (fallback.data && "data" in fallback.data && fallback.data.data) {
+        return fallback.data.data;
+      }
+
+      return (fallback.data as SettingItemType) || null;
+    } catch {
+      return null;
+    }
+  }
+};
+
+/**
  * Toggle enable/disable status for a setting
  */
 export const toggleSetting = async (id: string): Promise<SettingItemType> => {

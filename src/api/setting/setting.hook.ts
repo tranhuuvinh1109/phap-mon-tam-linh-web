@@ -10,7 +10,12 @@ import {
 import { AxiosError } from "axios";
 
 import { QueryKeyEnum } from "@/enums";
-import { getSettings, toggleSetting, updateSetting } from "./setting.api";
+import {
+  getSettingById,
+  getSettings,
+  toggleSetting,
+  updateSetting,
+} from "./setting.api";
 import {
   QuerySettingParams,
   SettingItemType,
@@ -39,6 +44,32 @@ export const useGetSettings = (
     queryKey: [QueryKeyEnum.GET_SETTINGS, params],
     queryFn: () => getSettings(params),
     staleTime: 30 * 1000,
+    ...options,
+  });
+};
+
+export type UseGetSettingByIdOptions = Omit<
+  UseQueryOptions<
+    SettingItemType | null,
+    AxiosError,
+    SettingItemType | null,
+    [QueryKeyEnum.GET_SETTING_DETAIL, string | undefined]
+  >,
+  "queryKey" | "queryFn"
+>;
+
+/**
+ * Hook to retrieve a single setting by ID or Key
+ */
+export const useGetSettingById = (
+  idOrKey?: string,
+  options?: UseGetSettingByIdOptions
+): UseQueryResult<SettingItemType | null, AxiosError> => {
+  return useQuery({
+    queryKey: [QueryKeyEnum.GET_SETTING_DETAIL, idOrKey],
+    queryFn: () => (idOrKey ? getSettingById(idOrKey) : null),
+    enabled: !!idOrKey,
+    staleTime: 60 * 1000,
     ...options,
   });
 };

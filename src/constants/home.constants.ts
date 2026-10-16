@@ -9,7 +9,7 @@ export interface NavItem {
 export const MAIN_NAV_ITEMS: NavItem[] = [
   { id: "home", label: "Trang chủ", iconName: "Home", href: "/" },
   { id: "practice", label: "Tu tập", iconName: "Flame", href: "#tu-tap" },
-  { id: "bach-thoai", label: "Bạch thoại Phật pháp", iconName: "BookOpen", href: "/bach-thoai-phat-phap" },
+  { id: "bach-thoai-phat-phap", label: "Bạch thoại Phật pháp", iconName: "BookOpen", href: "/bach-thoai-phat-phap" },
   { id: "favorites", label: "Bài viết đã lưu", iconName: "Bookmark", href: "/yeu-thich" },
   { id: "khai-thi", label: "Khai thị", iconName: "Sparkles", href: "/khai-thi" },
   { id: "hop-phap", label: "Bạch thoại hợp pháp", iconName: "Compass", href: "#hop-phap" },

@@ -17,6 +17,8 @@ import React from "react";
 
 import { LotusLogo } from "@/components/shared/lotus-logo";
 import { BOTTOM_NAV_ITEMS, MAIN_NAV_ITEMS, NavItem } from "@/constants/home.constants";
+import { FEATURE_FLAG_BACH_THOAI_PHAT_PHAP_WEB_ID } from "@/constants";
+import { useGetSettingById } from "@/api/setting";
 import { useFavoritesCount } from "@/stores";
 
 interface SidebarProps {
@@ -43,6 +45,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
 }) => {
   const favoritesCount = useFavoritesCount();
+  const { data: bachThoaiSetting } = useGetSettingById(
+    FEATURE_FLAG_BACH_THOAI_PHAT_PHAP_WEB_ID
+  );
+  const isBachThoaiEnabled = bachThoaiSetting ? bachThoaiSetting.isEnabled : true;
+
+  const visibleNavItems = MAIN_NAV_ITEMS.filter((item) => {
+    if (item.id === "bach-thoai-phat-phap" && !isBachThoaiEnabled) return false;
+    return true;
+  });
 
   const renderNavItem = (item: NavItem) => {
     const Icon = ICON_MAP[item.iconName] || Home;
@@ -54,17 +65,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         key={item.id}
         href={item.href}
         onClick={onCloseMobile}
-        className={`group flex items-center justify-between gap-3.5 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
-          isActive
+        className={`group flex items-center justify-between gap-3.5 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${isActive
             ? "bg-[#F3E8D8] font-semibold text-[#9C5812] shadow-xs"
             : "text-[#6C6356] hover:bg-[#F8F2E8] hover:text-[#9C5812]"
-        }`}
+          }`}
       >
         <div className="flex items-center gap-3.5 min-w-0">
           <Icon
-            className={`h-4.5 w-4.5 shrink-0 transition-colors ${
-              isActive ? "text-[#9C5812]" : "text-[#7D7364] group-hover:text-[#9C5812]"
-            }`}
+            className={`h-4.5 w-4.5 shrink-0 transition-colors ${isActive ? "text-[#9C5812]" : "text-[#7D7364] group-hover:text-[#9C5812]"
+              }`}
           />
           <span className="truncate">{item.label}</span>
         </div>
@@ -107,7 +116,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Primary Navigation List */}
-        <nav className="space-y-1">{MAIN_NAV_ITEMS.map((item) => renderNavItem(item))}</nav>
+        <nav className="space-y-1">{visibleNavItems.map((item) => renderNavItem(item))}</nav>
       </div>
 
       {/* Bottom Secondary Navigation */}
