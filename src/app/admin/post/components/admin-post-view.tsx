@@ -12,12 +12,17 @@ import {
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 
-import { useGetPosts, useSearchPosts } from "@/api/post";
+import { useDeletePost, useGetPosts, useSearchPosts } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
 import { Button } from "@/components/ui";
+import { BACH_THOAI_PHAT_PHAP_ID, BACH_THOAI_PHAT_PHAP_SLUG } from "@/constants";
 import { ContentType } from "@/enums";
+import { isBachThoaiPhatPhap } from "../utils/content-type";
+import { ConfirmModal } from "./confirm-modal";
 import { PostTableItem } from "./post-table-item";
+import { UpdatePostModal } from "./update-post-modal";
 
 const PAGE_SIZE = 15;
 
@@ -27,8 +32,41 @@ export const AdminPostView: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"ALL" | ContentType>("ALL");
 
+  // State for Update Modal
+  const [editingPost, setEditingPost] = useState<PostItemType | null>(null);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+
+  // State for Delete Confirmation Modal
+  const [deletingPost, setDeletingPost] = useState<PostItemType | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
+
+  const isBachThoaiTab = useMemo(() => {
+    return (
+      categoryParam === "bach-thoai-phat-phap" ||
+      categoryParam === BACH_THOAI_PHAT_PHAP_SLUG ||
+      categoryParam === BACH_THOAI_PHAT_PHAP_ID ||
+      isBachThoaiPhatPhap(undefined, categoryParam || undefined)
+    );
+  }, [categoryParam]);
+
+  // Delete mutation
+  const deletePostMutation = useDeletePost({
+    onSuccess: () => {
+      toast.success("Đã xoá bài viết thành công!");
+      setIsDeleteModalOpen(false);
+      setDeletingPost(null);
+    },
+    onError: (err) => {
+      const msg =
+        (err as any)?.response?.data?.message ||
+        err.message ||
+        "Xoá bài viết thất bại.";
+      toast.error(Array.isArray(msg) ? msg.join(", ") : msg);
+    },
+  });
 
   // Debounce search query to avoid spamming the backend
   useEffect(() => {
@@ -282,7 +320,19 @@ export const AdminPostView: React.FC = () => {
                   </tr>
                 ) : (
                   posts.map((post) => (
-                    <PostTableItem key={post.id} post={post} />
+                    <PostTableItem
+                      key={post.id}
+                      post={post}
+                      isBachThoaiTab={isBachThoaiTab}
+                      onEdit={(selected) => {
+                        setEditingPost(selected);
+                        setIsUpdateModalOpen(true);
+                      }}
+                      onDelete={(selected) => {
+                        setDeletingPost(selected);
+                        setIsDeleteModalOpen(true);
+                      }}
+                    />
                   ))
                 )}
               </tbody>
@@ -339,6 +389,42 @@ export const AdminPostView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Update Post Modal */}
+      <UpdatePostModal
+        isOpen={isUpdateModalOpen}
+        post={editingPost}
+        onClose={() => {
+          setIsUpdateModalOpen(false);
+          setEditingPost(null);
+        }}
+        onSuccess={() => {
+          activeQuery.refetch();
+        }}
+      />
+
+      {/* Delete Post Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        title="Xác nhận xoá bài viết"
+        description={`Bạn có chắc chắn muốn xoá bài viết "${deletingPost?.title}"? Bài viết sẽ được chuyển vào thùng rác.`}
+        confirmText="Xoá bài viết"
+        cancelText="Huỷ"
+        variant="danger"
+        isLoading={deletePostMutation.isPending}
+        onConfirm={() => {
+          if (deletingPost?.id) {
+            deletePostMutation.mutate(deletingPost.id);
+          }
+        }}
+        onClose={() => {
+          if (!deletePostMutation.isPending) {
+            setIsDeleteModalOpen(false);
+            setDeletingPost(null);
+          }
+        }}
+      />
     </div>
   );
 };
+

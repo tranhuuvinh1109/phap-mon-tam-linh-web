@@ -35,6 +35,11 @@ export interface CreatePostPayloadType {
   video?: CreatePostVideoPayloadType;
 }
 
+/**
+ * Payload for updating an existing post (PATCH /posts/:id)
+ */
+export type UpdatePostPayloadType = Partial<CreatePostPayloadType>;
+
 export interface PostAudioType {
   id: string;
   postId: string;

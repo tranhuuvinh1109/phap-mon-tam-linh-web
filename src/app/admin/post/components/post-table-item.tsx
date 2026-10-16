@@ -1,21 +1,40 @@
 "use client";
 
-import { BookOpen, Eye, Volume2 } from "lucide-react";
+import { BookOpen, Pencil, Trash2, Volume2 } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
 import type { PostItemType } from "@/api/post/post.type";
-import { Button } from "@/components/ui";
+import { BACH_THOAI_PHAT_PHAP_SLUG } from "@/constants";
 import { ContentType } from "@/enums";
 import { stripHtml } from "@/lib/utils";
+import { isBachThoaiPhatPhap } from "../utils/content-type";
 
 interface PostTableItemProps {
   post: PostItemType;
+  isBachThoaiTab?: boolean;
+  onEdit: (post: PostItemType) => void;
+  onDelete: (post: PostItemType) => void;
 }
 
-export const PostTableItem: React.FC<PostTableItemProps> = ({ post }) => {
+export const PostTableItem: React.FC<PostTableItemProps> = ({
+  post,
+  isBachThoaiTab = false,
+  onEdit,
+  onDelete,
+}) => {
   const isNormal = post.type === ContentType.NORMAL;
   const excerpt = post.content ? stripHtml(post.content) : "";
+
+  const isBachThoai =
+    isBachThoaiTab ||
+    post.category?.slug === "bach-thoai-phat-phap" ||
+    post.category?.slug === BACH_THOAI_PHAT_PHAP_SLUG ||
+    isBachThoaiPhatPhap(
+      post.categoryId || post.category?.id,
+      post.category?.slug,
+      post.category?.name
+    );
 
   const postUrl = post.category?.slug
     ? `/${post.category.slug}/${encodeURIComponent(post.slug || post.id)}`
@@ -100,17 +119,31 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({ post }) => {
 
       {/* Actions */}
       <td className="py-3.5 px-4 text-right whitespace-nowrap">
-        <Link href={postUrl} target="_blank" rel="noopener noreferrer">
-          <Button
+        <div className="inline-flex items-center gap-1.5 justify-end">
+          {!isBachThoai && (
+            <button
+              type="button"
+              onClick={() => onEdit(post)}
+              title="Chỉnh sửa bài viết"
+              className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50/80 px-2.5 py-1 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 hover:border-amber-400 shadow-2xs"
+            >
+              <Pencil className="h-3.5 w-3.5 text-amber-800" />
+              <span>Sửa</span>
+            </button>
+          )}
+
+          <button
             type="button"
-            variant="outline"
-            className="rounded-lg px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-50 hover:border-amber-400 inline-flex items-center gap-1"
+            onClick={() => onDelete(post)}
+            title="Xoá bài viết"
+            className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50/80 px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100 hover:border-red-300 shadow-2xs"
           >
-            <Eye className="h-3.5 w-3.5" />
-            <span>Xem chi tiết</span>
-          </Button>
-        </Link>
+            <Trash2 className="h-3.5 w-3.5 text-red-600" />
+            <span>Xoá</span>
+          </button>
+        </div>
       </td>
     </tr>
   );
 };
+

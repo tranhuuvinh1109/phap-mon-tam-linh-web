@@ -13,11 +13,13 @@ import { AxiosError } from "axios";
 import { QueryKeyEnum } from "@/enums";
 import {
   createPost,
+  deletePost,
   getPostBySlug,
   getPosts,
   getPostsByCategory,
   searchPostBySlug,
   searchPosts,
+  updatePost,
 } from "./post.api";
 import {
   CreatePostPayloadType,
@@ -26,6 +28,7 @@ import {
   PostItemType,
   SearchPostsParams,
   SearchPostsResponse,
+  UpdatePostPayloadType,
 } from "./post.type";
 
 export type UseCreatePostOptions = Omit<
@@ -173,6 +176,79 @@ export const useInfiniteSearchPosts = (
       return undefined;
     },
     ...options,
+  });
+};
+
+export type UseUpdatePostOptions = Omit<
+  UseMutationOptions<
+    PostItemType,
+    AxiosError,
+    { id: string; payload: UpdatePostPayloadType }
+  >,
+  "mutationFn"
+>;
+
+/**
+ * Mutation hook to update a post via PATCH /posts/:id
+ */
+export const useUpdatePost = (
+  options?: UseUpdatePostOptions
+): UseMutationResult<
+  PostItemType,
+  AxiosError,
+  { id: string; payload: UpdatePostPayloadType }
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updatePost,
+    ...options,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({
+        queryKey: [QueryKeyEnum.GET_POSTS],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["posts-search"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["posts-search-infinite"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QueryKeyEnum.GET_POST_DETAIL],
+      });
+      options?.onSuccess?.(...args);
+    },
+  });
+};
+
+export type UseDeletePostOptions = Omit<
+  UseMutationOptions<any, AxiosError, string>,
+  "mutationFn"
+>;
+
+/**
+ * Mutation hook to delete a post via DELETE /posts/:id
+ */
+export const useDeletePost = (
+  options?: UseDeletePostOptions
+): UseMutationResult<any, AxiosError, string> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deletePost,
+    ...options,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({
+        queryKey: [QueryKeyEnum.GET_POSTS],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["posts-search"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["posts-search-infinite"],
+      });
+      options?.onSuccess?.(...args);
+    },
   });
 };
 

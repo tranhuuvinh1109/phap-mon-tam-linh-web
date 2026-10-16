@@ -7,6 +7,7 @@ import {
   PostItemType,
   SearchPostsParams,
   SearchPostsResponse,
+  UpdatePostPayloadType,
 } from "./post.type";
 
 /**
@@ -157,4 +158,32 @@ export const searchPosts = async (
   return response.data;
 };
 
+/**
+ * API call to update a post via PATCH /posts/:id
+ */
+export const updatePost = async ({
+  id,
+  payload,
+}: {
+  id: string;
+  payload: UpdatePostPayloadType;
+}): Promise<PostItemType> => {
+  const response = await apiClient.patch<
+    PostItemType | { data: PostItemType }
+  >(API_URL.postById(id), payload);
 
+  const data = response.data;
+  if (data && typeof data === "object" && "data" in data) {
+    return (data as { data: PostItemType }).data;
+  }
+
+  return data as PostItemType;
+};
+
+/**
+ * API call to delete a post via DELETE /posts/:id
+ */
+export const deletePost = async (id: string): Promise<any> => {
+  const response = await apiClient.delete(API_URL.postById(id));
+  return response.data;
+};
