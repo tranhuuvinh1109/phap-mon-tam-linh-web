@@ -17,7 +17,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useMemo, useRef, useState } from "react";
 
-import { useGetPosts } from "@/api/post";
+import { useGetPosts, useSearchPosts } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
 import { ContentType } from "@/enums";
 import { formatTime, slugify, stripHtml } from "@/lib/utils";
@@ -41,6 +41,8 @@ interface CategorizedPostsProps {
   excludeBachThoai?: boolean;
   hideIfEmpty?: boolean;
   filterCategory?: string;
+  postsOverride?: PostItemType[];
+  isLoadingOverride?: boolean;
 }
 
 export const CategorizedPosts: React.FC<CategorizedPostsProps> = ({
@@ -48,16 +50,50 @@ export const CategorizedPosts: React.FC<CategorizedPostsProps> = ({
   excludeBachThoai = false,
   hideIfEmpty = false,
   filterCategory,
+  postsOverride,
+  isLoadingOverride,
 }) => {
   const router = useRouter();
-  const { data, isLoading, isError, error, refetch } = useGetPosts();
+
+  const allPostsQuery = useGetPosts(undefined, {
+    enabled: !postsOverride && !filterCategory,
+  });
+
+  const searchCategoryQuery = useSearchPosts(
+    { category: filterCategory || "", limit: 100 },
+    { enabled: !postsOverride && !!filterCategory }
+  );
+
+  const isLoading =
+    isLoadingOverride !== undefined
+      ? isLoadingOverride
+      : filterCategory
+      ? searchCategoryQuery.isLoading
+      : allPostsQuery.isLoading;
+
+  const isError = filterCategory
+    ? searchCategoryQuery.isError
+    : allPostsQuery.isError;
+  const error = filterCategory
+    ? searchCategoryQuery.error
+    : allPostsQuery.error;
+
+  const refetch = () => {
+    if (filterCategory) {
+      return searchCategoryQuery.refetch();
+    }
+    return allPostsQuery.refetch();
+  };
+
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [expandedPostIds, setExpandedPostIds] = useState<Set<string>>(new Set());
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const posts: PostItemType[] = useMemo(() => {
-    return data?.data || [];
-  }, [data]);
+    if (postsOverride) return postsOverride;
+    if (filterCategory) return searchCategoryQuery.data?.data || [];
+    return allPostsQuery.data?.data || [];
+  }, [postsOverride, filterCategory, searchCategoryQuery.data, allPostsQuery.data]);
 
   // Group posts by Category
   const groupedCategories = useMemo<CategoryGroup[]>(() => {
