@@ -15,5 +15,9 @@ export const API_URL = {
   analyticsEvents: "/analytics/posts/events",
   analyticsTopPosts: "/analytics/posts/top",
   postsSearch: "/posts/search",
+  settings: "/settings",
+  settingToggle: (id: string) => `/settings/${id}/toggle`,
+  settingById: (id: string) => `/settings/${id}`,
+  settingByKey: (key: string) => `/settings/key/${key}`,
 };
 
