@@ -45,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="text-base font-bold text-amber-950 sm:hidden"
             style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
           >
-            Phật Môn Tâm Linh
+            Pháp Môn Tâm Linh
           </span>
         </div>
       </div>
