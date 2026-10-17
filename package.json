@@ -13,10 +13,10 @@
     "build:local": "dotenv -e .env.prod -- next build",
     "start": "dotenv -e .env.prod -- next start",
     "pages:build": "next build",
-    "pages:deploy": "wrangler pages deploy",
-    "pages:dev": "wrangler pages dev",
+    "pages:deploy": "npx wrangler pages deploy",
+    "pages:dev": "npx wrangler pages dev",
     "cf:build": "opennextjs-cloudflare",
-    "cf:deploy": "opennextjs-cloudflare && wrangler deploy",
+    "cf:deploy": "opennextjs-cloudflare && npx wrangler deploy",
     "lint": "next lint",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
     "lint:fix": "next lint --fix",
@@ -64,7 +64,6 @@
     "prettier-plugin-tailwindcss": "^0.6.11",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.10",
-    "wrangler": "^3.114.0"
+    "vitest": "^4.1.10"
   }
 }
