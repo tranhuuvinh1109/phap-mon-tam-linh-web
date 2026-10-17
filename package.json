@@ -9,8 +9,14 @@
   },
   "scripts": {
     "dev": "dotenv -e .env.local -- next dev --turbopack",
-    "build": "dotenv -e .env.prod -- next build",
+    "build": "next build",
+    "build:local": "dotenv -e .env.prod -- next build",
     "start": "dotenv -e .env.prod -- next start",
+    "pages:build": "next build",
+    "pages:deploy": "wrangler pages deploy",
+    "pages:dev": "wrangler pages dev",
+    "cf:build": "opennextjs-cloudflare",
+    "cf:deploy": "opennextjs-cloudflare && wrangler deploy",
     "lint": "next lint",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
     "lint:fix": "next lint --fix",
@@ -58,6 +64,7 @@
     "prettier-plugin-tailwindcss": "^0.6.11",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "wrangler": "^3.114.0"
   }
 }
