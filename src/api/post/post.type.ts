@@ -83,6 +83,15 @@ export interface PostAuthorType {
   updatedAt?: string;
 }
 
+export interface PostGroupType {
+  id: string;
+  name: string;
+  description?: string | null;
+  deletedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface PostItemType {
   id: string;
   title: string;
@@ -93,8 +102,10 @@ export interface PostItemType {
   publishedAt?: string | null;
   authorId?: string | null;
   categoryId?: string | null;
+  groupId?: string | null;
   author?: PostAuthorType | null;
   category?: PostCategoryType | null;
+  group?: PostGroupType | null;
   audio?: PostAudioType | null;
   video?: PostVideoType | null;
   deletedAt?: string | null;
