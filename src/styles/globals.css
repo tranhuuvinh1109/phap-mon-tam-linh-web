@@ -16,6 +16,18 @@
     }
 }
 
+@keyframes progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 /* Rich Text / Quill Content Renderer Styling */
 .rich-post-content {
   color: #262626;

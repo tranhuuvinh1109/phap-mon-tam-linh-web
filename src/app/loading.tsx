@@ -2,6 +2,7 @@
 
 import { FC, useEffect, useState } from "react";
 
+import { LotusLogo } from "@/components/shared/lotus-logo";
 import { cn } from "@/lib/utils";
 
 interface LoadingProps {
@@ -10,13 +11,14 @@ interface LoadingProps {
   duration?: number;
 }
 
-const Loading: FC<LoadingProps> = (props) => {
+const Loading: FC<LoadingProps> = ({ className, message, duration }) => {
   const [show, setShow] = useState(true);
-  const { className, message, duration } = props;
 
   useEffect(() => {
-    const timer = setTimeout(() => setShow(false), duration);
-    return () => clearTimeout(timer);
+    if (typeof duration === "number" && duration > 0) {
+      const timer = setTimeout(() => setShow(false), duration);
+      return () => clearTimeout(timer);
+    }
   }, [duration]);
 
   if (!show) return null;
@@ -24,61 +26,59 @@ const Loading: FC<LoadingProps> = (props) => {
   return (
     <div
       className={cn(
-        "fixed inset-0 z-50 flex min-h-screen items-center justify-center bg-gray-950/90 backdrop-blur-md transition-all duration-500",
+        "fixed inset-0 z-50 flex min-h-screen items-center justify-center bg-[#FAF7F0] text-neutral-800 transition-opacity duration-300",
         className
       )}
       role="status"
       aria-label="Loading"
     >
-      {/* Animated Grid Background */}
+      {/* Warm Golden Ambient Glow in center */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute top-0 left-0 h-full w-full bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black_70%)] bg-[size:40px_40px]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/10 via-purple-500/10 to-pink-500/10 opacity-50" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(245,158,11,0.09),transparent_65%)]" />
       </div>
 
-      {/* Gradient Line */}
-      <div className="absolute top-0 right-0 left-0 h-1">
-        <div className="animate-gradient-x h-full w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 blur-sm" />
+      {/* Top Golden Accent Line */}
+      <div className="fixed top-0 right-0 left-0 h-0.5 overflow-hidden z-20">
+        <div className="h-full w-full animate-[progress_1.6s_ease-in-out_infinite] bg-gradient-to-r from-amber-400 via-amber-600 to-amber-700 shadow-[0_1px_6px_rgba(217,119,6,0.3)]" />
       </div>
 
-      {/* Loading Content */}
-      <div className="relative z-10 flex flex-col items-center space-y-8">
-        {/* Animated Logo/Spinner */}
-        <div className="relative h-24 w-24">
-          {/* Outer Ring */}
-          <div className="absolute inset-0 animate-[spin_3s_linear_infinite] rounded-full border-4 border-dashed border-indigo-500/30" />
-          <div className="absolute inset-0 animate-[spin_3s_linear_infinite_reverse] rounded-full border-4 border-dashed border-purple-500/30" />
+      {/* Central Card / Visual */}
+      <div className="relative z-10 flex flex-col items-center space-y-5 px-6">
+        {/* Lotus Logo with warm glowing aura */}
+        <div className="relative flex items-center justify-center">
+          {/* Subtle breathing background halo */}
+          <div className="absolute h-24 w-24 rounded-full bg-amber-400/20 blur-xl animate-pulse" />
 
-          {/* Middle Ring */}
-          <div className="absolute inset-2 animate-[spin_2s_linear_infinite] rounded-full border-4 border-dashed border-indigo-500/50" />
-          <div className="absolute inset-2 animate-[spin_2s_linear_infinite_reverse] rounded-full border-4 border-dashed border-purple-500/50" />
+          {/* Decorative spinning aura ring */}
+          <div className="absolute h-20 w-20 rounded-full border border-dashed border-amber-300/60 animate-[spin_10s_linear_infinite]" />
 
-          {/* Inner Ring */}
-          <div className="absolute inset-4 animate-[spin_1s_linear_infinite] rounded-full border-4 border-dashed border-pink-500/70" />
-
-          {/* Center Dot */}
-          <div className="absolute inset-[42%] animate-pulse rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" />
+          {/* Lotus Logo */}
+          <LotusLogo size={56} className="relative z-10 drop-shadow-sm transition-transform hover:scale-105" />
         </div>
 
-        {/* Loading Text */}
-        <div className="text-center">
-          <h2 className="mb-3 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-300 bg-clip-text text-2xl font-bold text-transparent">
-            {message || "Loading, please wait..."}
+        {/* Brand & Loading Message */}
+        <div className="text-center space-y-1">
+          <h2
+            className="font-serif text-lg sm:text-xl font-bold tracking-wide text-amber-950"
+            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+          >
+            Pháp Môn Tâm Linh
           </h2>
-          <div className="flex items-center justify-center gap-3">
-            <div className="flex gap-1">
-              <span className="h-2 w-2 animate-[bounce_1s_infinite] rounded-full bg-indigo-400" />
-              <span className="h-2 w-2 animate-[bounce_1s_infinite_0.2s] rounded-full bg-purple-400" />
-              <span className="h-2 w-2 animate-[bounce_1s_infinite_0.4s] rounded-full bg-pink-400" />
-            </div>
-            <span className="text-sm font-medium text-gray-400">Preparing your experience</span>
-          </div>
+          <p className="text-xs font-medium text-amber-800/80">
+            {message || "Đang tải dữ liệu..."}
+          </p>
         </div>
 
-        {/* Progress Bar */}
-        <div className="h-1 w-48 overflow-hidden rounded-full bg-gray-800/50">
-          <div className="h-full w-full animate-[progress_2s_ease-in-out_infinite] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+        {/* Smooth Amber Progress Bar */}
+        <div className="h-1 w-36 overflow-hidden rounded-full bg-amber-200/60 shadow-inner">
+          <div className="h-full w-full animate-[progress_1.6s_ease-in-out_infinite] bg-gradient-to-r from-amber-400 via-amber-600 to-amber-500 rounded-full" />
+        </div>
+
+        {/* Zen Bouncing Dots */}
+        <div className="flex items-center gap-1.5 pt-0.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-600 animate-[bounce_1s_infinite]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-[bounce_1s_infinite_0.2s]" />
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-[bounce_1s_infinite_0.4s]" />
         </div>
       </div>
     </div>
