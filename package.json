@@ -2,6 +2,7 @@
   "name": "phap-mon-tam-linh-web",
   "version": "1.1.0",
   "private": true,
+  "packageManager": "yarn@1.22.22",
   "author": {
     "name": "Vinh Developer",
     "email": "Vinhhuutran.developer@gmail.com",
@@ -46,7 +47,6 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.6.1",
-    "react-quill": "npm:react-quill-new",
     "react-quill-new": "^3.8.3",
     "tailwind-merge": "^3.2.0",
     "youtube-transcript": "^1.3.1",

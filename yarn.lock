@@ -5953,14 +5953,6 @@ react-quill-new@^3.8.3:
     lodash-es "^4.17.21"
     quill "~2.0.3"
 
-"react-quill@npm:react-quill-new":
-  version "3.8.3"
-  resolved "https://registry.yarnpkg.com/react-quill-new/-/react-quill-new-3.8.3.tgz#c9642428ebb1c8eb6cb98b7c347fc6d0c1ca3b95"
-  integrity sha512-c96PYqFTo0pI4R3e79B3rH9LUIce1kIQbmTBu/imJQZk8305ogyLyBqKKjG2UoInDlquXqePSzmBo2aVia3ttw==
-  dependencies:
-    lodash-es "^4.17.21"
-    quill "~2.0.3"
-
 react@^19.0.0:
   version "19.2.0"
   resolved "https://registry.yarnpkg.com/react/-/react-19.2.0.tgz#d33dd1721698f4376ae57a54098cb47fc75d93a5"

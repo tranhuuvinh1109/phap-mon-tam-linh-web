@@ -4,10 +4,10 @@ import { Eye, Loader2, PenLine } from "lucide-react";
 import dynamic from "next/dynamic";
 import React, { useState } from "react";
 
-import "react-quill/dist/quill.snow.css";
+import "react-quill-new/dist/quill.snow.css";
 
 // Dynamically import ReactQuill to prevent SSR issues in Next.js App Router
-const ReactQuill = dynamic(() => import("react-quill"), {
+const ReactQuill = dynamic(() => import("react-quill-new"), {
   ssr: false,
   loading: () => (
     <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-neutral-200 bg-[#FAF7F0]/50 text-neutral-500">
