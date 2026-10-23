@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { StateStorage, createJSONStorage, persist } from "zustand/middleware";
 
 import { getAppStorage, setAppStorage } from "@/lib/storage";
+import { trackBookmarkClick } from "@/lib/gtm";
 
 export interface FavoriteItem {
   id: string;
@@ -88,11 +89,23 @@ export const useFavoritesStore = create<FavoritesStore>()(
         const { favorites } = get();
         const exists = favorites.some((f) => f.id === item.id);
         if (exists) {
+          trackBookmarkClick({
+            action: "remove",
+            itemTitle: item.title,
+            itemId: item.id,
+            category: item.categoryName,
+          });
           set({
             favorites: favorites.filter((f) => f.id !== item.id),
           });
           return false;
         } else {
+          trackBookmarkClick({
+            action: "add",
+            itemTitle: item.title,
+            itemId: item.id,
+            category: item.categoryName,
+          });
           set({
             favorites: [
               {

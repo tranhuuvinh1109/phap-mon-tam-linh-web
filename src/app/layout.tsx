@@ -1,7 +1,13 @@
 import { type FC } from "react";
 
+import { GoogleTagManagerNoScript } from "@/components/analytics";
 import { PersistentAudioPlayer } from "@/components/audio";
-import { AuthProvider, QueryProvider, ToastProvider } from "@/components/providers";
+import {
+  AnalyticsProvider,
+  AuthProvider,
+  QueryProvider,
+  ToastProvider,
+} from "@/components/providers";
 import { geistMono, geistSans } from "@/config";
 
 import "@/styles/globals.css";
@@ -19,11 +25,14 @@ const RootLayout: FC<TProps> = ({ children }) => (
       className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       suppressHydrationWarning
     >
+      <GoogleTagManagerNoScript gtmId={process.env.NEXT_PUBLIC_GTM_ID} />
       <QueryProvider>
         <AuthProvider>
-          <ToastProvider />
-          {children}
-          <PersistentAudioPlayer />
+          <AnalyticsProvider>
+            <ToastProvider />
+            {children}
+            <PersistentAudioPlayer />
+          </AnalyticsProvider>
         </AuthProvider>
       </QueryProvider>
     </body>

@@ -65,6 +65,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         key={item.id}
         href={item.href}
         onClick={onCloseMobile}
+        data-track-click={`sidebar_nav_${item.id}`}
+        data-track-category="sidebar_navigation"
         className={`group flex items-center justify-between gap-3.5 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${isActive
           ? "bg-[#F3E8D8] font-semibold text-[#9C5812] shadow-xs"
           : "text-[#6C6356] hover:bg-[#F8F2E8] hover:text-[#9C5812]"

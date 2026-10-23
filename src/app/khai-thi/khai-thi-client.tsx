@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { useGetPostsByCategory } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
@@ -21,6 +21,7 @@ import { KhaiThiItem } from "@/components/home";
 import { MainLayout } from "@/components/layout";
 import { KhaiThiSkeleton } from "@/components/skeletons";
 import { KHAI_THI_SLUG } from "@/constants";
+import { trackSearch } from "@/lib/gtm";
 
 const PAGE_SIZE = 9;
 
@@ -54,6 +55,19 @@ export const KhaiThiClient: React.FC = () => {
       return titleMatch || authorMatch;
     });
   }, [rawPosts, searchQuery]);
+
+  // Debounced search tracking for GTM & GA4
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    const timeoutId = setTimeout(() => {
+      trackSearch({
+        searchTerm: searchQuery,
+        searchLocation: "khai_thi",
+        resultsCount: filteredPosts.length,
+      });
+    }, 600);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, filteredPosts.length]);
 
   // Pagination calculations
   const totalPosts = meta?.total ?? rawPosts.length;

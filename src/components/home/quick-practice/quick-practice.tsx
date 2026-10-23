@@ -66,6 +66,8 @@ export const QuickPractice: React.FC<QuickPracticeProps> = ({
           <Link
             key={item.id}
             href={item.href}
+            data-track-click={`quick_practice_${item.id}`}
+            data-track-category="home_quick_practice"
             className={`group flex flex-col items-center justify-center rounded-2xl border ${item.borderClass} ${item.bgClass} p-4 text-center shadow-2xs transition-all duration-200 select-none hover:-translate-y-1 hover:shadow-md`}
           >
             {/* Icon Container */}
