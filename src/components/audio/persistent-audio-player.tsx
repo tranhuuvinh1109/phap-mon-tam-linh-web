@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 
 import { formatTime } from "@/lib/utils";
+import { trackAudioClick } from "@/lib/gtm";
 import { useEvent } from "@/hooks";
 import { useAudioPlayerStore } from "@/stores";
 
@@ -168,8 +169,15 @@ export const PersistentAudioPlayer: React.FC = () => {
           {/* Close Button to dismiss mini player when desired */}
           <button
             type="button"
+            data-track-click="audio_close_mini_player"
+            data-track-category="audio_player"
             onClick={(e) => {
               e.stopPropagation();
+              trackAudioClick({
+                action: "close",
+                trackTitle: currentTrack.title,
+                trackId: currentTrack.id,
+              });
               closeMiniPlayer();
             }}
             aria-label="Tắt trình phát thu nhỏ"
@@ -184,6 +192,8 @@ export const PersistentAudioPlayer: React.FC = () => {
             onClick={handleNavigateToTrack}
             role="button"
             tabIndex={0}
+            data-track-click="audio_open_track_detail"
+            data-track-category="audio_player"
             aria-label={`Mở bài viết ${currentTrack.title}`}
             onKeyDown={(e) => e.key === "Enter" && handleNavigateToTrack()}
             className="group relative h-12 w-12 shrink-0 cursor-pointer overflow-hidden rounded-xl border border-amber-900/10 bg-amber-50 shadow-2xs sm:h-13 sm:w-13"
@@ -204,6 +214,8 @@ export const PersistentAudioPlayer: React.FC = () => {
               onClick={handleNavigateToTrack}
               role="button"
               tabIndex={0}
+              data-track-click="audio_open_track_detail"
+              data-track-category="audio_player"
               onKeyDown={(e) => e.key === "Enter" && handleNavigateToTrack()}
               title={currentTrack.title}
               className="cursor-pointer truncate text-sm font-bold text-neutral-900 leading-tight transition hover:text-amber-800"
@@ -234,8 +246,15 @@ export const PersistentAudioPlayer: React.FC = () => {
           {/* Amber Circle Play/Pause Button */}
           <button
             type="button"
+            data-track-click={isPlaying ? "audio_pause" : "audio_play"}
+            data-track-category="audio_player"
             onClick={(e) => {
               e.stopPropagation();
+              trackAudioClick({
+                action: isPlaying ? "pause" : "play",
+                trackTitle: currentTrack.title,
+                trackId: currentTrack.id,
+              });
               togglePlay();
             }}
             aria-label={isPlaying ? "Tạm dừng phát" : "Tiếp tục phát"}

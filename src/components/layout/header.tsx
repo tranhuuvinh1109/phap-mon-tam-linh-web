@@ -5,6 +5,7 @@ import Link from "next/link";
 import React, { useState } from "react";
 
 import { LotusLogo } from "@/components/shared/lotus-logo";
+import { trackSearch } from "@/lib/gtm";
 import { useFavoritesCount } from "@/stores";
 
 interface HeaderProps {
@@ -23,6 +24,12 @@ export const Header: React.FC<HeaderProps> = ({
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (searchValue.trim()) {
+      trackSearch({
+        searchTerm: searchValue,
+        searchLocation: "header",
+      });
+    }
     if (onSearch) {
       onSearch(searchValue);
     }
@@ -34,6 +41,8 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-3 lg:hidden">
         <button
           onClick={onOpenMobileSidebar}
+          data-track-click="open_mobile_sidebar"
+          data-track-category="header"
           className="rounded-lg p-2 text-neutral-600 transition-colors hover:bg-[#F2EADB]"
           aria-label="Mở menu"
         >
@@ -69,6 +78,8 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Quick Link to Favorites Page */}
         <Link
           href="/yeu-thich"
+          data-track-click="header_favorites_link"
+          data-track-category="header"
           title="Bài viết đã lưu / Yêu thích"
           className="relative flex h-10 w-10 items-center justify-center rounded-xl text-neutral-600 transition hover:bg-[#F0E8D9] hover:text-[#9C5812]"
         >

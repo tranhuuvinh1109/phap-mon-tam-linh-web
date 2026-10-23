@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { useGetSettingById } from "@/api/setting";
 import { FEATURE_FLAG_BACH_THOAI_PHAT_PHAP_WEB_ID } from "@/constants";
+import { trackRedirect } from "@/lib/gtm";
 
 export default function BachThoaiLayout({
   children,
@@ -21,6 +22,11 @@ export default function BachThoaiLayout({
   useEffect(() => {
     // If setting is loaded and disabled, redirect to home page
     if (!isLoading && setting && setting.isEnabled === false) {
+      trackRedirect({
+        from: "/bach-thoai-phat-phap",
+        to: "/",
+        reason: "feature_flag_disabled",
+      });
       router.replace("/");
     }
   }, [isLoading, setting, router]);

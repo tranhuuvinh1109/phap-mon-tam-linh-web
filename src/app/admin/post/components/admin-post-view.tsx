@@ -19,6 +19,7 @@ import type { PostItemType } from "@/api/post/post.type";
 import { Button } from "@/components/ui";
 import { BACH_THOAI_PHAT_PHAP_ID, BACH_THOAI_PHAT_PHAP_SLUG } from "@/constants";
 import { ContentType } from "@/enums";
+import { trackSearch } from "@/lib/gtm";
 import { isBachThoaiPhatPhap } from "../utils/content-type";
 import { ConfirmModal } from "./confirm-modal";
 import { PostTableItem } from "./post-table-item";
@@ -71,9 +72,16 @@ export const AdminPostView: React.FC = () => {
   // Debounce search query to avoid spamming the backend
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery.trim());
+      const trimmed = searchQuery.trim();
+      setDebouncedSearch(trimmed);
       setCurrentPage(1);
-    }, 300);
+      if (trimmed) {
+        trackSearch({
+          searchTerm: trimmed,
+          searchLocation: "admin_posts",
+        });
+      }
+    }, 400);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 

@@ -19,6 +19,7 @@ import toast from "react-hot-toast";
 
 import { LotusLogo } from "@/components/shared/lotus-logo";
 import { getAuthToken } from "@/lib/axios";
+import { trackRedirect } from "@/lib/gtm";
 import { useAuthStore } from "@/stores/auth-store";
 import { AdminUserProfile } from "./components/admin-user-profile";
 import { AdminSidebarNav } from "./components/admin-sidebar-nav";
@@ -50,6 +51,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         id: "auth-guard-admin",
       });
       const targetPreUrl = pathname || "/admin";
+      trackRedirect({
+        from: pathname || "/admin",
+        to: `/login?pre-url=${encodeURIComponent(targetPreUrl)}`,
+        reason: "admin_unauthorized",
+      });
       router.replace(`/login?pre-url=${encodeURIComponent(targetPreUrl)}`);
     }
   }, [isMounted, isAuthenticated, isHydrated, pathname, router]);

@@ -15,9 +15,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { MainLayout } from "@/components/layout";
+import { trackSearch } from "@/lib/gtm";
 import { formatTime } from "@/lib/utils";
 import {
   type FavoriteItem,
@@ -65,6 +66,19 @@ export const FavoritesClient: React.FC = () => {
       return true;
     });
   }, [favorites, activeTab, searchQuery]);
+
+  // Debounced search tracking for GTM & GA4
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    const timeoutId = setTimeout(() => {
+      trackSearch({
+        searchTerm: searchQuery,
+        searchLocation: "favorites",
+        resultsCount: filteredItems.length,
+      });
+    }, 600);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, filteredItems.length]);
 
   const audioCount = useMemo(
     () => favorites.filter((f) => Boolean(f.audioUrl) || f.type === "AUDIO").length,
@@ -166,6 +180,8 @@ export const FavoritesClient: React.FC = () => {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
+                data-track-click="favorites_filter_all"
+                data-track-category="favorites_filter"
                 onClick={() => setActiveTab("ALL")}
                 className={`rounded-xl px-4 py-2 text-xs font-bold transition shadow-2xs cursor-pointer ${
                   activeTab === "ALL"
@@ -178,6 +194,8 @@ export const FavoritesClient: React.FC = () => {
 
               <button
                 type="button"
+                data-track-click="favorites_filter_audio"
+                data-track-category="favorites_filter"
                 onClick={() => setActiveTab("AUDIO")}
                 className={`rounded-xl px-4 py-2 text-xs font-bold transition shadow-2xs cursor-pointer ${
                   activeTab === "AUDIO"
@@ -190,6 +208,8 @@ export const FavoritesClient: React.FC = () => {
 
               <button
                 type="button"
+                data-track-click="favorites_filter_article"
+                data-track-category="favorites_filter"
                 onClick={() => setActiveTab("ARTICLE")}
                 className={`rounded-xl px-4 py-2 text-xs font-bold transition shadow-2xs cursor-pointer ${
                   activeTab === "ARTICLE"

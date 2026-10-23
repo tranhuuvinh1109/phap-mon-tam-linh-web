@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { useGetPostsByCategory } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
@@ -22,6 +22,7 @@ import { MainLayout } from "@/components/layout";
 import { BachThoaiSkeleton } from "@/components/skeletons";
 import { BACH_THOAI_PHAT_PHAP_SLUG } from "@/constants";
 import { ContentType } from "@/enums";
+import { trackSearch } from "@/lib/gtm";
 import { formatTime, stripHtml } from "@/lib/utils";
 
 const PAGE_SIZE = 8;
@@ -104,6 +105,19 @@ export const BachThoaiClient: React.FC = () => {
       return true;
     });
   }, [displayItems, activeFilter, searchQuery]);
+
+  // Debounced search tracking for GTM & GA4
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    const timeoutId = setTimeout(() => {
+      trackSearch({
+        searchTerm: searchQuery,
+        searchLocation: "bach_thoai_phat_phap",
+        resultsCount: filteredItems.length,
+      });
+    }, 600);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, filteredItems.length]);
 
   // Pagination calculations
   const totalPosts = meta?.total ?? rawPosts.length;
@@ -204,6 +218,8 @@ export const BachThoaiClient: React.FC = () => {
           <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs sm:text-sm">
             <button
               type="button"
+              data-track-click="bach_thoai_filter_all"
+              data-track-category="bach_thoai_filter"
               onClick={() => setActiveFilter("ALL")}
               className={`rounded-xl px-3.5 py-2 font-semibold transition shrink-0 cursor-pointer ${
                 activeFilter === "ALL"
@@ -216,6 +232,8 @@ export const BachThoaiClient: React.FC = () => {
 
             <button
               type="button"
+              data-track-click="bach_thoai_filter_phap_thoai"
+              data-track-category="bach_thoai_filter"
               onClick={() => setActiveFilter("PHAP_THOAI")}
               className={`rounded-xl px-3.5 py-2 font-semibold transition shrink-0 cursor-pointer ${
                 activeFilter === "PHAP_THOAI"
@@ -228,6 +246,8 @@ export const BachThoaiClient: React.FC = () => {
 
             <button
               type="button"
+              data-track-click="bach_thoai_filter_bai_giang"
+              data-track-category="bach_thoai_filter"
               onClick={() => setActiveFilter("BAI_GIANG")}
               className={`rounded-xl px-3.5 py-2 font-semibold transition shrink-0 cursor-pointer ${
                 activeFilter === "BAI_GIANG"
@@ -240,6 +260,8 @@ export const BachThoaiClient: React.FC = () => {
 
             <button
               type="button"
+              data-track-click="bach_thoai_filter_audio"
+              data-track-category="bach_thoai_filter"
               onClick={() => setActiveFilter("AUDIO")}
               className={`rounded-xl px-3.5 py-2 font-semibold transition shrink-0 cursor-pointer ${
                 activeFilter === "AUDIO"
@@ -252,6 +274,8 @@ export const BachThoaiClient: React.FC = () => {
 
             <button
               type="button"
+              data-track-click="bach_thoai_filter_van_ban"
+              data-track-category="bach_thoai_filter"
               onClick={() => setActiveFilter("VAN_BAN")}
               className={`rounded-xl px-3.5 py-2 font-semibold transition shrink-0 cursor-pointer ${
                 activeFilter === "VAN_BAN"
@@ -276,6 +300,8 @@ export const BachThoaiClient: React.FC = () => {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
+                data-track-click="bach_thoai_clear_search"
+                data-track-category="bach_thoai_search"
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 cursor-pointer"
                 aria-label="Xóa tìm kiếm"
               >
