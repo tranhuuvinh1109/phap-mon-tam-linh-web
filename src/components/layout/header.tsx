@@ -1,12 +1,13 @@
 "use client";
 
-import { Bookmark, Menu, Search } from "lucide-react";
+import { Bookmark, LogIn, Menu, Search } from "lucide-react";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { LotusLogo } from "@/components/shared/lotus-logo";
+import { RoleEnum } from "@/enums";
 import { trackSearch } from "@/lib/gtm";
-import { useFavoritesCount } from "@/stores";
+import { useAuthHydrated, useFavoritesCount, useIsAuthenticated, useUser } from "@/stores";
 
 interface HeaderProps {
   onOpenMobileSidebar?: () => void;
@@ -20,7 +21,16 @@ export const Header: React.FC<HeaderProps> = ({
   onSearch,
 }) => {
   const favoritesCount = useFavoritesCount();
+  const isAuthenticated = useIsAuthenticated();
+  const user = useUser();
+  const isHydrated = useAuthHydrated();
+
+  const [mounted, setMounted] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,15 +58,13 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Menu className="h-5 w-5" />
         </button>
-        <div className="flex items-center gap-1.5">
-          <LotusLogo size={28} />
-          <span
-            className="text-base font-bold text-amber-950 sm:hidden"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-          >
-            Pháp Môn Tâm Linh
-          </span>
-        </div>
+        <Link
+          href="/"
+          title="Trang chủ"
+          className="flex items-center transition-transform hover:scale-105"
+        >
+          <LotusLogo size={30} />
+        </Link>
       </div>
 
       {/* Search Input Bar */}
@@ -73,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </form>
 
-      {/* Right Actions: Favorites Button & User Profile */}
+      {/* Right Actions: Favorites Button & Sign-in / User Profile */}
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Quick Link to Favorites Page */}
         <Link
@@ -90,6 +98,38 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           )}
         </Link>
+
+        {/* Sign In Button / User Profile */}
+        {mounted && isAuthenticated && user ? (
+          <div className="flex items-center gap-2">
+            {user.role === RoleEnum.ADMIN && (
+              <Link
+                href="/admin"
+                className="hidden md:inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 shadow-2xs"
+              >
+                <span>Quản trị</span>
+              </Link>
+            )}
+            <Link
+              href={user.role === RoleEnum.ADMIN ? "/admin" : "#"}
+              title={user.name || user.email}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-amber-600 to-amber-800 text-xs font-bold text-white shadow-xs transition hover:scale-105"
+            >
+              {(user.name || user.email || "U").charAt(0).toUpperCase()}
+            </Link>
+          </div>
+        ) : (
+          <Link
+            href="/login"
+            data-track-click="header_signin_link"
+            data-track-category="header"
+            title="Đăng nhập tài khoản"
+            className="flex h-10 w-10 lg:h-auto lg:w-auto items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-amber-600 via-amber-700 to-amber-800 lg:px-4 lg:py-2 text-xs sm:text-sm font-semibold text-white shadow-xs shadow-amber-900/15 transition-all hover:from-amber-700 hover:to-amber-900 active:scale-95 whitespace-nowrap"
+          >
+            <LogIn className="h-4 w-4" />
+            <span className="hidden lg:inline">Đăng nhập</span>
+          </Link>
+        )}
       </div>
     </header>
   );

@@ -1,13 +1,15 @@
 "use client";
 
-import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import toast from "react-hot-toast";
 
 import { useSignIn } from "@/api/auth/auth.hook";
 import { LotusLogo } from "@/components/shared/lotus-logo";
 import { Button } from "@/components/ui";
+import { RoleEnum } from "@/enums";
 import { useAuthStore } from "@/stores/auth-store";
 
 export function LoginForm() {
@@ -33,11 +35,26 @@ export function LoginForm() {
         refreshToken: data.refreshToken,
       });
 
-      const redirectTarget = preUrl.startsWith("/") ? preUrl : `/${preUrl}`;
-      router.push(redirectTarget);
+      const userRole = data.user?.role;
+      const isAdminOrCollab =
+        userRole === RoleEnum.ADMIN || userRole === RoleEnum.COLLABORATOR;
+
+      if (isAdminOrCollab) {
+        toast.success("Đăng nhập thành công!");
+        router.push("/admin");
+      } else {
+        toast.error("Tài khoản không có quyền truy cập trang quản trị", {
+          id: "no-admin-access",
+        });
+        router.push("/");
+      }
     },
-    onError: (error) => {
-      setApiError(error.message || "Đăng nhập không thành công. Vui lòng thử lại.");
+    onError: (error: any) => {
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Đăng nhập không thành công. Vui lòng thử lại.";
+      setApiError(Array.isArray(msg) ? msg[0] : msg);
     },
   });
 
@@ -72,15 +89,32 @@ export function LoginForm() {
 
   return (
     <div className="w-full max-w-[420px] px-4 py-8 sm:px-6">
-      {/* Top Lotus Logo & Brand Heading */}
-      <div className="text-center">
-        <LotusLogo size={56} />
-        <h2
-          className="mt-3 text-2xl font-bold tracking-wide text-amber-900"
-          style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+      {/* Back to Home Button */}
+      <div className="mb-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#EDE5D8] bg-white/80 px-3.5 py-1.5 text-xs font-semibold text-neutral-600 shadow-2xs backdrop-blur-xs transition hover:border-amber-600 hover:bg-amber-50/60 hover:text-amber-900"
         >
-          Pháp môn tâm linh
-        </h2>
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Về trang chủ</span>
+        </Link>
+      </div>
+
+      {/* Top Lotus Logo & Brand Heading (Clickable to Home) */}
+      <div className="text-center">
+        <Link
+          href="/"
+          title="Về trang chủ"
+          className="group inline-flex flex-col items-center transition-transform hover:scale-105"
+        >
+          <LotusLogo size={56} />
+          <h2
+            className="mt-3 text-2xl font-bold tracking-wide text-amber-900 group-hover:text-amber-950"
+            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+          >
+            Pháp môn tâm linh
+          </h2>
+        </Link>
       </div>
 
       {/* Screen Title & Tagline */}

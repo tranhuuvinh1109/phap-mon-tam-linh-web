@@ -74,3 +74,23 @@ export const updateCollaboratorPermissions = async (
   }
   return data as UserItemType;
 };
+
+/**
+ * Update user approval status via PATCH /users/:userId/approval
+ */
+export const updateApprovalStatus = async (
+  payload: { userId: string; status: string }
+): Promise<UserItemType> => {
+  const response = await apiClient.patch<
+    UserItemType | { data: UserItemType }
+  >(API_URL.userApproval(payload.userId), {
+    status: payload.status,
+  });
+
+  const data = response.data;
+  if (data && typeof data === "object" && "data" in data) {
+    return (data as { data: UserItemType }).data;
+  }
+  return data as UserItemType;
+};
+

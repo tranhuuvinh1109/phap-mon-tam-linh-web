@@ -12,6 +12,7 @@ interface ConfirmModalProps {
   confirmText?: string;
   cancelText?: string;
   variant?: "danger" | "warning" | "info";
+  icon?: React.ReactNode;
   isLoading?: boolean;
   onConfirm: () => void;
   onClose: () => void;
@@ -24,6 +25,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   confirmText = "Xác nhận",
   cancelText = "Huỷ",
   variant = "warning",
+  icon,
   isLoading = false,
   onConfirm,
   onClose,
@@ -31,6 +33,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   if (!isOpen) return null;
 
   const getIcon = () => {
+    if (icon) return icon;
     switch (variant) {
       case "danger":
         return <Trash2 className="h-6 w-6 text-red-600" />;

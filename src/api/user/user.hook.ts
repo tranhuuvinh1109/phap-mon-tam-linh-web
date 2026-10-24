@@ -12,11 +12,13 @@ import { AxiosError } from "axios";
 import { QueryKeyEnum } from "@/enums";
 import {
   getUsers,
+  updateApprovalStatus,
   updateCollaboratorPermissions,
   upgradeUserRole,
 } from "./user.api";
 import {
   AssignPermissionsPayloadType,
+  UpdateApprovalStatusPayloadType,
   UpgradeRolePayloadType,
   UserItemType,
 } from "./user.type";
@@ -92,3 +94,33 @@ export const useUpdateCollaboratorPermissions = (
     },
   });
 };
+
+export type UseUpdateApprovalStatusOptions = Omit<
+  UseMutationOptions<UserItemType, AxiosError, UpdateApprovalStatusPayloadType>,
+  "mutationFn"
+>;
+
+/**
+ * Mutation hook to update user approval status via PATCH /users/:userId/approval
+ */
+export const useUpdateApprovalStatus = (
+  options?: UseUpdateApprovalStatusOptions
+): UseMutationResult<
+  UserItemType,
+  AxiosError,
+  UpdateApprovalStatusPayloadType
+> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateApprovalStatus,
+    ...options,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({
+        queryKey: [QueryKeyEnum.GET_USERS],
+      });
+      options?.onSuccess?.(...args);
+    },
+  });
+};
+

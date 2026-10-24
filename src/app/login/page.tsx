@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { Suspense } from "react";
 
 import { LotusLogo } from "@/components/shared/lotus-logo";
@@ -30,7 +31,13 @@ export default function LoginPage() {
 
         {/* Top Header Logo on Artwork */}
         <div className="relative z-10 pt-10 text-center">
-          <LotusLogo size={52} showText showSubtitle textColor="text-amber-950" />
+          <Link
+            href="/"
+            title="Về trang chủ"
+            className="inline-block transition-opacity hover:opacity-85"
+          >
+            <LotusLogo size={52} showText showSubtitle textColor="text-amber-950" />
+          </Link>
         </div>
 
         {/* Spiritual Poetic Calligraphy Section */}
