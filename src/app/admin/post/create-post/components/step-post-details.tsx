@@ -28,6 +28,7 @@ import { NiemKinhStepEditor } from "./niem-kinh-step-editor";
 import { PostBasicFields } from "./post-basic-fields";
 import { RichTextEditor } from "./rich-text-editor";
 import { ThumbnailUpload } from "./thumbnail-upload";
+import { PdfUpload } from "./pdf-upload";
 
 interface StepPostDetailsProps {
   formValues: CreatePostFormValues;
@@ -49,6 +50,8 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
   const [audioProgress, setAudioProgress] = useState(0);
   const [isThumbUploading, setIsThumbUploading] = useState(false);
   const [thumbProgress, setThumbProgress] = useState(0);
+  const [isPdfUploading, setIsPdfUploading] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState(0);
   const [validationSuccess, setValidationSuccess] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [createdPost, setCreatedPost] = useState<PostItemType | null>(null);
@@ -104,23 +107,30 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
       errors.audioFile = "Vui lòng chọn tệp âm thanh định dạng .mp3 (tối đa 20 MB).";
     }
 
+    const hasPdf = Boolean(formValues.pdfFile) || Boolean(formValues.fileUrl);
+
     if (
       formValues.contentType === ContentType.NORMAL &&
-      !formValues.content.trim()
+      !formValues.content.trim() &&
+      !hasPdf
     ) {
       errors.content = isNiemKinhPost
         ? "Vui lòng nhập nội dung cho các bước Niệm Kinh."
-        : "Nội dung bài viết không được để trống.";
+        : "Nội dung bài viết không được để trống (hoặc đính kèm tệp PDF).";
     }
   }
+
+  const hasContentOrPdf =
+    formValues.content.trim().length > 0 ||
+    Boolean(formValues.pdfFile) ||
+    Boolean(formValues.fileUrl);
 
   const isValid =
     formValues.title.trim().length > 0 &&
     (formValues.contentType !== ContentType.AUDIO ||
       formValues.audioFile !== null ||
       Boolean(formValues.audioUrl)) &&
-    (formValues.contentType !== ContentType.NORMAL ||
-      formValues.content.trim().length > 0);
+    (formValues.contentType !== ContentType.NORMAL || hasContentOrPdf);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,6 +176,25 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
         setIsThumbUploading(false);
       }
 
+      // 3. Upload PDF to R2 (folder: 'pdf') if attached
+      let uploadedFileUrl = formValues.fileUrl;
+      let uploadedFileName = formValues.fileName;
+      let uploadedFileSize = formValues.fileSize;
+
+      if (formValues.pdfFile && !uploadedFileUrl) {
+        setIsPdfUploading(true);
+        setPdfProgress(0);
+        const pdfResult = await uploadFile(
+          formValues.pdfFile,
+          (pct) => setPdfProgress(pct),
+          "pdf"
+        );
+        uploadedFileUrl = pdfResult.url;
+        uploadedFileName = formValues.pdfFile.name;
+        uploadedFileSize = formValues.pdfFile.size;
+        setIsPdfUploading(false);
+      }
+
       // Update parent form state with S3 URLs and keys
       onChangeFormValues({
         audioUrl: uploadedAudioUrl,
@@ -204,6 +233,17 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
               mimeType: formValues.audioFile?.type || "audio/mpeg",
             },
           }),
+        ...(uploadedFileUrl && {
+          attachment: {
+            fileUrl: uploadedFileUrl,
+            fileName:
+              uploadedFileName ||
+              formValues.pdfFile?.name ||
+              "Tai-lieu-dinh-kem.pdf",
+            fileSize: uploadedFileSize || formValues.pdfFile?.size,
+            mimeType: "application/pdf",
+          },
+        }),
       };
 
       createPostMutation.mutate(payload);
@@ -219,6 +259,7 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
       setIsSubmitting(false);
       setIsAudioUploading(false);
       setIsThumbUploading(false);
+      setIsPdfUploading(false);
     }
   };
 
@@ -378,6 +419,37 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
       />
 
       {/* Section 3: Content-type specific fields */}
+      {formValues.contentType === ContentType.NORMAL && !isNiemKinhPost && (
+        <div className="pt-2">
+          <PdfUpload
+            pdfFile={formValues.pdfFile || null}
+            existingUrl={formValues.fileUrl}
+            existingName={formValues.fileName}
+            existingSize={formValues.fileSize}
+            isUploading={isPdfUploading}
+            uploadProgress={pdfProgress}
+            onChange={(pdfFile) => {
+              onChangeFormValues({
+                pdfFile,
+                fileUrl: null,
+                fileName: pdfFile?.name || null,
+                fileSize: pdfFile?.size || null,
+              });
+              setValidationSuccess(null);
+              setSubmitError(null);
+            }}
+            onClear={() => {
+              onChangeFormValues({
+                pdfFile: null,
+                fileUrl: null,
+                fileName: null,
+                fileSize: null,
+              });
+            }}
+          />
+        </div>
+      )}
+
       {formValues.contentType === ContentType.AUDIO && (
         <div className="pt-2">
           <AudioUpload

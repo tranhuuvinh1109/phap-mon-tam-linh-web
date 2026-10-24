@@ -14,6 +14,10 @@ export interface CreatePostFormValues {
   audioUrl?: string | null;
   audioKey?: string | null;
   audioDuration?: number | null;
+  pdfFile?: File | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
   content: string;
 }
 

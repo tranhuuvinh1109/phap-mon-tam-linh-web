@@ -56,12 +56,14 @@ export const uploadToS3 = async (
  */
 export const uploadFile = async (
   file: File,
-  onProgress?: (percent: number) => void
+  onProgress?: (percent: number) => void,
+  folder?: string
 ): Promise<UploadFileResult> => {
   // 1. Get presigned upload URL from backend
   const presigned = await getPresignedUploadUrl({
     fileName: file.name,
     mimeType: file.type || "application/octet-stream",
+    folder,
   });
 
   // 2. Upload file to S3
