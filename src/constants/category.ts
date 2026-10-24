@@ -8,6 +8,7 @@ export const NIEM_KINH_ID = '35d8a5b1-34d8-472b-9e5e-2d46da8fe033';
 export const NIEM_KINH_SLUG = 'niem-kinh';
 
 export const NGOI_NHA_NHO_SLUG = 'ngoi-nha-nho';
+export const KINH_SACH_SLUG = 'kinh-sach';
 
 /**
  * Default categories used across the system and admin sidebar tabs

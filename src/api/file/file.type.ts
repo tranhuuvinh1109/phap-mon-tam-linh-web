@@ -4,6 +4,7 @@
 export interface GetPresignedUploadUrlPayloadType {
   fileName: string;
   mimeType: string;
+  folder?: string;
 }
 
 /**

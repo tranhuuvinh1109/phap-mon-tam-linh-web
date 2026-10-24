@@ -70,6 +70,15 @@ export const CreatePostForm: React.FC = () => {
         }
       }
 
+      // Tự động lấy tên file PDF làm tiêu đề bài viết nếu chưa nhập tiêu đề
+      if (updates.pdfFile && !nextValues.title.trim()) {
+        const autoTitle = updates.pdfFile.name.replace(/\.[^/.]+$/, "").trim();
+        if (autoTitle) {
+          nextValues.title = autoTitle;
+          nextValues.slug = slugify(autoTitle);
+        }
+      }
+
       return nextValues;
     });
   };

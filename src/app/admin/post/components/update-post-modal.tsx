@@ -28,6 +28,7 @@ import { ContentType } from "@/enums";
 import { slugify } from "@/lib/utils";
 import { NiemKinhStepEditor } from "../create-post/components/niem-kinh-step-editor";
 import { RichTextEditor } from "../create-post/components/rich-text-editor";
+import { PdfUpload } from "../create-post/components/pdf-upload";
 import { parseNiemKinhContent } from "../types/niem-kinh.type";
 import { isNiemKinh } from "../utils/content-type";
 import { ConfirmModal } from "./confirm-modal";
@@ -56,6 +57,15 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [content, setContent] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
+
+  // Attachment state
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [attachmentUrl, setAttachmentUrl] = useState("");
+  const [attachmentName, setAttachmentName] = useState("");
+  const [attachmentSize, setAttachmentSize] = useState<number | null>(null);
+  const [isAttachmentDeleted, setIsAttachmentDeleted] = useState(false);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState(0);
 
   // Upload state
   const [isUploadingThumb, setIsUploadingThumb] = useState(false);
@@ -100,6 +110,11 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       setThumbnailUrl(post.thumbnailUrl || "");
       setContent(initialContentStr);
       setAudioUrl(post.audio?.audioUrl || "");
+      setAttachmentUrl(post.attachment?.fileUrl || "");
+      setAttachmentName(post.attachment?.fileName || "");
+      setAttachmentSize(post.attachment?.fileSize || null);
+      setPdfFile(null);
+      setIsAttachmentDeleted(false);
       setErrors({});
       setSubmitError(null);
       setCurrentStep(1);
@@ -129,9 +144,23 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       type !== (post.type || ContentType.NORMAL) ||
       thumbnailUrl !== (post.thumbnailUrl || "") ||
       content !== initialContentStr ||
-      audioUrl !== (post.audio?.audioUrl || "")
+      audioUrl !== (post.audio?.audioUrl || "") ||
+      pdfFile !== null ||
+      isAttachmentDeleted
     );
-  }, [post, title, slug, categoryId, type, thumbnailUrl, content, audioUrl, initialContentStr]);
+  }, [
+    post,
+    title,
+    slug,
+    categoryId,
+    type,
+    thumbnailUrl,
+    content,
+    audioUrl,
+    initialContentStr,
+    pdfFile,
+    isAttachmentDeleted,
+  ]);
 
   // Intercept F5 and browser reloads (Ctrl+R / Cmd+R)
   useEffect(() => {
@@ -248,13 +277,43 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
   };
 
   // Handle Save
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setSubmitError(null);
 
     if (!validateStep1()) {
       if (isNiemKinhPost) setCurrentStep(1);
       return;
+    }
+
+    let uploadedFileUrl = isAttachmentDeleted
+      ? undefined
+      : attachmentUrl.trim() || undefined;
+    let uploadedFileName = isAttachmentDeleted
+      ? undefined
+      : attachmentName.trim() || undefined;
+    let uploadedFileSize = isAttachmentDeleted
+      ? undefined
+      : attachmentSize || undefined;
+
+    if (pdfFile) {
+      setIsUploadingPdf(true);
+      setPdfProgress(0);
+      try {
+        const res = await uploadFile(
+          pdfFile,
+          (pct) => setPdfProgress(pct),
+          "pdf"
+        );
+        uploadedFileUrl = res.url;
+        uploadedFileName = pdfFile.name;
+        uploadedFileSize = pdfFile.size;
+      } catch {
+        setIsUploadingPdf(false);
+        setSubmitError("Lỗi khi tải tệp PDF lên R2. Vui lòng thử lại.");
+        return;
+      }
+      setIsUploadingPdf(false);
     }
 
     const payload: UpdatePostPayloadType = {
@@ -270,6 +329,19 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
               audioUrl: audioUrl.trim(),
             },
           }
+        : {}),
+      ...(uploadedFileUrl
+        ? {
+            attachment: {
+              fileUrl: uploadedFileUrl,
+              fileName:
+                uploadedFileName || pdfFile?.name || "Tai-lieu-dinh-kem.pdf",
+              fileSize: uploadedFileSize || pdfFile?.size,
+              mimeType: "application/pdf",
+            },
+          }
+        : isAttachmentDeleted
+        ? { attachment: null }
         : {}),
     };
 
@@ -640,7 +712,32 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                     </div>
                   )}
 
-                  {/* 6. Content Editor FOR REGULAR POSTS ONLY */}
+                  {/* 6. PDF Document Attachment */}
+                  {!isNiemKinhPost && (
+                    <div className="pt-1">
+                      <PdfUpload
+                        pdfFile={pdfFile}
+                        existingUrl={isAttachmentDeleted ? null : attachmentUrl}
+                        existingName={attachmentName}
+                        existingSize={attachmentSize}
+                        isUploading={isUploadingPdf}
+                        uploadProgress={pdfProgress}
+                        onChange={(file) => {
+                          setPdfFile(file);
+                          setIsAttachmentDeleted(false);
+                        }}
+                        onClear={() => {
+                          setPdfFile(null);
+                          setAttachmentUrl("");
+                          setAttachmentName("");
+                          setAttachmentSize(null);
+                          setIsAttachmentDeleted(true);
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* 7. Content Editor FOR REGULAR POSTS ONLY */}
                   {!isNiemKinhPost && (
                     <div>
                       <label className="block text-xs sm:text-sm font-semibold text-neutral-800 mb-1.5">

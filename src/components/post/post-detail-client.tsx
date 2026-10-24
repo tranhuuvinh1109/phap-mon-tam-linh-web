@@ -30,6 +30,7 @@ import {
   BachThoaiAudioPlayer,
   CategorizedPosts,
   PostContentRenderer,
+  PdfViewer,
 } from "@/components/post";
 import { Button } from "@/components/ui";
 import { ContentType } from "@/enums";
@@ -237,6 +238,20 @@ export const PostDetailClient: React.FC = () => {
                 onBack={() => router.back()}
               />
 
+              {/* If the post contains an attached PDF document */}
+              {displayPost.attachment?.fileUrl && (
+                <div className="pt-2">
+                  <PdfViewer
+                    fileUrl={displayPost.attachment.fileUrl}
+                    fileName={
+                      displayPost.attachment.fileName || displayPost.title
+                    }
+                    fileSize={displayPost.attachment.fileSize}
+                    slug={displayPost.slug}
+                  />
+                </div>
+              )}
+
               {/* If the post also contains written text/HTML content */}
               {displayPost.content && (
                 <div className="rounded-3xl border border-[#EDE5D8]/90 bg-white/95 p-6 sm:p-8 shadow-xs space-y-4">
@@ -416,10 +431,26 @@ export const PostDetailClient: React.FC = () => {
                 </div>
               )}
 
+              {/* PDF Document Viewer (Secure / Prevent Download) */}
+              {displayPost.attachment?.fileUrl && (
+                <div className="pt-2">
+                  <PdfViewer
+                    fileUrl={displayPost.attachment.fileUrl}
+                    fileName={
+                      displayPost.attachment.fileName || displayPost.title
+                    }
+                    fileSize={displayPost.attachment.fileSize}
+                    slug={displayPost.slug}
+                  />
+                </div>
+              )}
+
               {/* Article HTML Content */}
-              <div className="pt-2">
-                <PostContentRenderer content={displayPost.content} />
-              </div>
+              {displayPost.content && (
+                <div className="pt-2">
+                  <PostContentRenderer content={displayPost.content} />
+                </div>
+              )}
 
               {/* Bottom Footer Note */}
               <div className="border-t border-[#EDE5D8] pt-6 text-center text-xs italic text-neutral-400">

@@ -16,7 +16,13 @@ export interface CreatePostAudioPayloadType {
 export interface CreatePostVideoPayloadType {
   videoUrl: string;
   duration?: number;
-  thumbnailUrl?: string;
+}
+
+export interface CreatePostAttachmentPayloadType {
+  fileUrl: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
 }
 
 /**
@@ -33,6 +39,7 @@ export interface CreatePostPayloadType {
   categoryId?: string;
   audio?: CreatePostAudioPayloadType;
   video?: CreatePostVideoPayloadType;
+  attachment?: CreatePostAttachmentPayloadType | null;
 }
 
 /**
@@ -57,6 +64,17 @@ export interface PostVideoType {
   videoUrl: string;
   duration?: number | null;
   thumbnailUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PostAttachmentType {
+  id: string;
+  postId: string;
+  fileUrl: string;
+  fileName?: string | null;
+  fileSize?: number | null;
+  mimeType?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -108,6 +126,7 @@ export interface PostItemType {
   group?: PostGroupType | null;
   audio?: PostAudioType | null;
   video?: PostVideoType | null;
+  attachment?: PostAttachmentType | null;
   deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
