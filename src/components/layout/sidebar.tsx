@@ -3,6 +3,7 @@
 import {
   Bookmark,
   BookOpen,
+  BookText,
   Compass,
   Download,
   Flame,
@@ -31,6 +32,8 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Home,
   Flame,
   BookOpen,
+  BookText,
+  Book: BookText,
   Sparkles,
   Compass,
   Search,
@@ -57,7 +60,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const renderNavItem = (item: NavItem) => {
     const Icon = ICON_MAP[item.iconName] || Home;
-    const isActive = item.id === activeId;
+    const isActive =
+      item.id === activeId ||
+      (item.id === "bach-thoai-phat-phap" && (activeId === "bach-thoai" || activeId === "bach-thoai-phat-phap")) ||
+      (item.id === "kinh-sach" && (activeId === "kinh-sach" || activeId === "kinh-sach-detail"));
     const isFavoriteNav = item.id === "favorites" || item.id === "bookmarks";
 
     return (

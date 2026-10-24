@@ -34,6 +34,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     if (activeId) return activeId;
     if (!pathname || pathname === "/") return "home";
     if (pathname.startsWith("/bach-thoai")) return "bach-thoai";
+    if (pathname.startsWith("/kinh-sach")) return "kinh-sach";
     if (pathname.startsWith("/yeu-thich")) return "favorites";
     if (pathname.startsWith("/khai-thi")) return "khai-thi";
     if (pathname.startsWith("/niem-kinh")) return "practice";

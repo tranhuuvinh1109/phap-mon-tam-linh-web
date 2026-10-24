@@ -2,6 +2,7 @@
 
 import {
   BookOpen,
+  BookText,
   FileText,
   Flame,
   Folder,
@@ -37,6 +38,7 @@ export interface CategoryNavItem {
 const getCategoryIcon = (nameOrSlug: string): React.ElementType => {
   const s = slugify(nameOrSlug).toLowerCase();
   if (s.includes("bach-thoai")) return BookOpen;
+  if (s.includes("kinh-sach") || s.includes("sach")) return BookText;
   if (s.includes("niem-kinh") || s.includes("kinh")) return Flame;
   if (s.includes("khai-thi")) return Sparkles;
   return Folder;

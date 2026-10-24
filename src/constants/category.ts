@@ -18,6 +18,7 @@ export const DEFAULT_CATEGORY_NAMES = [
   'Niệm kinh',
   'Khai thị',
   'Ngôi nhà nhỏ',
+  'Kinh sách',
 ] as const;
 
 export const DEFAULT_CATEGORIES = DEFAULT_CATEGORY_NAMES;
