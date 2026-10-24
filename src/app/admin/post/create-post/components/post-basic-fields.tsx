@@ -1,7 +1,7 @@
 "use client";
 
 import { Info } from "lucide-react";
-import React, { useId } from "react";
+import React, { useId, useState } from "react";
 
 import { slugify } from "@/lib/utils";
 
@@ -14,6 +14,7 @@ interface PostBasicFieldsProps {
     slug?: string;
   };
   onChangeTitle: (title: string, slug: string) => void;
+  onChangeSlug?: (slug: string) => void;
   onChangeDescription: (description: string) => void;
 }
 
@@ -23,16 +24,38 @@ export const PostBasicFields: React.FC<PostBasicFieldsProps> = ({
   description,
   errors,
   onChangeTitle,
+  onChangeSlug,
   onChangeDescription,
 }) => {
   const titleId = useId();
   const slugId = useId();
   const descId = useId();
 
+  // State to enable/disable custom slug editing (default is false = disabled)
+  const [isCustomSlug, setIsCustomSlug] = useState(false);
+
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
-    const generatedSlug = slugify(newTitle);
-    onChangeTitle(newTitle, generatedSlug);
+    if (!isCustomSlug) {
+      const generatedSlug = slugify(newTitle);
+      onChangeTitle(newTitle, generatedSlug);
+    } else {
+      onChangeTitle(newTitle, slug);
+    }
+  };
+
+  const handleToggleCustomSlug = () => {
+    const nextState = !isCustomSlug;
+    setIsCustomSlug(nextState);
+    // When toggling off (disable custom slug), re-sync slug automatically from title
+    if (!nextState) {
+      const autoSlug = slugify(title);
+      onChangeSlug?.(autoSlug);
+    }
+  };
+
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChangeSlug?.(e.target.value);
   };
 
   return (
@@ -67,32 +90,82 @@ export const PostBasicFields: React.FC<PostBasicFieldsProps> = ({
         )}
       </div>
 
-      {/* Auto-generated Slug Field */}
+      {/* Slug Field with Switch Toggle */}
       <div>
-        <label
-          htmlFor={slugId}
-          className="block text-sm font-semibold text-neutral-800"
-        >
-          Đường dẫn tĩnh (Slug)
-        </label>
+        <div className="flex items-center justify-between">
+          <label
+            htmlFor={slugId}
+            className="block text-sm font-semibold text-neutral-800"
+          >
+            Đường dẫn tĩnh (Slug)
+          </label>
+
+          {/* Switch toggle: default is disabled */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-neutral-500 font-medium select-none">
+              Cho phép sửa slug
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isCustomSlug}
+              onClick={handleToggleCustomSlug}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2 ${
+                isCustomSlug ? "bg-amber-600" : "bg-neutral-300"
+              }`}
+              title={
+                isCustomSlug
+                  ? "Đang cho phép sửa slug (bấm để khóa và tự động tạo theo tiêu đề)"
+                  : "Đang khóa slug (bấm để cho phép chỉnh sửa thủ công)"
+              }
+            >
+              <span className="sr-only">Cho phép sửa slug</span>
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                  isCustomSlug ? "translate-x-4" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
         <div className="mt-1.5">
           <input
             id={slugId}
             type="text"
-            readOnly
-            tabIndex={-1}
+            readOnly={!isCustomSlug}
+            tabIndex={isCustomSlug ? 0 : -1}
             value={slug}
-            placeholder="Slug sẽ tự động tạo từ tiêu đề bài viết..."
-            className={`w-full rounded-xl border px-4 py-2.5 text-sm font-mono cursor-not-allowed select-all transition-colors focus:outline-none ${
-              slug
-                ? "border-neutral-200 bg-neutral-50/90 text-neutral-800"
-                : "border-dashed border-neutral-300 bg-neutral-50/60 text-neutral-400"
+            onChange={handleSlugChange}
+            placeholder={
+              isCustomSlug
+                ? "Nhập slug tùy chỉnh (ví dụ: khai-thi-ve-long-tu-bi)..."
+                : "Slug sẽ tự động tạo từ tiêu đề bài viết..."
+            }
+            className={`w-full rounded-xl border px-4 py-2.5 text-sm font-mono transition-colors focus:outline-none ${
+              isCustomSlug
+                ? "border-neutral-200 bg-white text-neutral-900 focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20"
+                : "cursor-not-allowed select-all border-neutral-200 bg-neutral-50/90 text-neutral-800"
+            } ${
+              errors?.slug
+                ? "border-red-400 focus:border-red-500 focus:ring-red-200"
+                : ""
             }`}
           />
         </div>
+        {errors?.slug && (
+          <p className="mt-1.5 text-xs font-medium text-red-600">
+            {errors.slug}
+          </p>
+        )}
         <div className="mt-1 flex items-center gap-1 text-xs text-neutral-400">
           <Info className="h-3 w-3 shrink-0" />
-          <span>Slug được tự động chuẩn hóa từ tiêu đề bài viết.</span>
+          <span>
+            {isCustomSlug
+              ? "Đang bật tùy chỉnh slug. Hãy dùng chữ thường không dấu và dấu gạch ngang (-)."
+              : "Slug được tự động chuẩn hóa từ tiêu đề bài viết. Bật công tắc bên trên để tùy chỉnh."}
+          </span>
         </div>
       </div>
 

@@ -345,6 +345,11 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
           setValidationSuccess(null);
           setSubmitError(null);
         }}
+        onChangeSlug={(slug) => {
+          onChangeFormValues({ slug });
+          setValidationSuccess(null);
+          setSubmitError(null);
+        }}
         onChangeDescription={(description) => {
           onChangeFormValues({ description });
           setValidationSuccess(null);
