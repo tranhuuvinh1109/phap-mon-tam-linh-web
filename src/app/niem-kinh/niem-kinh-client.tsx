@@ -332,11 +332,6 @@ export const NiemKinhClient: React.FC = () => {
               </>
             )}
           </div>
-
-          {/* Right Column: Other Categorized Posts Sidebar */}
-          <aside className="w-full space-y-6 lg:col-span-4">
-            <CategorizedPosts />
-          </aside>
         </div>
 
         {/* Toast Alert */}

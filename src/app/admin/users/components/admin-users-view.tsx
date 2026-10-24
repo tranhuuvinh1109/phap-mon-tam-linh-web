@@ -1,7 +1,10 @@
 "use client";
 
 import {
+  Ban,
+  Check,
   CheckCircle2,
+  Clock,
   Crown,
   Key,
   RefreshCw,
@@ -13,28 +16,71 @@ import {
   UserCheck,
   UserCog,
   Users,
+  X,
+  XCircle,
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
+import toast from "react-hot-toast";
 
-import { useGetUsers } from "@/api/user";
+import { useGetUsers, useUpdateApprovalStatus } from "@/api/user";
 import type { UserItemType } from "@/api/user/user.type";
 import { Button } from "@/components/ui";
-import { RoleEnum } from "@/enums";
+import { ApprovalStatusEnum, RoleEnum } from "@/enums";
+import { BlockUserModal } from "./block-user-modal";
 import { RolePermissionModal } from "./role-permission-modal";
 
 export const AdminUsersView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<"ALL" | RoleEnum>("ALL");
+  const [approvalFilter, setApprovalFilter] = useState<"ALL" | ApprovalStatusEnum>("ALL");
   const [selectedUser, setSelectedUser] = useState<UserItemType | null>(null);
+  const [userToBlock, setUserToBlock] = useState<UserItemType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [actionLoadingUserId, setActionLoadingUserId] = useState<string | null>(null);
 
   const { data: users = [], isLoading, isFetching, refetch } = useGetUsers();
+
+  const { mutate: changeApprovalStatus, isPending: isUpdatingApproval } = useUpdateApprovalStatus({
+    onSuccess: (updatedUser, variables) => {
+      const isApproved = variables.status === ApprovalStatusEnum.APPROVED;
+      toast.success(
+        isApproved
+          ? `Đã phê duyệt tài khoản ${updatedUser.email} thành công!`
+          : `Đã cập nhật trạng thái từ chối/chặn tài khoản ${updatedUser.email}!`
+      );
+      setActionLoadingUserId(null);
+      setUserToBlock(null);
+    },
+    onError: (err: any) => {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Không thể cập nhật trạng thái phê duyệt";
+      toast.error(Array.isArray(msg) ? msg[0] : msg);
+      setActionLoadingUserId(null);
+      setUserToBlock(null);
+    },
+  });
+
+  const handleUpdateApproval = (userId: string, status: ApprovalStatusEnum) => {
+    setActionLoadingUserId(userId);
+    changeApprovalStatus({ userId, status });
+  };
+
+  const handleConfirmBlockUser = () => {
+    if (!userToBlock) return;
+    handleUpdateApproval(userToBlock.id, ApprovalStatusEnum.REJECTED);
+  };
 
   // Filtered users
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
       const matchRole =
         roleFilter === "ALL" ? true : u.role === roleFilter;
+
+      const userStatus = u.approvalStatus || ApprovalStatusEnum.APPROVED;
+      const matchApproval =
+        approvalFilter === "ALL" ? true : userStatus === approvalFilter;
 
       const q = searchQuery.toLowerCase().trim();
       const matchSearch =
@@ -43,20 +89,29 @@ export const AdminUsersView: React.FC = () => {
         (u.email && u.email.toLowerCase().includes(q)) ||
         u.id.toLowerCase().includes(q);
 
-      return matchRole && matchSearch;
+      return matchRole && matchApproval && matchSearch;
     });
-  }, [users, roleFilter, searchQuery]);
+  }, [users, roleFilter, approvalFilter, searchQuery]);
 
   // Statistics
   const stats = useMemo(() => {
     const total = users.length;
+    const pending = users.filter(
+      (u) => (u.approvalStatus || ApprovalStatusEnum.APPROVED) === ApprovalStatusEnum.PENDING
+    ).length;
+    const rejected = users.filter(
+      (u) => (u.approvalStatus || ApprovalStatusEnum.APPROVED) === ApprovalStatusEnum.REJECTED
+    ).length;
+    const approved = users.filter(
+      (u) => (u.approvalStatus || ApprovalStatusEnum.APPROVED) === ApprovalStatusEnum.APPROVED
+    ).length;
     const admins = users.filter((u) => u.role === RoleEnum.ADMIN).length;
     const collaborators = users.filter(
       (u) => u.role === RoleEnum.COLLABORATOR
     ).length;
     const regularUsers = users.filter((u) => u.role === RoleEnum.USER).length;
 
-    return { total, admins, collaborators, regularUsers };
+    return { total, pending, rejected, approved, admins, collaborators, regularUsers };
   }, [users]);
 
   const handleOpenModal = (user: UserItemType) => {
@@ -102,9 +157,9 @@ export const AdminUsersView: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
         {/* Total Users */}
-        <div className="rounded-2xl border border-[#EDE5D8] bg-white p-4 sm:p-5 shadow-2xs flex items-center justify-between">
+        <div className="rounded-2xl border border-[#EDE5D8] bg-white p-4 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-xs font-medium text-neutral-500">Tổng tài khoản</p>
             <h3 className="text-xl sm:text-2xl font-bold text-neutral-900 mt-1">
@@ -114,29 +169,58 @@ export const AdminUsersView: React.FC = () => {
               Thành viên hệ thống
             </span>
           </div>
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
             <Users className="h-5 w-5" />
           </div>
         </div>
 
+        {/* Pending Approval */}
+        <div
+          className={`rounded-2xl border p-4 shadow-2xs flex items-center justify-between transition-all ${
+            stats.pending > 0
+              ? "border-amber-300 bg-amber-50/70 ring-2 ring-amber-400/20"
+              : "border-amber-100 bg-amber-50/30"
+          }`}
+        >
+          <div>
+            <p className="text-xs font-semibold text-amber-800">Chờ phê duyệt</p>
+            <div className="flex items-center gap-2 mt-1">
+              <h3 className="text-xl sm:text-2xl font-bold text-amber-950">
+                {stats.pending}
+              </h3>
+              {stats.pending > 0 && (
+                <span className="inline-flex items-center rounded-full bg-amber-200/80 px-2 py-0.5 text-[10px] font-bold text-amber-900 animate-pulse">
+                  Mới
+                </span>
+              )}
+            </div>
+            <span className="text-[11px] text-amber-700/80 mt-0.5 block">
+              Cần admin duyệt
+            </span>
+          </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+            <Clock className="h-5 w-5" />
+          </div>
+        </div>
+
         {/* Admins */}
-        <div className="rounded-2xl border border-rose-100 bg-rose-50/40 p-4 sm:p-5 shadow-2xs flex items-center justify-between">
+        <div className="rounded-2xl border border-rose-100 bg-rose-50/40 p-4 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-xs font-medium text-rose-700">Quản trị viên (ADMIN)</p>
             <h3 className="text-xl sm:text-2xl font-bold text-rose-950 mt-1">
               {stats.admins}
             </h3>
             <span className="text-[11px] text-rose-600/80 mt-0.5 block">
-              Full mọi quyền hạn
+              Full quyền hạn
             </span>
           </div>
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
             <Crown className="h-5 w-5" />
           </div>
         </div>
 
         {/* Collaborators */}
-        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 sm:p-5 shadow-2xs flex items-center justify-between">
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 shadow-2xs flex items-center justify-between">
           <div>
             <p className="text-xs font-medium text-emerald-700">
               Cộng tác viên (COLLAB)
@@ -148,13 +232,13 @@ export const AdminUsersView: React.FC = () => {
               Phân quyền tùy biến
             </span>
           </div>
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
             <Shield className="h-5 w-5" />
           </div>
         </div>
 
         {/* Regular Users */}
-        <div className="rounded-2xl border border-neutral-200 bg-neutral-50/50 p-4 sm:p-5 shadow-2xs flex items-center justify-between">
+        <div className="rounded-2xl border border-neutral-200 bg-neutral-50/50 p-4 shadow-2xs flex items-center justify-between col-span-2 sm:col-span-1">
           <div>
             <p className="text-xs font-medium text-neutral-600">Người dùng (USER)</p>
             <h3 className="text-xl sm:text-2xl font-bold text-neutral-900 mt-1">
@@ -164,49 +248,100 @@ export const AdminUsersView: React.FC = () => {
               Chỉ đọc nội dung
             </span>
           </div>
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-200 text-neutral-700">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-200 text-neutral-700">
             <User className="h-5 w-5" />
           </div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="rounded-2xl border border-[#EDE5D8] bg-white p-4 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm theo tên, email, hoặc UUID..."
-            className="w-full rounded-xl border border-neutral-200 bg-[#FAF7F0]/40 pl-10 pr-4 py-2 text-sm text-neutral-800 placeholder-neutral-400 focus:border-amber-600 focus:bg-white focus:outline-none transition"
-          />
+      <div className="rounded-2xl border border-[#EDE5D8] bg-white p-4 shadow-2xs space-y-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          {/* Search */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm theo tên, email, hoặc UUID..."
+              className="w-full rounded-xl border border-neutral-200 bg-[#FAF7F0]/40 pl-10 pr-4 py-2 text-sm text-neutral-800 placeholder-neutral-400 focus:border-amber-600 focus:bg-white focus:outline-none transition"
+            />
+          </div>
+
+          {/* Role Filter Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            <span className="text-xs font-medium text-neutral-400 whitespace-nowrap mr-1">
+              Vai trò:
+            </span>
+            {(
+              [
+                { id: "ALL", label: "Tất cả" },
+                { id: RoleEnum.ADMIN, label: "Admin" },
+                { id: RoleEnum.COLLABORATOR, label: "Cộng tác viên" },
+                { id: RoleEnum.USER, label: "Người dùng" },
+              ] as const
+            ).map((tab) => {
+              const isActive = roleFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setRoleFilter(tab.id as any)}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all ${
+                    isActive
+                      ? "bg-amber-700 text-white shadow-2xs"
+                      : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Role Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+        {/* Approval Status Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto border-t border-[#EDE5D8]/60 pt-3">
+          <span className="text-xs font-medium text-neutral-400 whitespace-nowrap mr-1">
+            Phê duyệt:
+          </span>
           {(
             [
-              { id: "ALL", label: "Tất cả" },
-              { id: RoleEnum.ADMIN, label: "Admin" },
-              { id: RoleEnum.COLLABORATOR, label: "Cộng tác viên" },
-              { id: RoleEnum.USER, label: "Người dùng" },
+              { id: "ALL", label: "Tất cả trạng thái" },
+              {
+                id: ApprovalStatusEnum.PENDING,
+                label: "Chờ phê duyệt",
+                badge: stats.pending,
+              },
+              { id: ApprovalStatusEnum.APPROVED, label: "Đã phê duyệt" },
+              { id: ApprovalStatusEnum.REJECTED, label: "Đã từ chối" },
             ] as const
           ).map((tab) => {
-            const isActive = roleFilter === tab.id;
+            const isActive = approvalFilter === tab.id;
             return (
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setRoleFilter(tab.id as any)}
-                className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all ${
+                onClick={() => setApprovalFilter(tab.id as any)}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all ${
                   isActive
-                    ? "bg-amber-700 text-white shadow-2xs"
+                    ? "bg-neutral-800 text-white shadow-2xs"
                     : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
                 }`}
               >
-                {tab.label}
+                <span>{tab.label}</span>
+                {typeof (tab as any).badge === "number" && (tab as any).badge > 0 && (
+                  <span
+                    className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+                      isActive
+                        ? "bg-amber-400 text-amber-950"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {(tab as any).badge}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -246,6 +381,7 @@ export const AdminUsersView: React.FC = () => {
                 <tr className="border-b border-[#EDE5D8] bg-[#FAF7F0] text-[12px] font-semibold uppercase tracking-wider text-neutral-600">
                   <th className="px-5 py-3.5">Người dùng</th>
                   <th className="px-4 py-3.5">Vai trò</th>
+                  <th className="px-4 py-3.5">Phê duyệt</th>
                   <th className="px-4 py-3.5">Quyền hạn (Permissions)</th>
                   <th className="px-4 py-3.5">Ngày tạo</th>
                   <th className="px-5 py-3.5 text-right">Thao tác</th>
@@ -256,6 +392,13 @@ export const AdminUsersView: React.FC = () => {
                   const role = user.role as RoleEnum;
                   const isAdmin = role === RoleEnum.ADMIN;
                   const isCollaborator = role === RoleEnum.COLLABORATOR;
+
+                  const status =
+                    user.approvalStatus || ApprovalStatusEnum.APPROVED;
+                  const isPendingStatus = status === ApprovalStatusEnum.PENDING;
+                  const isApprovedStatus = status === ApprovalStatusEnum.APPROVED;
+                  const isRejectedStatus = status === ApprovalStatusEnum.REJECTED;
+                  const isActionLoading = actionLoadingUserId === user.id;
 
                   return (
                     <tr
@@ -304,6 +447,28 @@ export const AdminUsersView: React.FC = () => {
                         </span>
                       </td>
 
+                      {/* Approval Status Badge */}
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {isPendingStatus && (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-3 py-1 text-xs font-semibold text-amber-900">
+                            <Clock className="h-3.5 w-3.5 text-amber-700 animate-spin" />
+                            <span>Chờ duyệt</span>
+                          </span>
+                        )}
+                        {isApprovedStatus && (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 border border-emerald-300 px-3 py-1 text-xs font-semibold text-emerald-900">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-700" />
+                            <span>Đã duyệt</span>
+                          </span>
+                        )}
+                        {isRejectedStatus && (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 border border-rose-300 px-3 py-1 text-xs font-semibold text-rose-900">
+                            <XCircle className="h-3.5 w-3.5 text-rose-700" />
+                            <span>Đã từ chối</span>
+                          </span>
+                        )}
+                      </td>
+
                       {/* Permissions List */}
                       <td className="px-4 py-4">
                         {isAdmin ? (
@@ -346,15 +511,81 @@ export const AdminUsersView: React.FC = () => {
 
                       {/* Actions */}
                       <td className="px-5 py-4 text-right whitespace-nowrap">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenModal(user)}
-                          className="inline-flex items-center gap-1.5 rounded-xl border-[#EDE5D8] hover:border-amber-600 hover:bg-[#FAF7F0] text-amber-900 font-semibold text-xs shadow-2xs"
-                        >
-                          <Key className="h-3.5 w-3.5 text-amber-700" />
-                          <span>Phân quyền</span>
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Approval Quick Action Buttons */}
+                          {isPendingStatus && (
+                            <>
+                              <button
+                                type="button"
+                                title="Phê duyệt tài khoản"
+                                disabled={isActionLoading}
+                                onClick={() =>
+                                  handleUpdateApproval(
+                                    user.id,
+                                    ApprovalStatusEnum.APPROVED
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-emerald-700 transition disabled:opacity-50"
+                              >
+                                <Check className="h-3.5 w-3.5" />
+                                <span>Duyệt</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                title="Từ chối tài khoản"
+                                disabled={isActionLoading}
+                                onClick={() => setUserToBlock(user)}
+                                className="inline-flex items-center gap-1 rounded-xl bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-rose-700 transition disabled:opacity-50"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                                <span>Từ chối</span>
+                              </button>
+                            </>
+                          )}
+
+                          {isRejectedStatus && (
+                            <button
+                              type="button"
+                              title="Phê duyệt lại"
+                              disabled={isActionLoading}
+                              onClick={() =>
+                                handleUpdateApproval(
+                                  user.id,
+                                  ApprovalStatusEnum.APPROVED
+                                )
+                              }
+                              className="inline-flex items-center gap-1 rounded-xl border border-emerald-300 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition disabled:opacity-50"
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                              <span>Duyệt lại</span>
+                            </button>
+                          )}
+
+                          {isApprovedStatus && !isAdmin && (
+                            <button
+                              type="button"
+                              title="Chặn / Từ chối tài khoản"
+                              disabled={isActionLoading}
+                              onClick={() => setUserToBlock(user)}
+                              className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50/60 px-2 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition disabled:opacity-50"
+                            >
+                              <Ban className="h-3.5 w-3.5" />
+                              <span>Chặn</span>
+                            </button>
+                          )}
+
+                          {/* Permissions Modal Trigger */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenModal(user)}
+                            className="inline-flex items-center gap-1.5 rounded-xl border-[#EDE5D8] hover:border-amber-600 hover:bg-[#FAF7F0] text-amber-900 font-semibold text-xs shadow-2xs"
+                          >
+                            <Key className="h-3.5 w-3.5 text-amber-700" />
+                            <span>Phân quyền</span>
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -370,6 +601,19 @@ export const AdminUsersView: React.FC = () => {
         user={selectedUser}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
+      />
+
+      {/* Block / Reject User Confirmation Modal */}
+      <BlockUserModal
+        user={userToBlock}
+        isOpen={!!userToBlock}
+        isLoading={isUpdatingApproval && actionLoadingUserId === userToBlock?.id}
+        onConfirm={handleConfirmBlockUser}
+        onClose={() => {
+          if (!isUpdatingApproval) {
+            setUserToBlock(null);
+          }
+        }}
       />
     </div>
   );

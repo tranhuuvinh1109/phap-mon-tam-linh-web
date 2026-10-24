@@ -1,6 +1,7 @@
 export interface SignUpPayloadType {
   email: string;
   password: string;
+  name?: string;
   fullName?: string;
 }
 
@@ -11,13 +12,15 @@ export interface UserProfileResponseType {
   fullName?: string;
   avatarUrl?: string;
   role?: string;
+  approvalStatus?: string;
   createdAt?: string;
   updatedAt?: string;
   permissions?: string[];
 }
 
 export interface SignUpResponseType {
-  accessToken: string;
+  message?: string;
+  accessToken?: string;
   refreshToken?: string;
   user: UserProfileResponseType;
 }
