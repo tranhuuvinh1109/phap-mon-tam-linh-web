@@ -13,9 +13,10 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 
-import { useGetPostsByCategory } from "@/api/post";
+import { useGetPostsByCategory, useSearchPosts } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
 import { BachThoaiDisplayItem, BachThoaiItem } from "@/components/home";
 import { MainLayout } from "@/components/layout";
@@ -30,24 +31,76 @@ const PAGE_SIZE = 8;
 type FilterTab = "ALL" | "PHAP_THOAI" | "BAI_GIANG" | "AUDIO" | "VAN_BAN";
 
 export const BachThoaiClient: React.FC = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
+
   const [page, setPage] = useState<number>(1);
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>(urlSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState<string>(urlSearch);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
   const [cursorHistory, setCursorHistory] = useState<(string | null)[]>([null]);
 
+  // Keep state synced if URL changes externally
+  useEffect(() => {
+    setSearchQuery(urlSearch);
+    setDebouncedSearch(urlSearch);
+  }, [urlSearch]);
+
+  // Debounced search query & URL parameter update
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchQuery.trim();
+      setDebouncedSearch(trimmed);
+      setPage(1);
+      setCursorHistory([null]);
+
+      const params = new URLSearchParams(searchParams.toString());
+      if (trimmed) {
+        params.set("search", trimmed);
+        params.delete("q");
+      } else {
+        params.delete("search");
+        params.delete("q");
+      }
+      const qs = params.toString();
+      const newUrl = qs ? `${pathname}?${qs}` : pathname;
+      router.replace(newUrl, { scroll: false });
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, pathname, router, searchParams]);
+
+  const isSearching = Boolean(debouncedSearch);
   const currentCursor = cursorHistory[page - 1] || null;
 
-  // Query posts by category_name = BACH_THOAI_PHAT_PHAP_SLUG with pagination
-  const { data, isLoading, isError, error, refetch, isFetching } =
-    useGetPostsByCategory({
+  // 1. Regular category posts query (when not searching)
+  const categoryPostsQuery = useGetPostsByCategory(
+    {
       category_name: BACH_THOAI_PHAT_PHAP_SLUG,
       limit: PAGE_SIZE,
       ...(currentCursor ? { cursor: currentCursor } : {}),
       page,
-    });
+    },
+    { enabled: !isSearching }
+  );
 
-  const rawPosts: PostItemType[] = data?.data || [];
-  const meta = data?.meta;
+  // 2. Search query within Bach Thoai category (when searching)
+  const searchPostsQuery = useSearchPosts(
+    {
+      category: BACH_THOAI_PHAT_PHAP_SLUG,
+      search: debouncedSearch,
+      limit: PAGE_SIZE,
+      page,
+    },
+    { enabled: isSearching }
+  );
+
+  const activeQuery = isSearching ? searchPostsQuery : categoryPostsQuery;
+  const { isLoading, isError, error, refetch, isFetching } = activeQuery;
+  const rawPosts: PostItemType[] = activeQuery.data?.data || [];
+  const meta = activeQuery.data?.meta;
 
   // Transform API posts to display item format
   const displayItems = useMemo<BachThoaiDisplayItem[]>(() => {
@@ -79,18 +132,10 @@ export const BachThoaiClient: React.FC = () => {
     });
   }, [rawPosts]);
 
-  // Filter items by search keyword and tab
+  // Filter items by tab
   const filteredItems = useMemo(() => {
     return displayItems.filter((item) => {
-      // 1. Search keyword
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        const matchTitle = item.title.toLowerCase().includes(query);
-        const matchAuthor = item.authorName.toLowerCase().includes(query);
-        if (!matchTitle && !matchAuthor) return false;
-      }
-
-      // 2. Tab filter
+      // Tab filter
       if (activeFilter === "ALL") return true;
       if (activeFilter === "AUDIO")
         return item.type === ContentType.AUDIO || !!item.audioUrl;
@@ -104,20 +149,17 @@ export const BachThoaiClient: React.FC = () => {
       }
       return true;
     });
-  }, [displayItems, activeFilter, searchQuery]);
+  }, [displayItems, activeFilter]);
 
   // Debounced search tracking for GTM & GA4
   useEffect(() => {
-    if (!searchQuery.trim()) return;
-    const timeoutId = setTimeout(() => {
-      trackSearch({
-        searchTerm: searchQuery,
-        searchLocation: "bach_thoai_phat_phap",
-        resultsCount: filteredItems.length,
-      });
-    }, 600);
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, filteredItems.length]);
+    if (!debouncedSearch) return;
+    trackSearch({
+      searchTerm: debouncedSearch,
+      searchLocation: "bach_thoai_phat_phap",
+      resultsCount: filteredItems.length,
+    });
+  }, [debouncedSearch, filteredItems.length]);
 
   // Pagination calculations
   const totalPosts = meta?.total ?? rawPosts.length;
@@ -133,12 +175,14 @@ export const BachThoaiClient: React.FC = () => {
 
   const handleNextPage = () => {
     if (!hasNextPage) return;
-    const nextCursor = meta?.nextCursor || null;
-    setCursorHistory((prev) => {
-      const updated = [...prev];
-      updated[page] = nextCursor;
-      return updated;
-    });
+    if (!isSearching) {
+      const nextCursor = meta?.nextCursor || null;
+      setCursorHistory((prev) => {
+        const updated = [...prev];
+        updated[page] = nextCursor;
+        return updated;
+      });
+    }
     setPage((prev) => prev + 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -158,6 +202,18 @@ export const BachThoaiClient: React.FC = () => {
       setPage(targetPage);
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setDebouncedSearch("");
+    setPage(1);
+    setCursorHistory([null]);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("search");
+    params.delete("q");
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
   return (
@@ -299,7 +355,7 @@ export const BachThoaiClient: React.FC = () => {
             />
             {searchQuery && (
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={handleClearSearch}
                 data-track-click="bach_thoai_clear_search"
                 data-track-category="bach_thoai_search"
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 cursor-pointer"
@@ -371,18 +427,18 @@ export const BachThoaiClient: React.FC = () => {
               <Sparkles className="h-7 w-7 text-amber-700" />
             </div>
             <h3 className="text-base sm:text-lg font-bold text-neutral-900">
-              {searchQuery
+              {debouncedSearch
                 ? "Không tìm thấy bài viết phù hợp"
                 : "Chưa có bài viết Bạch thoại Phật pháp nào"}
             </h3>
             <p className="mt-1.5 text-xs sm:text-sm text-neutral-500 max-w-sm">
-              {searchQuery
-                ? `Không có kết quả nào cho "${searchQuery}". Hãy thử tìm kiếm với từ khóa khác.`
+              {debouncedSearch
+                ? `Không có kết quả nào cho "${debouncedSearch}". Hãy thử tìm kiếm với từ khóa khác.`
                 : "Các bài giảng sẽ sớm được cập nhật. Kính mong quý Phật tử hoan hỷ đón đọc."}
             </p>
-            {searchQuery ? (
+            {debouncedSearch ? (
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={handleClearSearch}
                 className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-xs font-medium text-neutral-700 shadow-2xs hover:bg-neutral-50 cursor-pointer"
               >
                 <span>Xóa bộ lọc tìm kiếm</span>

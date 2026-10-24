@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import React from "react";
+import React, { Suspense } from "react";
 
 import { KhaiThiClient } from "./khai-thi-client";
 
@@ -10,5 +10,16 @@ export const metadata: Metadata = {
 };
 
 export default function KhaiThiPage() {
-  return <KhaiThiClient />;
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-600 border-t-transparent" />
+        </div>
+      }
+    >
+      <KhaiThiClient />
+    </Suspense>
+  );
 }
+

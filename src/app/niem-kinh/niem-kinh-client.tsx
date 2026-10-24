@@ -31,15 +31,19 @@ import { useFavoritesStore, useIsFavorite } from "@/stores";
 export const NiemKinhClient: React.FC = () => {
   const searchParams = useSearchParams();
   const selectedSlugOrId = searchParams.get("post");
+  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
 
-  // 1. Call API endpoint: /posts/search?category=niệm-kinh
+  // 1. Call API endpoint: /posts/search?category=niem-kinh
   const {
     data: searchResponse,
     isLoading: isSearchLoading,
     isError: isSearchError,
     error: searchError,
     refetch: refetchSearch,
-  } = useSearchPosts({ category: "niệm-kinh" });
+  } = useSearchPosts({
+    category: NIEM_KINH_SLUG,
+    search: urlSearch.trim() || undefined,
+  });
 
   // Get posts list from search response
   const niemKinhPosts: PostItemType[] = useMemo(() => {

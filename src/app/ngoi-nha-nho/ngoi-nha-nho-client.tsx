@@ -17,9 +17,10 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 
-import { useGetPostsByCategory } from "@/api/post";
+import { useGetPostsByCategory, useSearchPosts } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
 import { MainLayout } from "@/components/layout";
 import { NgoiNhaNhoSkeleton } from "@/components/skeletons";
@@ -31,56 +32,89 @@ import { formatTime } from "@/lib/utils";
 const PAGE_SIZE = 15;
 
 export const NgoiNhaNhoClient: React.FC = () => {
-  const [page, setPage] = useState<number>(1);
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
 
-  // Query posts by category slug with maximum limit allowed (100) to ensure accurate chronological sorting
-  const { data, isLoading, isError, error, refetch, isFetching } =
-    useGetPostsByCategory({
+  const [page, setPage] = useState<number>(1);
+  const [searchQuery, setSearchQuery] = useState<string>(urlSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState<string>(urlSearch);
+
+  // Keep state synced if URL changes externally
+  useEffect(() => {
+    setSearchQuery(urlSearch);
+    setDebouncedSearch(urlSearch);
+  }, [urlSearch]);
+
+  // Debounced search query & URL parameter update
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchQuery.trim();
+      setDebouncedSearch(trimmed);
+      setPage(1);
+
+      const params = new URLSearchParams(searchParams.toString());
+      if (trimmed) {
+        params.set("search", trimmed);
+        params.delete("q");
+      } else {
+        params.delete("search");
+        params.delete("q");
+      }
+      const qs = params.toString();
+      const newUrl = qs ? `${pathname}?${qs}` : pathname;
+      router.replace(newUrl, { scroll: false });
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, pathname, router, searchParams]);
+
+  const isSearching = Boolean(debouncedSearch);
+
+  // 1. Regular category query (when not searching)
+  const categoryPostsQuery = useGetPostsByCategory(
+    {
       category_name: NGOI_NHA_NHO_SLUG,
       limit: 100,
-    });
+    },
+    { enabled: !isSearching }
+  );
 
-  const rawPosts: PostItemType[] = data?.data || [];
+  // 2. Search query within Ngoi Nha Nho category (when searching)
+  const searchPostsQuery = useSearchPosts(
+    {
+      category: NGOI_NHA_NHO_SLUG,
+      search: debouncedSearch,
+      limit: 100,
+    },
+    { enabled: isSearching }
+  );
 
-  // Client-side filter and sort by updatedAt ascending (tăng dần: cũ -> mới nhất)
+  const activeQuery = isSearching ? searchPostsQuery : categoryPostsQuery;
+  const { isLoading, isError, error, refetch, isFetching } = activeQuery;
+  const rawPosts: PostItemType[] = activeQuery.data?.data || [];
+
+  // Sort by updatedAt ascending (tăng dần: cũ -> mới nhất)
   const sortedPosts = useMemo(() => {
     let list = [...rawPosts];
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      list = list.filter((post) => {
-        const titleMatch = post.title?.toLowerCase().includes(query);
-        const authorMatch = post.author?.name?.toLowerCase().includes(query);
-        const snippetMatch = post.content?.toLowerCase().includes(query);
-        return titleMatch || authorMatch || snippetMatch;
-      });
-    }
 
-    // Sort theo updatedAt tăng dần (nếu thiếu updatedAt thì dùng createdAt)
     return list.sort((a, b) => {
       const timeA = new Date(a.createdAt || 0).getTime();
       const timeB = new Date(b.createdAt || 0).getTime();
       return timeA - timeB;
     });
-  }, [rawPosts, searchQuery]);
-
-  // Reset to page 1 whenever search query changes
-  useEffect(() => {
-    setPage(1);
-  }, [searchQuery]);
+  }, [rawPosts]);
 
   // Debounced search tracking for GTM & GA4
   useEffect(() => {
-    if (!searchQuery.trim()) return;
-    const timeoutId = setTimeout(() => {
-      trackSearch({
-        searchTerm: searchQuery,
-        searchLocation: "ngoi_nha_nho",
-        resultsCount: sortedPosts.length,
-      });
-    }, 600);
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, sortedPosts.length]);
+    if (!debouncedSearch) return;
+    trackSearch({
+      searchTerm: debouncedSearch,
+      searchLocation: "ngoi_nha_nho",
+      resultsCount: sortedPosts.length,
+    });
+  }, [debouncedSearch, sortedPosts.length]);
 
   // Pagination calculations based on sorted posts
   const totalPosts = sortedPosts.length;
@@ -88,6 +122,17 @@ export const NgoiNhaNhoClient: React.FC = () => {
 
   const hasNextPage = page < totalPages;
   const hasPrevPage = page > 1;
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setDebouncedSearch("");
+    setPage(1);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("search");
+    params.delete("q");
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
 
   // Sliced posts for current page view
   const paginatedPosts = useMemo(() => {
@@ -172,7 +217,7 @@ export const NgoiNhaNhoClient: React.FC = () => {
                 />
                 {searchQuery && (
                   <button
-                    onClick={() => setSearchQuery("")}
+                    onClick={handleClearSearch}
                     className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 cursor-pointer"
                     aria-label="Xóa tìm kiếm"
                   >
@@ -244,18 +289,18 @@ export const NgoiNhaNhoClient: React.FC = () => {
               <Sparkles className="h-7 w-7 text-amber-700" />
             </div>
             <h3 className="text-base sm:text-lg font-bold text-neutral-900">
-              {searchQuery
+              {debouncedSearch
                 ? "Không tìm thấy bài viết phù hợp"
                 : "Chưa có bài viết Ngôi Nhà Nhỏ nào"}
             </h3>
             <p className="mt-1.5 text-xs sm:text-sm text-neutral-500 max-w-sm">
-              {searchQuery
-                ? `Không có kết quả nào cho "${searchQuery}". Hãy thử tìm kiếm với từ khóa khác.`
+              {debouncedSearch
+                ? `Không có kết quả nào cho "${debouncedSearch}". Hãy thử tìm kiếm với từ khóa khác.`
                 : "Các bài viết về Ngôi Nhà Nhỏ sẽ sớm được cập nhật. Kính mong quý Phật tử hoan hỷ đón đọc."}
             </p>
-            {searchQuery ? (
+            {debouncedSearch ? (
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={handleClearSearch}
                 className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-xs font-medium text-neutral-700 shadow-2xs hover:bg-neutral-50 cursor-pointer"
               >
                 <span>Xóa bộ lọc tìm kiếm</span>

@@ -8,9 +8,10 @@ import {
   Plus,
   RefreshCw,
   Search,
+  X,
 } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -28,10 +29,22 @@ import { UpdatePostModal } from "./update-post-modal";
 const PAGE_SIZE = 15;
 
 export const AdminPostView: React.FC = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get("category");
+  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
+
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(urlSearch);
   const [typeFilter, setTypeFilter] = useState<"ALL" | ContentType>("ALL");
+
+  // Keep state synced if URL changes externally
+  useEffect(() => {
+    setSearchQuery(urlSearch);
+    setDebouncedSearch(urlSearch);
+  }, [urlSearch]);
 
   // State for Update Modal
   const [editingPost, setEditingPost] = useState<PostItemType | null>(null);
@@ -40,9 +53,6 @@ export const AdminPostView: React.FC = () => {
   // State for Delete Confirmation Modal
   const [deletingPost, setDeletingPost] = useState<PostItemType | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
-  const searchParams = useSearchParams();
-  const categoryParam = searchParams.get("category");
 
   const isBachThoaiTab = useMemo(() => {
     return (
@@ -69,12 +79,25 @@ export const AdminPostView: React.FC = () => {
     },
   });
 
-  // Debounce search query to avoid spamming the backend
+  // Debounce search query to avoid spamming the backend and sync to URL
   useEffect(() => {
     const timer = setTimeout(() => {
       const trimmed = searchQuery.trim();
       setDebouncedSearch(trimmed);
       setCurrentPage(1);
+
+      const params = new URLSearchParams(searchParams.toString());
+      if (trimmed) {
+        params.set("search", trimmed);
+        params.delete("q");
+      } else {
+        params.delete("search");
+        params.delete("q");
+      }
+      const qs = params.toString();
+      const newUrl = qs ? `${pathname}?${qs}` : pathname;
+      router.replace(newUrl, { scroll: false });
+
       if (trimmed) {
         trackSearch({
           searchTerm: trimmed,
@@ -83,12 +106,23 @@ export const AdminPostView: React.FC = () => {
       }
     }, 400);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, pathname, router, searchParams]);
 
   // Reset to page 1 when category changes
   useEffect(() => {
     setCurrentPage(1);
   }, [categoryParam]);
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setDebouncedSearch("");
+    setCurrentPage(1);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("search");
+    params.delete("q");
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
 
   // Request parameters for backend pagination
   const queryParams = useMemo(() => {
@@ -252,8 +286,18 @@ export const AdminPostView: React.FC = () => {
               placeholder="Tìm tiêu đề, tác giả, nội dung..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-3 py-2 text-xs sm:text-sm outline-none transition focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20"
+              className="w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 py-2 text-xs sm:text-sm outline-none transition focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 cursor-pointer"
+                aria-label="Xóa tìm kiếm"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Filter by Type */}
