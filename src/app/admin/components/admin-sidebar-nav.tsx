@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Bell,
   BookOpen,
   FileText,
   Flame,
@@ -252,6 +253,25 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
             }`}
           />
           <span>Người dùng</span>
+        </Link>
+
+        <Link
+          href="/admin/notifications"
+          onClick={onItemClick}
+          className={`group flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+            pathname.startsWith("/admin/notifications")
+              ? "bg-[#F3E8D8] text-[#9C5812] font-semibold shadow-xs"
+              : "text-[#6C6356] hover:bg-[#F8F2E8] hover:text-[#9C5812]"
+          }`}
+        >
+          <Bell
+            className={`h-4.5 w-4.5 shrink-0 ${
+              pathname.startsWith("/admin/notifications")
+                ? "text-[#9C5812]"
+                : "text-[#7D7364] group-hover:text-[#9C5812]"
+            }`}
+          />
+          <span>Thông báo Push</span>
         </Link>
 
         <Link
