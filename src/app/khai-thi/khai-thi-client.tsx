@@ -13,9 +13,10 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
-import { useGetPostsByCategory } from "@/api/post";
+import { useGetPostsByCategory, useSearchPosts } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
 import { KhaiThiItem } from "@/components/home";
 import { MainLayout } from "@/components/layout";
@@ -26,51 +27,90 @@ import { trackSearch } from "@/lib/gtm";
 const PAGE_SIZE = 9;
 
 export const KhaiThiClient: React.FC = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
+
   const [page, setPage] = useState<number>(1);
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>(urlSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState<string>(urlSearch);
   const [cursorHistory, setCursorHistory] = useState<(string | null)[]>([null]);
+
+  // Sync state if URL changes externally
+  useEffect(() => {
+    setSearchQuery(urlSearch);
+    setDebouncedSearch(urlSearch);
+  }, [urlSearch]);
+
+  // Debounced search query & URL parameter update
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchQuery.trim();
+      setDebouncedSearch(trimmed);
+      setPage(1);
+      setCursorHistory([null]);
+
+      const params = new URLSearchParams(searchParams.toString());
+      if (trimmed) {
+        params.set("search", trimmed);
+        params.delete("q");
+      } else {
+        params.delete("search");
+        params.delete("q");
+      }
+      const qs = params.toString();
+      const newUrl = qs ? `${pathname}?${qs}` : pathname;
+      router.replace(newUrl, { scroll: false });
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, pathname, router, searchParams]);
+
+  const isSearching = Boolean(debouncedSearch);
 
   // Current cursor corresponding to the active page
   const currentCursor = cursorHistory[page - 1] || null;
 
-  // Query posts by category ID with pagination
-  const { data, isLoading, isError, error, refetch, isFetching } =
-    useGetPostsByCategory({
+  // 1. Regular category query (when not searching)
+  const categoryQuery = useGetPostsByCategory(
+    {
       category_name: KHAI_THI_SLUG,
       limit: PAGE_SIZE,
       ...(currentCursor ? { cursor: currentCursor } : {}),
       page,
-    });
+    },
+    { enabled: !isSearching }
+  );
 
-  const rawPosts: PostItemType[] = data?.data || [];
-  const meta = data?.meta;
+  // 2. Search query within Khai Thi category (when searching)
+  const searchQueryHook = useSearchPosts(
+    {
+      category: KHAI_THI_SLUG,
+      search: debouncedSearch,
+      limit: PAGE_SIZE,
+      page,
+    },
+    { enabled: isSearching }
+  );
 
-  // Client-side quick filter if user types in search box
-  const filteredPosts = useMemo(() => {
-    if (!searchQuery.trim()) return rawPosts;
-    const query = searchQuery.toLowerCase().trim();
-    return rawPosts.filter((post) => {
-      const titleMatch = post.title?.toLowerCase().includes(query);
-      const authorMatch = post.author?.name?.toLowerCase().includes(query);
-      return titleMatch || authorMatch;
-    });
-  }, [rawPosts, searchQuery]);
+  const activeQuery = isSearching ? searchQueryHook : categoryQuery;
+  const { isLoading, isError, error, refetch, isFetching } = activeQuery;
+  const posts: PostItemType[] = activeQuery.data?.data || [];
+  const meta = activeQuery.data?.meta;
 
   // Debounced search tracking for GTM & GA4
   useEffect(() => {
-    if (!searchQuery.trim()) return;
-    const timeoutId = setTimeout(() => {
-      trackSearch({
-        searchTerm: searchQuery,
-        searchLocation: "khai_thi",
-        resultsCount: filteredPosts.length,
-      });
-    }, 600);
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, filteredPosts.length]);
+    if (!debouncedSearch) return;
+    trackSearch({
+      searchTerm: debouncedSearch,
+      searchLocation: "khai_thi",
+      resultsCount: posts.length,
+    });
+  }, [debouncedSearch, posts.length]);
 
   // Pagination calculations
-  const totalPosts = meta?.total ?? rawPosts.length;
+  const totalPosts = meta?.total ?? posts.length;
   const totalPages =
     meta?.totalPages ?? (meta?.total ? Math.ceil(meta.total / PAGE_SIZE) : 1);
 
@@ -83,12 +123,14 @@ export const KhaiThiClient: React.FC = () => {
 
   const handleNextPage = () => {
     if (!hasNextPage) return;
-    const nextCursor = meta?.nextCursor || null;
-    setCursorHistory((prev) => {
-      const updated = [...prev];
-      updated[page] = nextCursor;
-      return updated;
-    });
+    if (!isSearching) {
+      const nextCursor = meta?.nextCursor || null;
+      setCursorHistory((prev) => {
+        const updated = [...prev];
+        updated[page] = nextCursor;
+        return updated;
+      });
+    }
     setPage((prev) => prev + 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -108,6 +150,18 @@ export const KhaiThiClient: React.FC = () => {
       setPage(targetPage);
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setDebouncedSearch("");
+    setPage(1);
+    setCursorHistory([null]);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("search");
+    params.delete("q");
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
   return (
@@ -168,8 +222,8 @@ export const KhaiThiClient: React.FC = () => {
                 />
                 {searchQuery && (
                   <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
+                    onClick={handleClearSearch}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 cursor-pointer"
                     aria-label="Xóa tìm kiếm"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -187,7 +241,7 @@ export const KhaiThiClient: React.FC = () => {
             <span>
               {isLoading
                 ? "Đang tải danh sách..."
-                : `Hiển thị ${filteredPosts.length} bài viết`}
+                : `Hiển thị ${posts.length} bài viết`}
             </span>
             {meta?.total ? (
               <span className="text-neutral-400">
@@ -233,25 +287,25 @@ export const KhaiThiClient: React.FC = () => {
               <span>Thử lại</span>
             </button>
           </div>
-        ) : filteredPosts.length === 0 ? (
+        ) : posts.length === 0 ? (
           /* Empty State */
           <div className="flex flex-col items-center justify-center rounded-3xl border border-[#EDE5D8] bg-white/70 p-12 text-center shadow-2xs">
             <div className="mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-800 border border-amber-200/60">
               <Sparkles className="h-7 w-7 text-amber-700" />
             </div>
             <h3 className="text-base sm:text-lg font-bold text-neutral-900">
-              {searchQuery
+              {debouncedSearch
                 ? "Không tìm thấy bài viết phù hợp"
                 : "Chưa có bài viết khai thị nào"}
             </h3>
             <p className="mt-1.5 text-xs sm:text-sm text-neutral-500 max-w-sm">
-              {searchQuery
-                ? `Không có kết quả nào cho "${searchQuery}". Hãy thử tìm kiếm với từ khóa khác.`
+              {debouncedSearch
+                ? `Không có kết quả nào cho "${debouncedSearch}". Hãy thử tìm kiếm với từ khóa khác.`
                 : "Các bài khai thị sẽ sớm được cập nhật. Kính mong quý Phật tử hoan hỷ đón đọc."}
             </p>
-            {searchQuery ? (
+            {debouncedSearch ? (
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={handleClearSearch}
                 className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-xs font-medium text-neutral-700 shadow-2xs hover:bg-neutral-50 cursor-pointer"
               >
                 <span>Xóa bộ lọc tìm kiếm</span>
@@ -269,14 +323,14 @@ export const KhaiThiClient: React.FC = () => {
         ) : (
           /* Post Grid */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredPosts.map((post) => (
+            {posts.map((post) => (
               <KhaiThiItem key={post.id || post.slug} post={post} />
             ))}
           </div>
         )}
 
         {/* 5. Pagination Controls */}
-        {!isLoading && !isError && rawPosts.length > 0 && (
+        {!isLoading && !isError && posts.length > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-[#EDE5D8]">
             {/* Total summary */}
             <div className="text-xs text-neutral-500 order-2 sm:order-1">
