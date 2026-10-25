@@ -59,6 +59,8 @@ export const BachThoaiItem: React.FC<BachThoaiItemProps> = ({ item }) => {
         slug: item.slug,
         authorName: item.authorName,
         categoryName: "Bạch thoại Phật pháp",
+        categorySlug: "bach-thoai-phat-phap",
+        postUrl,
         thumbnailUrl: item.thumbnailUrl,
         audioUrl: item.audioUrl,
       });

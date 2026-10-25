@@ -6,6 +6,8 @@ export interface AudioTrack {
   slug?: string;
   authorName?: string;
   categoryName?: string;
+  categorySlug?: string;
+  postUrl?: string;
   thumbnailUrl?: string;
   audioUrl: string;
   duration?: number;

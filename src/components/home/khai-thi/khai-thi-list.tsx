@@ -43,7 +43,7 @@ export const KhaiThiList: React.FC<KhaiThiListProps> = ({
               <h3 className="text-base sm:text-lg font-bold text-neutral-900">
                 Khai thị
               </h3>
-              <span className="rounded-full bg-amber-50 border border-amber-200/60 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-amber-800">
+              <span className="rounded-full hidden md:block bg-amber-50 border border-amber-200/60 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-amber-800">
                 Lời vàng Phật pháp
               </span>
             </div>

@@ -82,6 +82,8 @@ export const PostDetailClient: React.FC = () => {
         slug: displayPost.slug || displayPost.id,
         authorName: displayPost.author?.name || "Tác giả",
         categoryName: displayPost.category?.name || "Audio Phật pháp",
+        categorySlug: displayPost.category?.slug,
+        postUrl: pathname,
         thumbnailUrl: displayPost.thumbnailUrl || "/images/lotus-thumb.jpg",
         audioUrl: displayPost.audio.audioUrl,
         duration: displayPost.audio.duration || undefined,

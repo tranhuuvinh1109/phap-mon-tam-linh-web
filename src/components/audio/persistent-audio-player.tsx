@@ -112,7 +112,7 @@ export const PersistentAudioPlayer: React.FC = () => {
     const handleEnded = () => {
       if (isRepeat) {
         audio.currentTime = 0;
-        audio.play().catch(() => {});
+        audio.play().catch(() => { });
       } else {
         pause();
       }
@@ -146,9 +146,33 @@ export const PersistentAudioPlayer: React.FC = () => {
   };
 
   const handleNavigateToTrack = () => {
-    if (currentTrack?.slug) {
-      router.push(`/post/${encodeURIComponent(currentTrack.slug)}`);
+    if (!currentTrack) return;
+
+    if (currentTrack.postUrl) {
+      router.push(currentTrack.postUrl);
+      return;
     }
+
+    const targetSlug = currentTrack.slug || currentTrack.id;
+    if (!targetSlug) return;
+
+    const encoded = encodeURIComponent(targetSlug);
+
+    if (currentTrack.categorySlug) {
+      router.push(`/${currentTrack.categorySlug}/${encoded}`);
+      return;
+    }
+
+    if (currentTrack.categoryName) {
+      const lower = currentTrack.categoryName.toLowerCase();
+      if (lower.includes("bạch thoại") || lower.includes("bach-thoai")) {
+        router.push(`/bach-thoai-phat-phap/${encoded}`);
+        return;
+      }
+    }
+
+    // Fallback to Bach thoai phat phap
+    router.push(`/bach-thoai-phat-phap/${encoded}`);
   };
 
   const progressPercent =

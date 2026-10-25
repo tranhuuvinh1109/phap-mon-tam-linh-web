@@ -67,7 +67,7 @@ export const QuickPractice: React.FC<QuickPracticeProps> = ({
             <h3 className="text-base sm:text-lg font-bold text-neutral-900">
               Hướng dẫn tu tập
             </h3>
-            <span className="rounded-full bg-amber-50 border border-amber-200/60 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-amber-800">
+            <span className="rounded-full hidden md:block bg-amber-50 border border-amber-200/60 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-amber-800">
               Tu tập mỗi ngày
             </span>
           </div>

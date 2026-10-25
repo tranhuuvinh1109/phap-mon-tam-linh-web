@@ -68,7 +68,7 @@ export const BachThoaiSection: React.FC<BachThoaiSectionProps> = ({
               <h3 className="text-base sm:text-lg font-bold text-neutral-900">
                 Bạch thoại Phật pháp
               </h3>
-              <span className="rounded-full bg-amber-50 border border-amber-200/60 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-amber-800">
+              <span className="rounded-full hidden md:block bg-amber-50 border border-amber-200/60 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-amber-800">
                 Pháp âm mới
               </span>
             </div>

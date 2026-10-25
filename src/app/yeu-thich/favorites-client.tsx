@@ -106,6 +106,7 @@ export const FavoritesClient: React.FC = () => {
         thumbnailUrl: item.thumbnailUrl,
         audioUrl: item.audioUrl,
         duration: item.duration || undefined,
+        postUrl: `/post/${encodeURIComponent(item.slug)}`,
       });
     }
   };
