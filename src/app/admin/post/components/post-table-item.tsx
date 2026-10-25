@@ -9,6 +9,7 @@ import { BACH_THOAI_PHAT_PHAP_SLUG } from "@/constants";
 import { ContentType } from "@/enums";
 import { stripHtml } from "@/lib/utils";
 import { isBachThoaiPhatPhap } from "../utils/content-type";
+import { getCategoryBadgeStyle, getGroupBadgeStyle } from "../utils/color-badge";
 
 interface PostTableItemProps {
   post: PostItemType;
@@ -39,6 +40,17 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
   const postUrl = post.category?.slug
     ? `/${post.category.slug}/${encodeURIComponent(post.slug || post.id)}`
     : `/${encodeURIComponent(post.slug || post.id)}`;
+
+  const groupName = post.group?.name;
+  const isUndefinedGroup =
+    !groupName ||
+    groupName.trim() === "" ||
+    groupName.toLowerCase() === "undefined" ||
+    groupName.toLowerCase() === "không xác định";
+
+  const groupDisplayName = isUndefinedGroup ? "không xác định" : groupName;
+
+  const categoryName = post.category?.name || "Chưa phân loại";
 
   return (
     <tr className="hover:bg-amber-50/40 transition-colors">
@@ -73,30 +85,42 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
       </td>
 
       {/* Category */}
-      <td className="py-3.5 px-4">
-        <span className="inline-block rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800">
-          {post.category?.name || "Chưa phân loại"}
+      <td className="py-3.5 px-4 min-w-[130px]">
+        <span
+          title={categoryName}
+          className={`inline-block w-full max-w-[130px] rounded-md border px-2.5 py-1 text-xs font-medium text-center leading-normal cursor-default ${getCategoryBadgeStyle(
+            post.category?.slug || post.category?.name
+          )}`}
+        >
+          {categoryName}
         </span>
       </td>
 
       {/* Type */}
-      <td className="py-3.5 px-4">
+      <td className="py-3.5 px-4 min-w-[110px] whitespace-nowrap">
         {isNormal ? (
           <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
-            <BookOpen className="h-3 w-3" />
-            <span>Normal</span>
+            <BookOpen className="h-3 w-3 shrink-0" />
+            <span>Bình thường</span>
           </span>
         ) : (
           <span className="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-800">
-            <Volume2 className="h-3 w-3" />
+            <Volume2 className="h-3 w-3 shrink-0" />
             <span>Audio</span>
           </span>
         )}
       </td>
 
-      {/* Author */}
-      <td className="py-3.5 px-4 text-neutral-700">
-        {post.author?.name || "—"}
+      {/* Group */}
+      <td className="py-3.5 px-4 min-w-[170px]">
+        <span
+          title={groupDisplayName}
+          className={`inline-block w-full max-w-[180px] rounded-md border px-2.5 py-1 text-xs font-medium text-center leading-normal cursor-default ${getGroupBadgeStyle(
+            groupDisplayName
+          )}`}
+        >
+          {groupDisplayName}
+        </span>
       </td>
 
       {/* Content Excerpt */}
@@ -120,23 +144,21 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
       {/* Actions */}
       <td className="py-3.5 px-4 text-right whitespace-nowrap">
         <div className="inline-flex items-center gap-1.5 justify-end">
-          {!isBachThoai && (
-            <button
-              type="button"
-              onClick={() => onEdit(post)}
-              title="Chỉnh sửa bài viết"
-              className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50/80 px-2.5 py-1 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 hover:border-amber-400 shadow-2xs"
-            >
-              <Pencil className="h-3.5 w-3.5 text-amber-800" />
-              <span>Sửa</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => onEdit(post)}
+            title="Chỉnh sửa bài viết"
+            className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50/80 px-2.5 py-1 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 hover:border-amber-400 shadow-2xs cursor-pointer"
+          >
+            <Pencil className="h-3.5 w-3.5 text-amber-800" />
+            <span>Sửa</span>
+          </button>
 
           <button
             type="button"
             onClick={() => onDelete(post)}
             title="Xoá bài viết"
-            className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50/80 px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100 hover:border-red-300 shadow-2xs"
+            className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50/80 px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100 hover:border-red-300 shadow-2xs cursor-pointer"
           >
             <Trash2 className="h-3.5 w-3.5 text-red-600" />
             <span>Xoá</span>

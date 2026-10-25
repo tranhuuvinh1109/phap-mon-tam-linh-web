@@ -44,6 +44,8 @@ export const BachThoaiSection: React.FC<BachThoaiSectionProps> = ({
         type: post.type || (post.audio?.audioUrl ? ContentType.AUDIO : ContentType.NORMAL),
         audioUrl: post.audio?.audioUrl,
         snippet,
+        groupId: post.groupId || post.group?.id,
+        groupName: post.group?.name,
       };
     });
   }, [posts, limit]);

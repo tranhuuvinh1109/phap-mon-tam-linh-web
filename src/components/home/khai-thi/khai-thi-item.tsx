@@ -5,6 +5,7 @@ import Link from "next/link";
 import React, { useMemo } from "react";
 
 import type { PostItemType } from "@/api/post/post.type";
+import { getGroupBadgeStyle } from "@/lib/color-badge";
 import { stripHtml } from "@/lib/utils";
 
 export interface KhaiThiItemProps {
@@ -30,7 +31,13 @@ export const KhaiThiItem: React.FC<KhaiThiItemProps> = ({ post }) => {
       })
     : null;
 
-  const groupName = post.group?.name || "undefined";
+  const rawGroupName = post.group?.name;
+  const isUndefinedGroup =
+    !rawGroupName ||
+    rawGroupName.toLowerCase() === "undefined" ||
+    rawGroupName.toLowerCase() === "không xác định";
+  const groupDisplayName = isUndefinedGroup ? "không xác định" : rawGroupName;
+  const groupBadgeStyle = getGroupBadgeStyle(groupDisplayName);
 
   return (
     <Link
@@ -41,9 +48,11 @@ export const KhaiThiItem: React.FC<KhaiThiItemProps> = ({ post }) => {
         {/* Header: Group Badge & Date */}
         <div className="flex items-center justify-between gap-2">
           {/* Badge Group Name */}
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 border border-amber-200/80">
-            <Sparkles className="h-3 w-3 text-amber-600" />
-            <span>{groupName}</span>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 text-xs font-semibold border ${groupBadgeStyle}`}
+          >
+            <Sparkles className="h-3 w-3 opacity-70 shrink-0" />
+            <span className="truncate max-w-[120px]">{groupDisplayName}</span>
           </span>
 
           {formattedDate && (

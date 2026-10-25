@@ -21,5 +21,6 @@ export const API_URL = {
   settingToggle: (id: string) => `/settings/${id}/toggle`,
   settingById: (id: string) => `/settings/${id}`,
   settingByKey: (key: string) => `/settings/key/${key}`,
+  groups: "/groups",
 };
 

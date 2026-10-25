@@ -2,11 +2,12 @@
 
 import {
   ArrowLeft,
-  ArrowRight,
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  FolderTree,
   Home,
+  Layers,
   RefreshCw,
   Search,
   Sparkles,
@@ -14,82 +15,206 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
+import { useGetGroups } from "@/api/group";
 import { useGetPostsByCategory, useSearchPosts } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
 import { KhaiThiItem } from "@/components/home";
 import { MainLayout } from "@/components/layout";
 import { KhaiThiSkeleton } from "@/components/skeletons";
 import { KHAI_THI_SLUG } from "@/constants";
+import { getGroupBadgeStyle } from "@/lib/color-badge";
 import { trackSearch } from "@/lib/gtm";
+import { slugify } from "@/lib/utils";
 
-const PAGE_SIZE = 9;
+const PAGE_SIZE = 12;
+
+/**
+ * Generate a URL-friendly slug for a group name
+ */
+function getGroupSlug(name?: string | null): string {
+  if (
+    !name ||
+    name.toLowerCase() === "undefined" ||
+    name.toLowerCase() === "không xác định"
+  ) {
+    return "khong-xac-dinh";
+  }
+  return slugify(name);
+}
+
+/**
+ * Check if metadata is absent or empty
+ */
+function hasNoMetadata(metadata: any): boolean {
+  if (!metadata) return true;
+  if (typeof metadata === "object") {
+    return Object.keys(metadata).length === 0;
+  }
+  if (typeof metadata === "string") {
+    try {
+      const parsed = JSON.parse(metadata);
+      return !parsed || Object.keys(parsed).length === 0;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
 
 export const KhaiThiClient: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
 
-  const [page, setPage] = useState<number>(1);
+  // URL query params as single source of truth
+  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
+  const urlGroupParam =
+    searchParams.get("group") || searchParams.get("groupId") || "ALL";
+
+  const currentPage = useMemo(() => {
+    const p = parseInt(searchParams.get("page") || "1", 10);
+    return isNaN(p) || p < 1 ? 1 : p;
+  }, [searchParams]);
+
+  // Local state for search input debounce
   const [searchQuery, setSearchQuery] = useState<string>(urlSearch);
   const [debouncedSearch, setDebouncedSearch] = useState<string>(urlSearch);
-  const [cursorHistory, setCursorHistory] = useState<(string | null)[]>([null]);
 
-  // Sync state if URL changes externally
+  // Fetch groups and filter only items without metadata or undefined group
+  const { data: rawGroups = [] } = useGetGroups();
+
+  const groups = useMemo(() => {
+    return rawGroups.filter((grp) => {
+      if (grp.deletedAt) return false;
+
+      // Luôn lấy item group undefined
+      const isUndefined =
+        grp.name.toLowerCase() === "undefined" ||
+        grp.name.toLowerCase() === "không xác định";
+      if (isUndefined) return true;
+
+      // Chỉ lấy group item không có metadata
+      return hasNoMetadata(grp.metadata);
+    });
+  }, [rawGroups]);
+
+  // Resolve matching group from URL parameter (group slug, name, or UUID)
+  const selectedGroupObj = useMemo(() => {
+    if (!urlGroupParam || urlGroupParam === "ALL") return null;
+    const target = urlGroupParam.toLowerCase().trim();
+    return (
+      groups.find((g) => {
+        if (g.id === urlGroupParam) return true;
+        if (g.name.toLowerCase().trim() === target) return true;
+        if (getGroupSlug(g.name) === target) return true;
+        if (
+          (target === "khong-xac-dinh" ||
+            target === "undefined" ||
+            target === "chua-phan-nhom") &&
+          g.name.toLowerCase() === "undefined"
+        ) {
+          return true;
+        }
+        return false;
+      }) || null
+    );
+  }, [urlGroupParam, groups]);
+
+  const effectiveGroupId = selectedGroupObj ? selectedGroupObj.id : undefined;
+
+  const selectedGroupName = selectedGroupObj
+    ? selectedGroupObj.name.toLowerCase() === "undefined"
+      ? "Chưa phân nhóm"
+      : selectedGroupObj.name
+    : null;
+
+  // Sync search input if URL changes externally
   useEffect(() => {
     setSearchQuery(urlSearch);
     setDebouncedSearch(urlSearch);
   }, [urlSearch]);
 
-  // Debounced search query & URL parameter update
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const trimmed = searchQuery.trim();
-      setDebouncedSearch(trimmed);
-      setPage(1);
-      setCursorHistory([null]);
+  /**
+   * Updates URL query parameters cleanly and keeps history consistent
+   */
+  const updateUrlParams = (updates: {
+    page?: number;
+    groupSlug?: string | null;
+    search?: string | null;
+  }) => {
+    const params = new URLSearchParams(searchParams.toString());
 
-      const params = new URLSearchParams(searchParams.toString());
-      if (trimmed) {
-        params.set("search", trimmed);
+    // Update search query
+    if (updates.search !== undefined) {
+      if (updates.search && updates.search.trim()) {
+        params.set("search", updates.search.trim());
         params.delete("q");
       } else {
         params.delete("search");
         params.delete("q");
       }
-      const qs = params.toString();
-      const newUrl = qs ? `${pathname}?${qs}` : pathname;
-      router.replace(newUrl, { scroll: false });
+    }
+
+    // Update group slug
+    if (updates.groupSlug !== undefined) {
+      if (updates.groupSlug && updates.groupSlug !== "ALL") {
+        params.set("group", updates.groupSlug);
+      } else {
+        params.delete("group");
+      }
+      params.delete("groupId");
+    }
+
+    // Update page
+    if (updates.page !== undefined) {
+      if (updates.page > 1) {
+        params.set("page", String(updates.page));
+      } else {
+        params.delete("page");
+      }
+    }
+
+    const qs = params.toString();
+    const newUrl = qs ? `${pathname}?${qs}` : pathname;
+    router.replace(newUrl, { scroll: false });
+  };
+
+  // Debounced search sync to URL
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchQuery.trim();
+      setDebouncedSearch(trimmed);
+      if (trimmed !== urlSearch) {
+        updateUrlParams({ search: trimmed, page: 1 });
+      }
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, pathname, router, searchParams]);
+  }, [searchQuery, urlSearch]);
 
   const isSearching = Boolean(debouncedSearch);
 
-  // Current cursor corresponding to the active page
-  const currentCursor = cursorHistory[page - 1] || null;
-
-  // 1. Regular category query (when not searching)
+  // 1. Regular category query (when not searching) with offset pagination
   const categoryQuery = useGetPostsByCategory(
     {
       category_name: KHAI_THI_SLUG,
       limit: PAGE_SIZE,
-      ...(currentCursor ? { cursor: currentCursor } : {}),
-      page,
+      page: currentPage,
+      ...(effectiveGroupId ? { groupId: effectiveGroupId } : {}),
     },
     { enabled: !isSearching }
   );
 
-  // 2. Search query within Khai Thi category (when searching)
+  // 2. Search query within Khai Thi category (when searching) with offset pagination
   const searchQueryHook = useSearchPosts(
     {
       category: KHAI_THI_SLUG,
       search: debouncedSearch,
       limit: PAGE_SIZE,
-      page,
+      page: currentPage,
+      ...(effectiveGroupId ? { groupId: effectiveGroupId } : {}),
     },
     { enabled: isSearching }
   );
@@ -98,6 +223,25 @@ export const KhaiThiClient: React.FC = () => {
   const { isLoading, isError, error, refetch, isFetching } = activeQuery;
   const posts: PostItemType[] = activeQuery.data?.data || [];
   const meta = activeQuery.data?.meta;
+
+  // Group items by groupName for sectioned view when viewing ALL groups
+  const groupedPosts = useMemo(() => {
+    const groupsMap = new Map<string, PostItemType[]>();
+    for (const post of posts) {
+      const rawName = post.group?.name;
+      const key =
+        rawName &&
+        rawName.toLowerCase() !== "undefined" &&
+        rawName.toLowerCase() !== "không xác định"
+          ? rawName
+          : "Chưa phân nhóm";
+      if (!groupsMap.has(key)) {
+        groupsMap.set(key, []);
+      }
+      groupsMap.get(key)!.push(post);
+    }
+    return Array.from(groupsMap.entries());
+  }, [posts]);
 
   // Debounced search tracking for GTM & GA4
   useEffect(() => {
@@ -110,58 +254,41 @@ export const KhaiThiClient: React.FC = () => {
   }, [debouncedSearch, posts.length]);
 
   // Pagination calculations
-  const totalPosts = meta?.total ?? posts.length;
   const totalPages =
     meta?.totalPages ?? (meta?.total ? Math.ceil(meta.total / PAGE_SIZE) : 1);
 
   const hasNextPage = Boolean(
-    meta?.hasNextPage ||
-      meta?.nextCursor ||
-      (meta?.total && page < totalPages)
+    meta?.hasNextPage || (meta?.total && currentPage < totalPages)
   );
-  const hasPrevPage = page > 1;
+  const hasPrevPage = currentPage > 1;
+
+  const handleSelectGroup = (targetGroupSlug: string) => {
+    updateUrlParams({ groupSlug: targetGroupSlug, page: 1 });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleNextPage = () => {
     if (!hasNextPage) return;
-    if (!isSearching) {
-      const nextCursor = meta?.nextCursor || null;
-      setCursorHistory((prev) => {
-        const updated = [...prev];
-        updated[page] = nextCursor;
-        return updated;
-      });
-    }
-    setPage((prev) => prev + 1);
+    updateUrlParams({ page: currentPage + 1 });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handlePrevPage = () => {
     if (!hasPrevPage) return;
-    setPage((prev) => Math.max(1, prev - 1));
+    updateUrlParams({ page: Math.max(1, currentPage - 1) });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleGoToPage = (targetPage: number) => {
-    if (targetPage === page) return;
-    if (targetPage === 1) {
-      setPage(1);
-      setCursorHistory([null]);
-    } else {
-      setPage(targetPage);
-    }
+    if (targetPage === currentPage) return;
+    updateUrlParams({ page: targetPage });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleClearSearch = () => {
     setSearchQuery("");
     setDebouncedSearch("");
-    setPage(1);
-    setCursorHistory([null]);
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("search");
-    params.delete("q");
-    const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    updateUrlParams({ search: "", page: 1 });
   };
 
   return (
@@ -234,7 +361,67 @@ export const KhaiThiClient: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. List Header Info */}
+        {/* 3. Group Filter Pills */}
+        <div className="rounded-2xl border border-amber-900/10 bg-white/80 p-3.5 sm:p-4 backdrop-blur-xs shadow-2xs space-y-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-neutral-800">
+              <Layers className="h-4 w-4 text-amber-700" />
+              <span>Xem theo Nhóm:</span>
+            </div>
+            {selectedGroupObj && (
+              <button
+                type="button"
+                onClick={() => handleSelectGroup("ALL")}
+                className="text-xs font-semibold text-amber-800 hover:text-amber-950 underline cursor-pointer"
+              >
+                Xem tất cả nhóm
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
+            <button
+              type="button"
+              onClick={() => handleSelectGroup("ALL")}
+              className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 font-semibold transition shrink-0 cursor-pointer ${
+                !selectedGroupObj
+                  ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
+                  : "bg-white hover:bg-amber-50/60 text-neutral-700 border border-neutral-200/80 hover:border-amber-300"
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Tất cả nhóm</span>
+            </button>
+
+            {groups
+              .filter((grp) => !grp.deletedAt)
+              .map((grp) => {
+                const groupSlug = getGroupSlug(grp.name);
+                const isSelected = selectedGroupObj?.id === grp.id;
+                const displayName =
+                  grp.name.toLowerCase() === "undefined"
+                    ? "Chưa phân nhóm"
+                    : grp.name;
+                return (
+                  <button
+                    key={grp.id}
+                    type="button"
+                    onClick={() => handleSelectGroup(groupSlug)}
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 font-semibold transition shrink-0 cursor-pointer ${
+                      isSelected
+                        ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
+                        : "bg-white hover:bg-amber-50/60 text-neutral-700 border border-neutral-200/80 hover:border-amber-300"
+                    }`}
+                  >
+                    <FolderTree className="h-3.5 w-3.5 opacity-70" />
+                    <span>{displayName}</span>
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+
+        {/* 4. List Header Info */}
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
           <div className="flex items-center gap-2 font-medium text-neutral-600">
             <span className="flex h-2 w-2 rounded-full bg-amber-500" />
@@ -258,12 +445,12 @@ export const KhaiThiClient: React.FC = () => {
               </span>
             )}
             <span className="rounded-full bg-white px-3 py-1 font-semibold text-neutral-700 shadow-2xs border border-neutral-200/60">
-              Trang {page} {totalPages > 1 ? `/ ${totalPages}` : ""}
+              Trang {currentPage} {totalPages > 1 ? `/ ${totalPages}` : ""}
             </span>
           </div>
         </div>
 
-        {/* 4. Posts Grid Content */}
+        {/* 5. Posts Grid Content */}
         {isLoading ? (
           <KhaiThiSkeleton count={PAGE_SIZE} />
         ) : isError ? (
@@ -294,22 +481,36 @@ export const KhaiThiClient: React.FC = () => {
               <Sparkles className="h-7 w-7 text-amber-700" />
             </div>
             <h3 className="text-base sm:text-lg font-bold text-neutral-900">
-              {debouncedSearch
+              {debouncedSearch || selectedGroupObj
                 ? "Không tìm thấy bài viết phù hợp"
                 : "Chưa có bài viết khai thị nào"}
             </h3>
             <p className="mt-1.5 text-xs sm:text-sm text-neutral-500 max-w-sm">
               {debouncedSearch
                 ? `Không có kết quả nào cho "${debouncedSearch}". Hãy thử tìm kiếm với từ khóa khác.`
+                : selectedGroupObj
+                ? `Chưa có bài viết nào thuộc nhóm "${selectedGroupName}".`
                 : "Các bài khai thị sẽ sớm được cập nhật. Kính mong quý Phật tử hoan hỷ đón đọc."}
             </p>
-            {debouncedSearch ? (
-              <button
-                onClick={handleClearSearch}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-xs font-medium text-neutral-700 shadow-2xs hover:bg-neutral-50 cursor-pointer"
-              >
-                <span>Xóa bộ lọc tìm kiếm</span>
-              </button>
+            {debouncedSearch || selectedGroupObj ? (
+              <div className="mt-4 flex items-center justify-center gap-2 flex-wrap">
+                {debouncedSearch && (
+                  <button
+                    onClick={handleClearSearch}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-xs font-medium text-neutral-700 shadow-2xs hover:bg-neutral-50 cursor-pointer"
+                  >
+                    <span>Xóa từ khóa tìm kiếm</span>
+                  </button>
+                )}
+                {selectedGroupObj && (
+                  <button
+                    onClick={() => handleSelectGroup("ALL")}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-amber-800 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-amber-900 cursor-pointer"
+                  >
+                    <span>Xem tất cả nhóm</span>
+                  </button>
+                )}
+              </div>
             ) : (
               <Link
                 href="/"
@@ -320,28 +521,106 @@ export const KhaiThiClient: React.FC = () => {
               </Link>
             )}
           </div>
-        ) : (
-          /* Post Grid */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {posts.map((post) => (
-              <KhaiThiItem key={post.id || post.slug} post={post} />
+        ) : !selectedGroupObj && groupedPosts.length > 1 ? (
+          /* Sectioned by Group View when viewing ALL groups */
+          <div className="space-y-8">
+            {groupedPosts.map(([groupTitle, items]) => (
+              <div key={groupTitle} className="space-y-3.5">
+                <div className="flex items-center justify-between border-b border-amber-900/10 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-800 shadow-2xs">
+                      <FolderTree className="h-4 w-4" />
+                    </div>
+                    <h3 className="text-sm sm:text-base font-bold text-neutral-900">
+                      {groupTitle}
+                    </h3>
+                    <span
+                      className={`inline-block rounded-md border px-2 py-0.5 text-xs font-semibold ${getGroupBadgeStyle(
+                        groupTitle
+                      )}`}
+                    >
+                      {items.length} bài
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const matchGroup = groups.find(
+                        (g) =>
+                          g.name === groupTitle ||
+                          (groupTitle === "Chưa phân nhóm" &&
+                            g.name.toLowerCase() === "undefined")
+                      );
+                      if (matchGroup) {
+                        handleSelectGroup(getGroupSlug(matchGroup.name));
+                      }
+                    }}
+                    className="text-xs font-semibold text-amber-800 hover:text-amber-950 hover:underline cursor-pointer flex items-center gap-0.5"
+                  >
+                    <span>Chỉ xem nhóm này</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {items.map((post) => (
+                    <KhaiThiItem key={post.id || post.slug} post={post} />
+                  ))}
+                </div>
+              </div>
             ))}
+          </div>
+        ) : (
+          /* Filtered by single group or search result */
+          <div className="space-y-4">
+            {selectedGroupName && (
+              <div className="flex items-center justify-between bg-amber-50/80 border border-amber-200/80 rounded-xl px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <FolderTree className="h-4 w-4 text-amber-800" />
+                  <span className="text-xs text-neutral-600">
+                    Đang lọc theo nhóm:
+                  </span>
+                  <span
+                    className={`inline-block rounded-md border px-2.5 py-0.5 text-xs font-bold ${getGroupBadgeStyle(
+                      selectedGroupName
+                    )}`}
+                  >
+                    {selectedGroupName}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleSelectGroup("ALL")}
+                  className="text-xs font-semibold text-amber-800 hover:text-amber-950 underline cursor-pointer"
+                >
+                  Bỏ lọc nhóm
+                </button>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {posts.map((post) => (
+                <KhaiThiItem key={post.id || post.slug} post={post} />
+              ))}
+            </div>
           </div>
         )}
 
-        {/* 5. Pagination Controls */}
+        {/* 6. Pagination Controls */}
         {!isLoading && !isError && posts.length > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-[#EDE5D8]">
             {/* Total summary */}
             <div className="text-xs text-neutral-500 order-2 sm:order-1">
               {meta?.total ? (
                 <span>
-                  Đang hiển thị trang <strong>{page}</strong> trên tổng số{" "}
+                  Đang hiển thị trang <strong>{currentPage}</strong> trên tổng số{" "}
                   <strong>{totalPages}</strong> trang ({meta.total} bài viết)
                 </span>
               ) : (
                 <span>
-                  Trang <strong>{page}</strong>
+                  Trang <strong>{currentPage}</strong>
                 </span>
               )}
             </div>
@@ -369,7 +648,7 @@ export const KhaiThiClient: React.FC = () => {
                   {Array.from({ length: Math.min(totalPages, 5) }).map(
                     (_, index) => {
                       const pageNum = index + 1;
-                      const isActive = pageNum === page;
+                      const isActive = pageNum === currentPage;
                       return (
                         <button
                           key={pageNum}

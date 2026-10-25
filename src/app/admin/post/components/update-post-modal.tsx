@@ -7,6 +7,7 @@ import {
   BookOpen,
   Check,
   ChevronRight,
+  FolderTree,
   Image as ImageIcon,
   Layers,
   Loader2,
@@ -21,6 +22,7 @@ import toast from "react-hot-toast";
 
 import { useGetCategories } from "@/api/category";
 import { uploadFile } from "@/api/file";
+import { useGetGroups } from "@/api/group";
 import { useUpdatePost } from "@/api/post";
 import type { PostItemType, UpdatePostPayloadType } from "@/api/post/post.type";
 import { Button } from "@/components/ui";
@@ -30,8 +32,27 @@ import { NiemKinhStepEditor } from "../create-post/components/niem-kinh-step-edi
 import { RichTextEditor } from "../create-post/components/rich-text-editor";
 import { PdfUpload } from "../create-post/components/pdf-upload";
 import { parseNiemKinhContent } from "../types/niem-kinh.type";
-import { isNiemKinh } from "../utils/content-type";
+import { allowsGroupCategory, isBachThoaiPhatPhap, isKhaiThi, isNiemKinh } from "../utils/content-type";
 import { ConfirmModal } from "./confirm-modal";
+
+/**
+ * Check if metadata is absent or empty
+ */
+function hasNoMetadata(metadata: any): boolean {
+  if (!metadata) return true;
+  if (typeof metadata === "object") {
+    return Object.keys(metadata).length === 0;
+  }
+  if (typeof metadata === "string") {
+    try {
+      const parsed = JSON.parse(metadata);
+      return !parsed || Object.keys(parsed).length === 0;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
 
 interface UpdatePostModalProps {
   post: PostItemType | null;
@@ -53,6 +74,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [groupId, setGroupId] = useState("");
   const [type, setType] = useState<ContentType>(ContentType.NORMAL);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [content, setContent] = useState("");
@@ -106,6 +128,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       setTitle(post.title || "");
       setSlug(post.slug || "");
       setCategoryId(post.categoryId || post.category?.id || "");
+      setGroupId(post.groupId || post.group?.id || "");
       setType(post.type || ContentType.NORMAL);
       setThumbnailUrl(post.thumbnailUrl || "");
       setContent(initialContentStr);
@@ -134,6 +157,83 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
     );
   }, [categoryId, selectedCategory, post, content]);
 
+  // Detect if category supports group
+  const isGroupSupported = useMemo(() => {
+    return Boolean(
+      allowsGroupCategory(
+        categoryId,
+        selectedCategory?.slug || post?.category?.slug,
+        selectedCategory?.name || post?.category?.name
+      )
+    );
+  }, [categoryId, selectedCategory, post]);
+
+  // Detect if current post is Bach Thoai Phat Phap
+  const isBachThoai = useMemo(() => {
+    return Boolean(
+      isBachThoaiPhatPhap(
+        categoryId,
+        selectedCategory?.slug || post?.category?.slug,
+        selectedCategory?.name || post?.category?.name
+      )
+    );
+  }, [categoryId, selectedCategory, post]);
+
+  // Detect if current post is Khai Thi
+  const isKhaiThiPost = useMemo(() => {
+    return Boolean(
+      isKhaiThi(
+        categoryId,
+        selectedCategory?.slug || post?.category?.slug,
+        selectedCategory?.name || post?.category?.name
+      )
+    );
+  }, [categoryId, selectedCategory, post]);
+
+  const groupQueryParams = useMemo(() => {
+    if (isBachThoai) {
+      return { isSupportForBachThoaiPhatPhap: true };
+    }
+    return undefined;
+  }, [isBachThoai]);
+
+  const { data: rawGroups = [], isLoading: isLoadingGroups } = useGetGroups(
+    groupQueryParams,
+    { enabled: isGroupSupported }
+  );
+
+  // Filter groups: If Khai Thi, only include groups without metadata and the undefined group
+  const groups = useMemo(() => {
+    if (!isKhaiThiPost) return rawGroups;
+
+    return rawGroups.filter((grp) => {
+      if (grp.deletedAt) return false;
+
+      // Group 'undefined'
+      const isUndefined =
+        grp.name.toLowerCase() === "undefined" ||
+        grp.name.toLowerCase() === "không xác định";
+      if (isUndefined) return true;
+
+      // Group không có metadata
+      return hasNoMetadata(grp.metadata);
+    });
+  }, [rawGroups, isKhaiThiPost]);
+
+  // Ensure selected groupId is valid within filtered groups for Khai Thi
+  useEffect(() => {
+    if (isGroupSupported && isKhaiThiPost && groups.length > 0 && groupId) {
+      const existsInGroups = groups.some((g) => g.id === groupId);
+      if (!existsInGroups) {
+        const defaultGroup =
+          groups.find((g) => g.name.toLowerCase() === "undefined") || groups[0];
+        if (defaultGroup) {
+          setGroupId(defaultGroup.id);
+        }
+      }
+    }
+  }, [isGroupSupported, isKhaiThiPost, groups, groupId]);
+
   // Compute if form has been modified (isDirty)
   const isDirty = useMemo(() => {
     if (!post) return false;
@@ -141,6 +241,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       title !== (post.title || "") ||
       slug !== (post.slug || "") ||
       categoryId !== (post.categoryId || post.category?.id || "") ||
+      groupId !== (post.groupId || post.group?.id || "") ||
       type !== (post.type || ContentType.NORMAL) ||
       thumbnailUrl !== (post.thumbnailUrl || "") ||
       content !== initialContentStr ||
@@ -320,29 +421,30 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       title: title.trim(),
       slug: slug.trim(),
       categoryId: categoryId || undefined,
+      groupId: isGroupSupported ? (groupId || null) : undefined,
       type,
       thumbnailUrl: thumbnailUrl.trim() || undefined,
       content,
       ...(type === ContentType.AUDIO && audioUrl.trim()
         ? {
-            audio: {
-              audioUrl: audioUrl.trim(),
-            },
-          }
+          audio: {
+            audioUrl: audioUrl.trim(),
+          },
+        }
         : {}),
       ...(uploadedFileUrl
         ? {
-            attachment: {
-              fileUrl: uploadedFileUrl,
-              fileName:
-                uploadedFileName || pdfFile?.name || "Tai-lieu-dinh-kem.pdf",
-              fileSize: uploadedFileSize || pdfFile?.size,
-              mimeType: "application/pdf",
-            },
-          }
+          attachment: {
+            fileUrl: uploadedFileUrl,
+            fileName:
+              uploadedFileName || pdfFile?.name || "Tai-lieu-dinh-kem.pdf",
+            fileSize: uploadedFileSize || pdfFile?.size,
+            mimeType: "application/pdf",
+          },
+        }
         : isAttachmentDeleted
-        ? { attachment: null }
-        : {}),
+          ? { attachment: null }
+          : {}),
     };
 
     updatePostMutation.mutate({
@@ -417,19 +519,17 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                   className="flex items-center gap-2 text-left group cursor-pointer focus:outline-none"
                 >
                   <div
-                    className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${
-                      currentStep === 1
+                    className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${currentStep === 1
                         ? "bg-amber-600 text-white ring-4 ring-amber-500/20 shadow-xs"
                         : "bg-emerald-600 text-white"
-                    }`}
+                      }`}
                   >
                     {currentStep > 1 ? <Check className="h-3.5 w-3.5" /> : "1"}
                   </div>
                   <div>
                     <p
-                      className={`text-xs font-semibold ${
-                        currentStep === 1 ? "text-amber-900" : "text-neutral-600"
-                      }`}
+                      className={`text-xs font-semibold ${currentStep === 1 ? "text-amber-900" : "text-neutral-600"
+                        }`}
                     >
                       Bước 1
                     </p>
@@ -453,19 +553,17 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                   className="flex items-center gap-2 text-left group cursor-pointer focus:outline-none"
                 >
                   <div
-                    className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${
-                      currentStep === 2
+                    className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${currentStep === 2
                         ? "bg-amber-600 text-white ring-4 ring-amber-500/20 shadow-xs"
                         : "bg-neutral-200 text-neutral-600"
-                    }`}
+                      }`}
                   >
                     2
                   </div>
                   <div>
                     <p
-                      className={`text-xs font-semibold ${
-                        currentStep === 2 ? "text-amber-900" : "text-neutral-500"
-                      }`}
+                      className={`text-xs font-semibold ${currentStep === 2 ? "text-amber-900" : "text-neutral-500"
+                        }`}
                     >
                       Bước 2
                     </p>
@@ -508,11 +606,10 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                         if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }));
                       }}
                       placeholder="Nhập tiêu đề bài viết..."
-                      className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 outline-none transition focus:ring-2 ${
-                        errors.title
+                      className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 outline-none transition focus:ring-2 ${errors.title
                           ? "border-red-400 focus:border-red-500 focus:ring-red-200"
                           : "border-neutral-200 focus:border-amber-600 focus:ring-amber-500/20"
-                      }`}
+                        }`}
                     />
                     {errors.title && (
                       <p className="mt-1 text-xs text-red-600 font-medium">
@@ -549,11 +646,10 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                           if (errors.slug) setErrors((prev) => ({ ...prev, slug: undefined }));
                         }}
                         placeholder="duong-dan-bai-viet"
-                        className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-xs sm:text-sm font-mono text-neutral-900 outline-none transition focus:ring-2 ${
-                          errors.slug
+                        className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-xs sm:text-sm font-mono text-neutral-900 outline-none transition focus:ring-2 ${errors.slug
                             ? "border-red-400 focus:border-red-500 focus:ring-red-200"
                             : "border-neutral-200 focus:border-amber-600 focus:ring-amber-500/20"
-                        }`}
+                          }`}
                       />
                     </div>
                     {errors.slug && (
@@ -594,11 +690,10 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setType(ContentType.NORMAL)}
-                          className={`flex-1 flex items-center justify-center gap-2 rounded-xl border py-2 px-3 text-xs sm:text-sm font-semibold transition ${
-                            type === ContentType.NORMAL
+                          className={`flex-1 flex items-center justify-center gap-2 rounded-xl border py-2 px-3 text-xs sm:text-sm font-semibold transition ${type === ContentType.NORMAL
                               ? "border-emerald-500 bg-emerald-50 text-emerald-800 shadow-2xs font-bold"
                               : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
-                          }`}
+                            }`}
                         >
                           <BookOpen className="h-4 w-4" />
                           <span>Bài viết thường</span>
@@ -606,11 +701,10 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setType(ContentType.AUDIO)}
-                          className={`flex-1 flex items-center justify-center gap-2 rounded-xl border py-2 px-3 text-xs sm:text-sm font-semibold transition ${
-                            type === ContentType.AUDIO
+                          className={`flex-1 flex items-center justify-center gap-2 rounded-xl border py-2 px-3 text-xs sm:text-sm font-semibold transition ${type === ContentType.AUDIO
                               ? "border-sky-500 bg-sky-50 text-sky-800 shadow-2xs font-bold"
                               : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
-                          }`}
+                            }`}
                         >
                           <Volume2 className="h-4 w-4" />
                           <span>Audio / Bài giảng</span>
@@ -618,6 +712,47 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                       </div>
                     </div>
                   </div>
+
+                  {/* 3.5 Group Selection (For Khai thị & Bạch thoại Phật Pháp) */}
+                  {isGroupSupported && (
+                    <div className="rounded-xl border border-amber-200/80 bg-amber-50/40 p-4 transition-all">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
+                        <label className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-neutral-800">
+                          <FolderTree className="h-4 w-4 text-amber-700" />
+                          <span>Phân nhóm bài viết (Group)</span>
+                        </label>
+                        <span className="text-[11px] text-neutral-500">
+                          Mặc định: <code className="rounded bg-amber-100/70 px-1 py-0.5 font-mono text-amber-800">undefined</code>
+                        </span>
+                      </div>
+                      <p className="text-xs text-neutral-500 mb-2.5">
+                        Chọn nhóm chuyên đề cho bài viết thuộc chuyên mục <strong>{selectedCategory?.name || post?.category?.name || "Khai thị / Bạch thoại Phật Pháp"}</strong>.
+                      </p>
+                      <div className="relative">
+                        <select
+                          value={groupId}
+                          onChange={(e) => setGroupId(e.target.value)}
+                          disabled={isLoadingGroups}
+                          className="w-full appearance-none rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 pr-10 text-xs sm:text-sm text-neutral-900 outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 disabled:bg-neutral-100 cursor-pointer"
+                        >
+                          {groups
+                            .filter((grp) => !grp.deletedAt)
+                            .map((grp) => (
+                              <option key={grp.id} value={grp.id}>
+                                {grp.name} {grp.description && grp.description !== grp.name ? `— ${grp.description}` : ""}
+                              </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-400">
+                          {isLoadingGroups ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+                          ) : (
+                            <FolderTree className="h-4 w-4 text-amber-600/70" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* 4. Thumbnail URL & Upload */}
                   <div>

@@ -19,6 +19,7 @@ export const CreatePostForm: React.FC = () => {
   // Form state across steps
   const [formValues, setFormValues] = useState<CreatePostFormValues>({
     categoryId: "",
+    groupId: "",
     contentType: ContentType.NORMAL,
     title: "",
     slug: "",
@@ -40,6 +41,7 @@ export const CreatePostForm: React.FC = () => {
       ...prev,
       categoryId,
       contentType,
+      groupId: prev.categoryId === categoryId ? prev.groupId : "",
     }));
     setCurrentStep(2);
   };

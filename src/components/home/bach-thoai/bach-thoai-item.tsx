@@ -11,6 +11,7 @@ import Link from "next/link";
 import React from "react";
 
 import { ContentType } from "@/enums";
+import { getGroupBadgeStyle } from "@/lib/color-badge";
 import { useAudioPlayerStore } from "@/stores";
 
 export interface BachThoaiDisplayItem {
@@ -23,6 +24,8 @@ export interface BachThoaiDisplayItem {
   type: ContentType;
   audioUrl?: string;
   snippet?: string;
+  groupId?: string;
+  groupName?: string;
 }
 
 export interface BachThoaiItemProps {
@@ -98,6 +101,19 @@ export const BachThoaiItem: React.FC<BachThoaiItemProps> = ({ item }) => {
       <div className="min-w-0 flex-1 space-y-1.5">
         {/* Meta badges row */}
         <div className="flex items-center gap-2 flex-wrap">
+          {item.groupName &&
+            item.groupName.toLowerCase() !== "undefined" &&
+            item.groupName.toLowerCase() !== "không xác định" && (
+              <span
+                title={item.groupName}
+                className={`inline-block max-w-[150px] truncate rounded-md border px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold leading-tight shadow-2xs ${getGroupBadgeStyle(
+                  item.groupName
+                )}`}
+              >
+                {item.groupName}
+              </span>
+            )}
+
           {isAudio ? (
             <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200/60 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-amber-800">
               <Volume2 className="h-3 w-3 text-amber-700" />

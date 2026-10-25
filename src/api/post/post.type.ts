@@ -37,6 +37,7 @@ export interface CreatePostPayloadType {
   publishedAt?: string;
   authorId?: string;
   categoryId?: string;
+  groupId?: string | null;
   audio?: CreatePostAudioPayloadType;
   video?: CreatePostVideoPayloadType;
   attachment?: CreatePostAttachmentPayloadType | null;
@@ -149,6 +150,8 @@ export interface GetPostsResponse {
 export interface GetPostsByCategoryParams {
   category_id?: string;
   category_name?: string;
+  groupId?: string;
+  group_id?: string;
   limit?: number;
   cursor?: string | null;
   page?: number;
@@ -165,6 +168,8 @@ export interface SearchPostsParams {
   category_id?: string;
   category_name?: string;
   categoryName?: string;
+  groupId?: string;
+  group_id?: string;
   search?: string;
   q?: string;
   cursor?: string | null;

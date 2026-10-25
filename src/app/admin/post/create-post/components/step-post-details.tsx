@@ -7,13 +7,15 @@ import {
   CheckCircle2,
   FileAudio,
   FileText,
+  FolderTree,
   Loader2,
   Tag,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
 import { CategoryItemType } from "@/api/category";
 import { uploadFile } from "@/api/file";
+import { useGetGroups } from "@/api/group";
 import { useCreatePost } from "@/api/post";
 import { CreatePostPayloadType, PostItemType } from "@/api/post/post.type";
 import { Button } from "@/components/ui";
@@ -22,8 +24,27 @@ import { getAudioDuration, slugify } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { CreatePostFormValues } from "../../types/post-form.type";
-import { isBachThoaiPhatPhap, isNiemKinh } from "../../utils/content-type";
+import { allowsGroupCategory, isBachThoaiPhatPhap, isKhaiThi, isNiemKinh } from "../../utils/content-type";
 import { AudioUpload } from "./audio-upload";
+
+/**
+ * Check if metadata is absent or empty
+ */
+function hasNoMetadata(metadata: any): boolean {
+  if (!metadata) return true;
+  if (typeof metadata === "object") {
+    return Object.keys(metadata).length === 0;
+  }
+  if (typeof metadata === "string") {
+    try {
+      const parsed = JSON.parse(metadata);
+      return !parsed || Object.keys(parsed).length === 0;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
 import { NiemKinhStepEditor } from "./niem-kinh-step-editor";
 import { PostBasicFields } from "./post-basic-fields";
 import { RichTextEditor } from "./rich-text-editor";
@@ -61,6 +82,54 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
     category?.slug,
     category?.name
   );
+
+  const isBachThoaiPost = isBachThoaiPhatPhap(
+    formValues.categoryId,
+    category?.slug,
+    category?.name
+  );
+
+  const isKhaiThiPost = isKhaiThi(
+    formValues.categoryId,
+    category?.slug,
+    category?.name
+  );
+
+  const isGroupSupported = allowsGroupCategory(
+    formValues.categoryId,
+    category?.slug,
+    category?.name
+  );
+
+  const groupQueryParams = useMemo(() => {
+    if (isBachThoaiPost) {
+      return { isSupportForBachThoaiPhatPhap: true };
+    }
+    return undefined;
+  }, [isBachThoaiPost]);
+
+  const { data: rawGroups = [], isLoading: isLoadingGroups } = useGetGroups(
+    groupQueryParams,
+    { enabled: isGroupSupported }
+  );
+
+  // Filter groups: If Khai Thi, only include groups without metadata and the undefined group
+  const groups = useMemo(() => {
+    if (!isKhaiThiPost) return rawGroups;
+
+    return rawGroups.filter((grp) => {
+      if (grp.deletedAt) return false;
+
+      // Group 'undefined'
+      const isUndefined =
+        grp.name.toLowerCase() === "undefined" ||
+        grp.name.toLowerCase() === "không xác định";
+      if (isUndefined) return true;
+
+      // Group không có metadata
+      return hasNoMetadata(grp.metadata);
+    });
+  }, [rawGroups, isKhaiThiPost]);
 
   // TanStack Query Create Post Mutation
   const createPostMutation = useCreatePost({
@@ -221,18 +290,19 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
         type: formValues.contentType,
         thumbnailUrl: uploadedThumbUrl || undefined,
         categoryId: formValues.categoryId || undefined,
+        groupId: isGroupSupported ? (formValues.groupId || undefined) : undefined,
         ...(formValues.contentType === ContentType.AUDIO &&
           uploadedAudioUrl && {
-            audio: {
-              audioUrl: uploadedAudioUrl,
-              duration:
-                audioDuration && audioDuration > 0
-                  ? Math.round(audioDuration)
-                  : undefined,
-              fileSize: formValues.audioFile?.size,
-              mimeType: formValues.audioFile?.type || "audio/mpeg",
-            },
-          }),
+          audio: {
+            audioUrl: uploadedAudioUrl,
+            duration:
+              audioDuration && audioDuration > 0
+                ? Math.round(audioDuration)
+                : undefined,
+            fileSize: formValues.audioFile?.size,
+            mimeType: formValues.audioFile?.type || "audio/mpeg",
+          },
+        }),
         ...(uploadedFileUrl && {
           attachment: {
             fileUrl: uploadedFileUrl,
@@ -397,6 +467,59 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
           setSubmitError(null);
         }}
       />
+
+      {/* Section 1.5: Group Selection (For Khai thị & Bạch thoại Phật Pháp) */}
+      {isGroupSupported && (
+        <div className="rounded-2xl border border-[#EDE5D8] bg-[#FDFBF7]/80 p-5 shadow-xs transition-all">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2.5">
+            <label
+              htmlFor="post-group-select"
+              className="flex items-center gap-2 text-sm font-semibold text-neutral-800"
+            >
+              <FolderTree className="h-4 w-4 text-amber-700" />
+              <span>Phân nhóm bài viết (Group)</span>
+              <span className="text-xs font-normal text-neutral-500">
+                (Tùy chọn)
+              </span>
+            </label>
+            <span className="text-xs text-neutral-500">
+              Mặc định: <code className="rounded bg-amber-100/70 px-1.5 py-0.5 font-mono text-amber-800 text-[11px]">undefined</code>
+            </span>
+          </div>
+          <p className="text-xs text-neutral-500 mb-3 leading-relaxed">
+            Chọn nhóm chuyên đề cho bài viết thuộc chuyên mục <strong>{category?.name || "Khai thị / Bạch thoại Phật Pháp"}</strong>. Nếu để trống, hệ thống sẽ tự động gán vào nhóm mặc định (<code className="text-amber-800">undefined</code>).
+          </p>
+
+          <div className="relative">
+            <select
+              id="post-group-select"
+              value={formValues.groupId || ""}
+              onChange={(e) => {
+                onChangeFormValues({ groupId: e.target.value || null });
+                setValidationSuccess(null);
+                setSubmitError(null);
+              }}
+              disabled={isLoadingGroups}
+              className="w-full appearance-none rounded-xl border border-neutral-200 bg-white px-4 py-2.5 pr-10 text-sm text-neutral-900 transition-colors focus:border-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:bg-neutral-100 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {groups
+                .filter((grp) => !grp.deletedAt)
+                .map((grp) => (
+                  <option key={grp.id} value={grp.id}>
+                    {grp.name}
+                  </option>
+                ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-neutral-400">
+              {isLoadingGroups ? (
+                <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+              ) : (
+                <FolderTree className="h-4 w-4 text-amber-600/70" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Section 2: Thumbnail Image Upload */}
       <ThumbnailUpload

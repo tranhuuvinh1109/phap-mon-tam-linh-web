@@ -2,6 +2,7 @@ import { ContentType } from "@/enums";
 
 export interface CreatePostFormValues {
   categoryId: string;
+  groupId?: string | null;
   contentType: ContentType;
   title: string;
   slug: string;

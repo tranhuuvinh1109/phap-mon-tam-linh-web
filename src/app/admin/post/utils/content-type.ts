@@ -2,6 +2,8 @@ import { PostItemType } from "@/api/post";
 import {
   BACH_THOAI_PHAT_PHAP_ID,
   BACH_THOAI_PHAT_PHAP_SLUG,
+  KHAI_THI_ID,
+  KHAI_THI_SLUG,
   NIEM_KINH_ID,
   NIEM_KINH_SLUG,
 } from "@/constants";
@@ -68,5 +70,24 @@ export function isNiemKinh(
     }
   }
   return false;
+}
+
+export function isKhaiThi(
+  categoryId?: string,
+  slug?: string,
+  name?: string
+): boolean {
+  if (categoryId && categoryId === KHAI_THI_ID) return true;
+  if (slug && (slug === KHAI_THI_SLUG || slug.includes("khai-thi"))) return true;
+  if (name && name.toLowerCase().includes("khai thị")) return true;
+  return false;
+}
+
+export function allowsGroupCategory(
+  categoryId?: string,
+  slug?: string,
+  name?: string
+): boolean {
+  return isBachThoaiPhatPhap(categoryId, slug, name) || isKhaiThi(categoryId, slug, name);
 }
 

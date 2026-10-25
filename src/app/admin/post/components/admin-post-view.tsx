@@ -283,7 +283,7 @@ export const AdminPostView: React.FC = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
             <input
               type="text"
-              placeholder="Tìm tiêu đề, tác giả, nội dung..."
+              placeholder="Tìm tiêu đề, nhóm, nội dung..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 py-2 text-xs sm:text-sm outline-none transition focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20"
@@ -345,13 +345,13 @@ export const AdminPostView: React.FC = () => {
             <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-[#EDE5D8] bg-[#FAF7F0]/80 text-neutral-600 text-xs uppercase tracking-wider font-semibold">
-                  <th className="py-3 px-4">Bài viết</th>
-                  <th className="py-3 px-4">Danh mục</th>
-                  <th className="py-3 px-4">Loại</th>
-                  <th className="py-3 px-4">Tác giả</th>
-                  <th className="py-3 px-4">Trích đoạn nội dung</th>
-                  <th className="py-3 px-4">Ngày tạo</th>
-                  <th className="py-3 px-4 text-right">Thao tác</th>
+                  <th className="py-3 px-4 min-w-[220px]">Bài viết</th>
+                  <th className="py-3 px-4 min-w-[130px] w-[130px]">Danh mục</th>
+                  <th className="py-3 px-4 min-w-[110px] w-[110px]">Loại</th>
+                  <th className="py-3 px-4 min-w-[170px] w-[170px]">Nhóm</th>
+                  <th className="py-3 px-4 min-w-[200px]">Trích đoạn nội dung</th>
+                  <th className="py-3 px-4 min-w-[100px] w-[100px]">Ngày tạo</th>
+                  <th className="py-3 px-4 text-right min-w-[120px] w-[120px]">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#EDE5D8]/60">
