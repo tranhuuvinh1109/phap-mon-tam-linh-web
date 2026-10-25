@@ -2,9 +2,27 @@ import { API_URL } from "@/constants";
 import { apiClient } from "@/lib/axios";
 import {
   AssignPermissionsPayloadType,
+  CreateUserPayloadType,
   UpgradeRolePayloadType,
   UserItemType,
 } from "./user.type";
+
+/**
+ * Create a new user via POST /users (Admin only)
+ */
+export const createUser = async (
+  payload: CreateUserPayloadType
+): Promise<UserItemType> => {
+  const response = await apiClient.post<
+    UserItemType | { data: UserItemType }
+  >(API_URL.users, payload);
+
+  const data = response.data;
+  if (data && typeof data === "object" && "data" in data) {
+    return (data as { data: UserItemType }).data;
+  }
+  return data as UserItemType;
+};
 
 /**
  * Fetch all users via GET /users

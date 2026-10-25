@@ -12,6 +12,14 @@ export interface UserItemType {
   updatedAt?: string;
 }
 
+export interface CreateUserPayloadType {
+  email: string;
+  password: string;
+  name?: string;
+  role?: RoleEnum | string;
+  approvalStatus?: ApprovalStatusEnum | string;
+}
+
 export interface UpgradeRolePayloadType {
   userId: string;
   role: RoleEnum | string;
