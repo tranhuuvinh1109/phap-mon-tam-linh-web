@@ -72,7 +72,7 @@ export function HomeView() {
           <KhaiThiList posts={khaiThiPosts} isLoading={isLoading} />
 
           {/* 5. Latest Content 4-Grid Cards */}
-          <LatestContent items={LATEST_CONTENT_ITEMS} />
+          {/* <LatestContent items={LATEST_CONTENT_ITEMS} /> */}
         </div>
       </div>
     </MainLayout>

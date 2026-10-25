@@ -147,8 +147,8 @@ export const PostDetailClient: React.FC = () => {
     currentCategorySlug === "bach-thoai-phat-phap"
       ? "bach-thoai"
       : currentCategorySlug === "niem-kinh"
-      ? "practice"
-      : currentCategorySlug;
+        ? "practice"
+        : currentCategorySlug;
 
   return (
     <MainLayout activeId={activeNavId}>
@@ -337,59 +337,6 @@ export const PostDetailClient: React.FC = () => {
                 {displayPost.title}
               </h1>
 
-              {/* Author Meta Box */}
-              <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#EDE5D8]/80 bg-[#FAF7F0]/70 p-4">
-                {displayPost.author ? (
-                  <div className="flex items-center gap-3">
-                    {displayPost.author.avatarUrl ? (
-                      <img
-                        src={displayPost.author.avatarUrl}
-                        alt={displayPost.author.name}
-                        className="h-11 w-11 shrink-0 rounded-full border border-amber-200 object-cover shadow-2xs"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src =
-                            "/images/lotus-thumb.jpg";
-                        }}
-                      />
-                    ) : (
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
-                        <User className="h-5 w-5" />
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="text-sm font-bold text-neutral-900">
-                        {displayPost.author.name}
-                      </h3>
-                      {displayPost.author.bio && (
-                        <p className="text-xs text-neutral-500 line-clamp-1">
-                          {displayPost.author.bio}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-xs font-medium text-neutral-600">
-                    <Sparkles className="h-4 w-4 text-amber-600" />
-                    <span>Ban biên tập Phật Pháp</span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 text-xs text-neutral-500">
-                  {formattedDate && (
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5 text-neutral-400" />
-                      <span>{formattedDate}</span>
-                    </div>
-                  )}
-                  {displayPost.audio?.duration && displayPost.audio.duration > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5 text-neutral-400" />
-                      <span>{formatTime(displayPost.audio.duration)}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* Audio Player Card (If standard post has audio) */}
               {displayPost.audio?.audioUrl && (
                 <div className="flex items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 shadow-2xs">
@@ -452,10 +399,6 @@ export const PostDetailClient: React.FC = () => {
                 </div>
               )}
 
-              {/* Bottom Footer Note */}
-              <div className="border-t border-[#EDE5D8] pt-6 text-center text-xs italic text-neutral-400">
-                Nguyện đem công đức này, hướng về khắp tất cả. Đệ tử và chúng sanh, đều trọn thành Phật đạo.
-              </div>
             </article>
           )}
         </div>

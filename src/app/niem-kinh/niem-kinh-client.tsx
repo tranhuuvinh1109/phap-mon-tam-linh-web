@@ -328,10 +328,6 @@ export const NiemKinhClient: React.FC = () => {
                     <NiemKinhAccordion data={stepsData} allowToggle={true} />
                   </div>
 
-                  {/* Bottom Dedication Blessing Note */}
-                  <div className="border-t border-[#EDE5D8] pt-6 text-center text-xs italic text-neutral-500 leading-relaxed">
-                    Nguyện đem công đức này, hướng về khắp tất cả. Đệ tử và chúng sanh, đều trọn thành Phật đạo.
-                  </div>
                 </article>
               </>
             )}

@@ -66,14 +66,14 @@ export const QUICK_PRACTICE_ITEMS: QuickPracticeItem[] = [
     href: "#phong-sanh",
   },
   {
-    id: "phap-nguyen",
-    title: "Pháp Nguyện",
+    id: "phat-nguyen",
+    title: "Phát Nguyện",
     subtitle: "Phát nguyện từ tâm",
     iconType: "prayer",
     bgClass: "bg-[#FDF0ED]",
     borderClass: "border-[#FADCD5]",
     textClass: "text-[#B84E38]",
-    href: "#phap-nguyen",
+    href: "#phat-nguyen",
   },
   {
     id: "thap-huong",
