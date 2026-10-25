@@ -6,6 +6,7 @@ import {
   Sparkles,
   Twitter as Bird,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
@@ -17,11 +18,27 @@ interface QuickPracticeProps {
   items?: QuickPracticeItem[];
 }
 
+function getIconSrc(iconType: string): string {
+  if (iconType.startsWith("/")) return iconType;
+  return `/images/icon/${iconType}`;
+}
+
+function isImageIcon(type: string): boolean {
+  return (
+    type.endsWith(".png") ||
+    type.endsWith(".jpg") ||
+    type.endsWith(".jpeg") ||
+    type.endsWith(".webp") ||
+    type.endsWith(".svg") ||
+    type.includes("/")
+  );
+}
+
 export const QuickPractice: React.FC<QuickPracticeProps> = ({
   className = "",
   items = QUICK_PRACTICE_ITEMS,
 }) => {
-  const renderIcon = (type: QuickPracticeItem["iconType"]) => {
+  const renderIcon = (type: string) => {
     switch (type) {
       case "book":
         return <BookOpen className="h-7 w-7 text-[#B46A10]" />;
@@ -68,15 +85,27 @@ export const QuickPractice: React.FC<QuickPracticeProps> = ({
             href={item.href}
             data-track-click={`quick_practice_${item.id}`}
             data-track-category="home_quick_practice"
-            className={`group flex flex-col items-center justify-center rounded-2xl border ${item.borderClass} ${item.bgClass} p-4 text-center shadow-2xs transition-all duration-200 select-none hover:-translate-y-1 hover:shadow-md`}
+            className={`group flex flex-col items-center justify-center rounded-2xl border ${item.borderClass} ${item.bgClass} p-3 sm:p-4 text-center shadow-2xs transition-all duration-200 select-none hover:-translate-y-1 hover:shadow-md`}
           >
-            {/* Icon Container */}
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110">
-              {renderIcon(item.iconType)}
+            {/* Icon Container: 40px (h-10 w-10) on mobile, larger on sm+ */}
+            <div className="flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110">
+              {isImageIcon(item.iconType) ? (
+                <Image
+                  src={getIconSrc(item.iconType)}
+                  alt={item.title}
+                  width={56}
+                  height={56}
+                  className="h-10 w-10 sm:h-12 sm:w-12 object-contain drop-shadow-2xs sm:scale-[1.3]"
+                />
+              ) : (
+                <div className="flex items-center justify-center sm:scale-[1.3]">
+                  {renderIcon(item.iconType)}
+                </div>
+              )}
             </div>
 
             {/* Title */}
-            <h4 className={`mt-2.5 text-xs font-bold tracking-tight sm:text-sm ${item.textClass}`}>
+            <h4 className={`mt-2 sm:mt-2.5 text-xs font-bold tracking-tight sm:text-sm ${item.textClass}`}>
               {item.title}
             </h4>
 

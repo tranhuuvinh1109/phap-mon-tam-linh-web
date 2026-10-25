@@ -27,7 +27,7 @@ export interface QuickPracticeItem {
   id: string;
   title: string;
   subtitle: string;
-  iconType: "book" | "house" | "bird" | "prayer" | "lotus";
+  iconType: string;
   bgClass: string;
   borderClass: string;
   textClass: string;
@@ -37,9 +37,9 @@ export interface QuickPracticeItem {
 export const QUICK_PRACTICE_ITEMS: QuickPracticeItem[] = [
   {
     id: "kinh",
-    title: "Kinh",
-    subtitle: "Nghe kinh, tụng kinh",
-    iconType: "book",
+    title: "Niệm kinh",
+    subtitle: "Hướng dẫn niệm kinh bài tập hàng ngày",
+    iconType: "kinh-sach.png",
     bgClass: "bg-[#FFF6E3]",
     borderClass: "border-[#FFE5B4]",
     textClass: "text-[#B46A10]",
@@ -48,8 +48,8 @@ export const QUICK_PRACTICE_ITEMS: QuickPracticeItem[] = [
   {
     id: "ngoi-nha-nho",
     title: "Ngôi nhà nhỏ",
-    subtitle: "Học cách sống an lành",
-    iconType: "house",
+    subtitle: "Tổ hợp kinh điển Phật giác Ngôi Nhà Nhỏ",
+    iconType: "ngoi-nha-nho.png",
     bgClass: "bg-[#FFF1DE]",
     borderClass: "border-[#FFDEC0]",
     textClass: "text-[#A85816]",
@@ -59,7 +59,7 @@ export const QUICK_PRACTICE_ITEMS: QuickPracticeItem[] = [
     id: "phong-sanh",
     title: "Phóng sanh",
     subtitle: "Giúp muôn loài, gieo duyên lành",
-    iconType: "bird",
+    iconType: "phong-sinh.png",
     bgClass: "bg-[#E6F7F5]",
     borderClass: "border-[#C5EFEA]",
     textClass: "text-[#168378]",
@@ -69,7 +69,7 @@ export const QUICK_PRACTICE_ITEMS: QuickPracticeItem[] = [
     id: "phat-nguyen",
     title: "Phát Nguyện",
     subtitle: "Phát nguyện từ tâm",
-    iconType: "prayer",
+    iconType: "phat-nguyen.png",
     bgClass: "bg-[#FDF0ED]",
     borderClass: "border-[#FADCD5]",
     textClass: "text-[#B84E38]",
@@ -79,7 +79,7 @@ export const QUICK_PRACTICE_ITEMS: QuickPracticeItem[] = [
     id: "thap-huong",
     title: "Thắp hương bàn thờ Phật",
     subtitle: "Thể hiện lòng thành kính",
-    iconType: "lotus",
+    iconType: "ban-tho-phat.png",
     bgClass: "bg-[#FFF6E4]",
     borderClass: "border-[#FFE5BA]",
     textClass: "text-[#B86E0E]",
