@@ -2,25 +2,22 @@
 
 import React, { useMemo } from "react";
 
-import { useGetPosts } from "@/api/post";
+import { useGetPosts, useGetPostsByCategory } from "@/api/post";
 import { useGetSettingById } from "@/api/setting";
-import { isBachThoaiPhatPhapCategory } from "@/app/admin/post/utils/content-type";
 import {
   BachThoaiSection,
   HeroBanner,
   KhaiThiList,
-  LatestContent,
   QuickPractice,
 } from "@/components/home";
 import { MainLayout } from "@/components/layout";
 import {
-  BACH_THOAI_PHAT_PHAP_ID,
+  BACH_THOAI_PHAT_PHAP_SLUG,
   FEATURE_FLAG_BACH_THOAI_PHAT_PHAP_WEB_ID,
   KHAI_THI_ID,
 } from "@/constants";
 import {
   HERO_BANNER_DATA,
-  LATEST_CONTENT_ITEMS,
   QUICK_PRACTICE_ITEMS,
 } from "@/constants/home.constants";
 
@@ -29,20 +26,17 @@ export function HomeView() {
   const { data: bachThoaiSetting } = useGetSettingById(
     FEATURE_FLAG_BACH_THOAI_PHAT_PHAP_WEB_ID
   );
-
   const isBachThoaiEnabled = bachThoaiSetting ? bachThoaiSetting.isEnabled : true;
+  const { data: bachThoaiPosts } = useGetPostsByCategory(
+    {
+      category_name: BACH_THOAI_PHAT_PHAP_SLUG,
+      limit: 10,
+      page: 1,
+    },
+    { enabled: isBachThoaiEnabled }
+  );
 
   const posts = useMemo(() => postsData?.data || [], [postsData]);
-
-  // Memoized Bach Thoai posts list
-  const bachThoaiPosts = useMemo(() => {
-    return posts.filter(
-      (post) =>
-        isBachThoaiPhatPhapCategory(post) ||
-        post.category?.id === BACH_THOAI_PHAT_PHAP_ID
-    );
-  }, [posts]);
-
   // Memoized Khai Thi posts list
   const khaiThiPosts = useMemo(() => {
     return posts.filter((post) => post.category?.id === KHAI_THI_ID);
@@ -65,7 +59,7 @@ export function HomeView() {
 
           {/* 3. Bạch thoại phật pháp (ẩn/hiện theo setting) */}
           {isBachThoaiEnabled && (
-            <BachThoaiSection posts={bachThoaiPosts} isLoading={isLoading} />
+            <BachThoaiSection posts={bachThoaiPosts?.data} isLoading={isLoading} />
           )}
 
           {/* 4. Khai thị */}
