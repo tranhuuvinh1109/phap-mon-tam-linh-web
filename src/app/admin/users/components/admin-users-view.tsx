@@ -15,6 +15,7 @@ import {
   User,
   UserCheck,
   UserCog,
+  UserPlus,
   Users,
   X,
   XCircle,
@@ -27,6 +28,7 @@ import type { UserItemType } from "@/api/user/user.type";
 import { Button } from "@/components/ui";
 import { ApprovalStatusEnum, RoleEnum } from "@/enums";
 import { BlockUserModal } from "./block-user-modal";
+import { CreateUserModal } from "./create-user-modal";
 import { RolePermissionModal } from "./role-permission-modal";
 
 export const AdminUsersView: React.FC = () => {
@@ -36,6 +38,7 @@ export const AdminUsersView: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserItemType | null>(null);
   const [userToBlock, setUserToBlock] = useState<UserItemType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [actionLoadingUserId, setActionLoadingUserId] = useState<string | null>(null);
 
   const { data: users = [], isLoading, isFetching, refetch } = useGetUsers();
@@ -141,12 +144,20 @@ export const AdminUsersView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <Button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-2 rounded-xl bg-amber-800 hover:bg-amber-900 text-white px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold shadow-xs transition cursor-pointer"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span>Tạo tài khoản</span>
+          </Button>
+
           <Button
             variant="outline"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold border-[#EDE5D8] hover:bg-[#FAF7F0] shadow-2xs"
+            className="flex items-center gap-2 rounded-xl px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold border-[#EDE5D8] hover:bg-[#FAF7F0] shadow-2xs"
           >
             <RefreshCw
               className={`h-4 w-4 text-amber-700 ${isFetching ? "animate-spin" : ""}`}
@@ -595,6 +606,13 @@ export const AdminUsersView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Create User Modal */}
+      <CreateUserModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => refetch()}
+      />
 
       {/* Role and Permissions Edit Modal */}
       <RolePermissionModal

@@ -11,6 +11,7 @@ import { AxiosError } from "axios";
 
 import { QueryKeyEnum } from "@/enums";
 import {
+  createUser,
   getUsers,
   updateApprovalStatus,
   updateCollaboratorPermissions,
@@ -18,10 +19,36 @@ import {
 } from "./user.api";
 import {
   AssignPermissionsPayloadType,
+  CreateUserPayloadType,
   UpdateApprovalStatusPayloadType,
   UpgradeRolePayloadType,
   UserItemType,
 } from "./user.type";
+
+export type UseCreateUserOptions = Omit<
+  UseMutationOptions<UserItemType, AxiosError, CreateUserPayloadType>,
+  "mutationFn"
+>;
+
+/**
+ * Mutation hook to create a new user via POST /users (Admin only)
+ */
+export const useCreateUser = (
+  options?: UseCreateUserOptions
+): UseMutationResult<UserItemType, AxiosError, CreateUserPayloadType> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createUser,
+    ...options,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({
+        queryKey: [QueryKeyEnum.GET_USERS],
+      });
+      options?.onSuccess?.(...args);
+    },
+  });
+};
 
 export type UseGetUsersOptions = Omit<
   UseQueryOptions<UserItemType[], AxiosError>,
