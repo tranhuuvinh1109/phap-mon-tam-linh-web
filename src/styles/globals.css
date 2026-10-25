@@ -35,15 +35,15 @@
   font-size: 0.9375rem;
   width: 100%;
   max-width: 100%;
-  word-break: normal !important;
-  overflow-wrap: normal !important;
-  word-wrap: normal !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: break-word;
   white-space: normal !important;
   hyphens: none !important;
   -webkit-hyphens: none !important;
 }
 
-/* Ensure all nested blocks and inline elements wrap strictly at word boundaries without breaking words */
+/* Ensure all nested blocks and inline elements wrap properly and break lines without overflowing on mobile */
 .rich-post-content *,
 .rich-post-content p,
 .rich-post-content div,
@@ -62,9 +62,9 @@
 .rich-post-content h4,
 .rich-post-content h5,
 .rich-post-content h6 {
-  word-break: normal !important;
-  overflow-wrap: normal !important;
-  word-wrap: normal !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: break-word;
   white-space: normal !important;
   hyphens: none !important;
   -webkit-hyphens: none !important;
