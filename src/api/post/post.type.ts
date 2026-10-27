@@ -41,6 +41,7 @@ export interface CreatePostPayloadType {
   audio?: CreatePostAudioPayloadType;
   video?: CreatePostVideoPayloadType;
   attachment?: CreatePostAttachmentPayloadType | null;
+  attachments?: CreatePostAttachmentPayloadType[];
 }
 
 /**
@@ -128,6 +129,7 @@ export interface PostItemType {
   audio?: PostAudioType | null;
   video?: PostVideoType | null;
   attachment?: PostAttachmentType | null;
+  attachments?: PostAttachmentType[];
   deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;

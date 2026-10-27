@@ -5,6 +5,9 @@ export interface GetPresignedUploadUrlPayloadType {
   fileName: string;
   mimeType: string;
   folder?: string;
+  isAttachment?: boolean;
+  fileSize?: number;
+  metadata?: Record<string, any>;
 }
 
 /**
@@ -15,6 +18,15 @@ export interface PresignedUploadUrlResponseType {
   url: string;
   key: string;
   expiresIn: number;
+  attachment?: {
+    id: string;
+    key: string;
+    fileType?: string;
+    fileSize?: number;
+    metadata?: Record<string, any>;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 /**
@@ -26,4 +38,5 @@ export interface UploadFileResult {
   fileName: string;
   fileSize: number;
   mimeType: string;
+  attachment?: any;
 }

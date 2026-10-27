@@ -78,6 +78,9 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
   const [type, setType] = useState<ContentType>(ContentType.NORMAL);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [content, setContent] = useState("");
+  const [pendingEditorImagesMap, setPendingEditorImagesMap] = useState<
+    Map<string, File>
+  >(new Map());
   const [audioUrl, setAudioUrl] = useState("");
 
   // Attachment state
@@ -301,6 +304,11 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
   const updatePostMutation = useUpdatePost({
     onSuccess: (updated) => {
       toast.success(`Cập nhật bài viết "${updated.title}" thành công!`);
+      pendingEditorImagesMap.forEach((_, blobUrl) => {
+        try {
+          URL.revokeObjectURL(blobUrl);
+        } catch {}
+      });
       onSuccess?.();
       onClose();
     },
@@ -417,6 +425,52 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       setIsUploadingPdf(false);
     }
 
+    // Upload pending editor images to R2 in parallel
+    const blobRegex = /blob:[^\s"'>)]+/g;
+    const activeBlobUrls = Array.from(
+      new Set(content ? content.match(blobRegex) || [] : [])
+    );
+
+    const uploadedImageAttachments: Array<{
+      fileUrl: string;
+      fileName: string;
+      fileSize: number;
+      mimeType: string;
+      blobUrl: string;
+    }> = [];
+
+    if (activeBlobUrls.length > 0) {
+      try {
+        const uploadPromises = activeBlobUrls.map(async (blobUrl) => {
+          const file = pendingEditorImagesMap.get(blobUrl);
+          if (!file) return null;
+          const res = await uploadFile(file, undefined, "image");
+          return {
+            blobUrl,
+            fileUrl: res.url,
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type || "image/jpeg",
+          };
+        });
+
+        const results = await Promise.all(uploadPromises);
+        results.forEach((item) => {
+          if (item) uploadedImageAttachments.push(item);
+        });
+      } catch {
+        toast.error("Không thể tải lên một số hình ảnh. Vui lòng thử lại.");
+        return;
+      }
+    }
+
+    let finalContent = content;
+    if (finalContent && uploadedImageAttachments.length > 0) {
+      uploadedImageAttachments.forEach(({ blobUrl, fileUrl }) => {
+        finalContent = finalContent.split(blobUrl).join(fileUrl);
+      });
+    }
+
     const payload: UpdatePostPayloadType = {
       title: title.trim(),
       slug: slug.trim(),
@@ -424,7 +478,16 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       groupId: isGroupSupported ? (groupId || null) : undefined,
       type,
       thumbnailUrl: thumbnailUrl.trim() || undefined,
-      content,
+      content: finalContent,
+      attachments:
+        uploadedImageAttachments.length > 0
+          ? uploadedImageAttachments.map((img) => ({
+              fileUrl: img.fileUrl,
+              fileName: img.fileName,
+              fileSize: img.fileSize,
+              mimeType: img.mimeType,
+            }))
+          : undefined,
       ...(type === ContentType.AUDIO && audioUrl.trim()
         ? {
           audio: {
@@ -885,6 +948,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                           placeholder="Nhập nội dung bài viết..."
                           minHeight="280px"
                           hideHeader={true}
+                          onPendingImagesChange={setPendingEditorImagesMap}
                         />
                       </div>
                     </div>

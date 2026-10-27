@@ -42,14 +42,18 @@ export const uploadToS3 = async (
     },
     onUploadProgress: (progressEvent) => {
       if (progressEvent.total) {
-        const percentCompleted = Math.round(
-          (progressEvent.loaded * 100) / progressEvent.total
-        );
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
         onProgress?.(percentCompleted);
       }
     },
   });
 };
+
+export interface UploadFileOptions {
+  folder?: string;
+  isAttachment?: boolean;
+  metadata?: Record<string, any>;
+}
 
 /**
  * Complete workflow: Request Presigned URL -> Upload to S3 -> Return S3 URL & key
@@ -57,13 +61,17 @@ export const uploadToS3 = async (
 export const uploadFile = async (
   file: File,
   onProgress?: (percent: number) => void,
-  folder?: string
+  folder?: string,
+  options?: UploadFileOptions
 ): Promise<UploadFileResult> => {
   // 1. Get presigned upload URL from backend
   const presigned = await getPresignedUploadUrl({
     fileName: file.name,
     mimeType: file.type || "application/octet-stream",
-    folder,
+    folder: folder ?? options?.folder,
+    isAttachment: options?.isAttachment,
+    fileSize: file.size,
+    metadata: options?.metadata,
   });
 
   // 2. Upload file to S3
@@ -76,5 +84,6 @@ export const uploadFile = async (
     fileName: file.name,
     fileSize: file.size,
     mimeType: file.type || "application/octet-stream",
+    attachment: presigned.attachment,
   };
 };

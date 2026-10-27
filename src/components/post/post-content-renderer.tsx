@@ -35,6 +35,14 @@ export const PostContentRenderer: React.FC<PostContentRendererProps> = ({
                 if (typeof op.insert === "string") {
                   return `<p>${op.insert.replace(/\n/g, "<br/>")}</p>`;
                 }
+                if (
+                  op.insert &&
+                  typeof op.insert === "object" &&
+                  "image" in op.insert &&
+                  typeof (op.insert as any).image === "string"
+                ) {
+                  return `<div class="my-4"><img src="${(op.insert as any).image}" class="max-w-full rounded-2xl shadow-xs" alt="Hình ảnh bài viết" loading="lazy" /></div>`;
+                }
                 return "";
               })
               .join("");
@@ -63,6 +71,14 @@ export const PostContentRenderer: React.FC<PostContentRendererProps> = ({
           .map((op) => {
             if (typeof op.insert === "string") {
               return `<p>${op.insert.replace(/\n/g, "<br/>")}</p>`;
+            }
+            if (
+              op.insert &&
+              typeof op.insert === "object" &&
+              "image" in op.insert &&
+              typeof (op.insert as any).image === "string"
+            ) {
+              return `<div class="my-4"><img src="${(op.insert as any).image}" class="max-w-full rounded-2xl shadow-xs" alt="Hình ảnh bài viết" loading="lazy" /></div>`;
             }
             return "";
           })

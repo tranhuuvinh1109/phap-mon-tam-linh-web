@@ -76,6 +76,9 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
   const [validationSuccess, setValidationSuccess] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [createdPost, setCreatedPost] = useState<PostItemType | null>(null);
+  const [pendingEditorImagesMap, setPendingEditorImagesMap] = useState<
+    Map<string, File>
+  >(new Map());
 
   const isNiemKinhPost = isNiemKinh(
     formValues.categoryId,
@@ -139,6 +142,12 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
         `Bài viết "${post.title}" đã được tạo thành công trên hệ thống!`
       );
       toast.success(`Tạo bài viết "${post.title}" thành công!`);
+      // Clean up object URLs
+      pendingEditorImagesMap.forEach((_, blobUrl) => {
+        try {
+          URL.revokeObjectURL(blobUrl);
+        } catch {}
+      });
       router.push("/admin/post");
     },
     onError: (err) => {
@@ -282,15 +291,109 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
         audioDuration = await getAudioDuration(formValues.audioFile);
       }
 
+      // 4. Scan content for active blob: URLs and upload images to R2 in parallel
+      const blobRegex = /blob:[^\s"'>)]+/g;
+      const activeBlobUrls = Array.from(
+        new Set(
+          formValues.content ? formValues.content.match(blobRegex) || [] : []
+        )
+      );
+
+      const uploadedImageAttachments: Array<{
+        fileUrl: string;
+        fileName: string;
+        fileSize: number;
+        mimeType: string;
+        blobUrl: string;
+      }> = [];
+
+      if (activeBlobUrls.length > 0) {
+        const toastId = toast.loading(
+          `Đang tải ${activeBlobUrls.length} hình ảnh lên máy chủ...`
+        );
+        try {
+          const uploadPromises = activeBlobUrls.map(async (blobUrl) => {
+            const file = pendingEditorImagesMap.get(blobUrl);
+            if (!file) return null;
+            const res = await uploadFile(file, undefined, "image");
+            return {
+              blobUrl,
+              fileUrl: res.url,
+              fileName: file.name,
+              fileSize: file.size,
+              mimeType: file.type || "image/jpeg",
+            };
+          });
+
+          const results = await Promise.all(uploadPromises);
+          results.forEach((item) => {
+            if (item) {
+              uploadedImageAttachments.push(item);
+            }
+          });
+          toast.success("Tải hình ảnh thành công", { id: toastId });
+        } catch (err: unknown) {
+          const msg =
+            (err as Error)?.message ||
+            "Không thể tải lên một số hình ảnh. Vui lòng thử lại.";
+          toast.error(msg, { id: toastId });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // Convert local blob URLs in content to permanent R2 URLs
+      let finalContent = formValues.content;
+      if (finalContent && uploadedImageAttachments.length > 0) {
+        uploadedImageAttachments.forEach(({ blobUrl, fileUrl }) => {
+          finalContent = finalContent.split(blobUrl).join(fileUrl);
+        });
+      }
+
+      // Construct list of all attachments to save (editor images + PDF if attached)
+      const allAttachmentsPayload: Array<{
+        fileUrl: string;
+        fileName?: string;
+        fileSize?: number;
+        mimeType?: string;
+      }> = [];
+
+      // Add image attachments from editor
+      if (uploadedImageAttachments.length > 0) {
+        uploadedImageAttachments.forEach((att) => {
+          allAttachmentsPayload.push({
+            fileUrl: att.fileUrl,
+            fileName: att.fileName,
+            fileSize: att.fileSize,
+            mimeType: att.mimeType,
+          });
+        });
+      }
+
+      // Add PDF attachment if uploaded
+      if (uploadedFileUrl) {
+        allAttachmentsPayload.push({
+          fileUrl: uploadedFileUrl,
+          fileName:
+            uploadedFileName ||
+            formValues.pdfFile?.name ||
+            "Tai-lieu-dinh-kem.pdf",
+          fileSize: uploadedFileSize || formValues.pdfFile?.size,
+          mimeType: "application/pdf",
+        });
+      }
+
       // 3. Construct CreatePostDto payload and execute mutation
       const payload: CreatePostPayloadType = {
         title: formValues.title.trim(),
         slug: formValues.slug.trim() || undefined,
-        content: formValues.content || undefined,
+        content: finalContent,
         type: formValues.contentType,
         thumbnailUrl: uploadedThumbUrl || undefined,
         categoryId: formValues.categoryId || undefined,
         groupId: isGroupSupported ? (formValues.groupId || undefined) : undefined,
+        attachments:
+          allAttachmentsPayload.length > 0 ? allAttachmentsPayload : undefined,
         ...(formValues.contentType === ContentType.AUDIO &&
           uploadedAudioUrl && {
           audio: {
@@ -612,6 +715,7 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
                 setValidationSuccess(null);
                 setSubmitError(null);
               }}
+              onPendingImagesChange={setPendingEditorImagesMap}
             />
           )}
         </div>
