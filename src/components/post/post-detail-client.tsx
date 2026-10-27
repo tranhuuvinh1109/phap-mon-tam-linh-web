@@ -152,6 +152,34 @@ export const PostDetailClient: React.FC = () => {
         ? "practice"
         : currentCategorySlug;
 
+  // Find dedicated PDF attachment from post attachments or attachment field
+  const pdfAttachment = useMemo(() => {
+    if (!displayPost) return null;
+
+    const isPdf = (att?: { fileUrl?: string | null; fileName?: string | null; mimeType?: string | null } | null) => {
+      if (!att || !att.fileUrl) return false;
+      const mime = att.mimeType?.toLowerCase() || "";
+      const name = att.fileName?.toLowerCase() || "";
+      const url = att.fileUrl.toLowerCase();
+      return (
+        mime.includes("pdf") ||
+        name.endsWith(".pdf") ||
+        url.includes(".pdf")
+      );
+    };
+
+    if (displayPost.attachments && displayPost.attachments.length > 0) {
+      const found = displayPost.attachments.find(isPdf);
+      if (found) return found;
+    }
+
+    if (isPdf(displayPost.attachment)) {
+      return displayPost.attachment;
+    }
+
+    return null;
+  }, [displayPost]);
+
   return (
     <MainLayout activeId={activeNavId}>
       <div className="flex flex-col items-start gap-6 xl:flex-row">
@@ -241,14 +269,14 @@ export const PostDetailClient: React.FC = () => {
               />
 
               {/* If the post contains an attached PDF document */}
-              {displayPost.attachment?.fileUrl && (
+              {pdfAttachment?.fileUrl && (
                 <div className="pt-2">
                   <PdfViewer
-                    fileUrl={displayPost.attachment.fileUrl}
+                    fileUrl={pdfAttachment.fileUrl}
                     fileName={
-                      displayPost.attachment.fileName || displayPost.title
+                      pdfAttachment.fileName || displayPost.title
                     }
-                    fileSize={displayPost.attachment.fileSize}
+                    fileSize={pdfAttachment.fileSize}
                     slug={displayPost.slug}
                   />
                 </div>
@@ -381,14 +409,14 @@ export const PostDetailClient: React.FC = () => {
               )}
 
               {/* PDF Document Viewer (Secure / Prevent Download) */}
-              {displayPost.attachment?.fileUrl && (
+              {pdfAttachment?.fileUrl && (
                 <div className="pt-2">
                   <PdfViewer
-                    fileUrl={displayPost.attachment.fileUrl}
+                    fileUrl={pdfAttachment.fileUrl}
                     fileName={
-                      displayPost.attachment.fileName || displayPost.title
+                      pdfAttachment.fileName || displayPost.title
                     }
-                    fileSize={displayPost.attachment.fileSize}
+                    fileSize={pdfAttachment.fileSize}
                     slug={displayPost.slug}
                   />
                 </div>
