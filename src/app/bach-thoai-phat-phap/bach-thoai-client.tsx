@@ -3,7 +3,6 @@
 import {
   ArrowLeft,
   BookOpen,
-  ChevronLeft,
   ChevronRight,
   FolderTree,
   Home,
@@ -28,21 +27,13 @@ import { BACH_THOAI_PHAT_PHAP_SLUG } from "@/constants";
 import { ContentType } from "@/enums";
 import { getGroupBadgeStyle } from "@/lib/color-badge";
 import { trackSearch } from "@/lib/gtm";
-import { formatTime, slugify, stripHtml } from "@/lib/utils";
+import { formatTime, stripHtml } from "@/lib/utils";
+
+import { GroupItem, Pagination, getGroupSlug } from "./components";
 
 const PAGE_SIZE = 12;
 
 type FilterTab = "ALL" | "PHAP_THOAI" | "BAI_GIANG" | "AUDIO" | "VAN_BAN";
-
-/**
- * Generate a URL-friendly slug for a group name
- */
-function getGroupSlug(name?: string | null): string {
-  if (!name || name.toLowerCase() === "undefined" || name.toLowerCase() === "không xác định") {
-    return "khong-xac-dinh";
-  }
-  return slugify(name);
-}
 
 export const BachThoaiClient: React.FC = () => {
   const router = useRouter();
@@ -369,39 +360,27 @@ export const BachThoaiClient: React.FC = () => {
             <button
               type="button"
               onClick={() => handleSelectGroup("ALL")}
-              className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-2 font-semibold transition ${
+              title="Tất cả nhóm"
+              className={`flex h-14 w-[140px] max-w-[140px] min-w-[140px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-left text-xs leading-tight font-semibold transition ${
                 !selectedGroupObj
                   ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
                   : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
               }`}
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Tất cả nhóm</span>
+              <Sparkles className="h-4 w-4 shrink-0" />
+              <span className="line-clamp-2 leading-tight break-words">Tất cả nhóm</span>
             </button>
 
             {groups
               .filter((grp) => !grp.deletedAt)
-              .map((grp) => {
-                const groupSlug = getGroupSlug(grp.name);
-                const isSelected = selectedGroupObj?.id === grp.id;
-                const displayName =
-                  grp.name.toLowerCase() === "undefined" ? "Chưa phân nhóm" : grp.name;
-                return (
-                  <button
-                    key={grp.id}
-                    type="button"
-                    onClick={() => handleSelectGroup(groupSlug)}
-                    className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl px-3.5 py-2 font-semibold transition ${
-                      isSelected
-                        ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
-                        : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
-                    }`}
-                  >
-                    <FolderTree className="h-3.5 w-3.5 opacity-70" />
-                    <span>{displayName}</span>
-                  </button>
-                );
-              })}
+              .map((grp) => (
+                <GroupItem
+                  key={grp.id}
+                  group={grp}
+                  isSelected={selectedGroupObj?.id === grp.id}
+                  onSelect={handleSelectGroup}
+                />
+              ))}
           </div>
         </div>
 
@@ -613,77 +592,17 @@ export const BachThoaiClient: React.FC = () => {
 
         {/* 7. Pagination Controls */}
         {!isLoading && !isError && rawPosts.length > 0 && (
-          <div className="flex flex-col items-center justify-between gap-4 border-t border-[#EDE5D8] pt-6 sm:flex-row">
-            <div className="order-2 text-xs text-neutral-500 sm:order-1">
-              {meta?.total ? (
-                <span>
-                  Đang hiển thị trang <strong>{currentPage}</strong> trên tổng số{" "}
-                  <strong>{totalPages}</strong> trang ({meta.total} bài viết)
-                </span>
-              ) : (
-                <span>
-                  Trang <strong>{currentPage}</strong>
-                </span>
-              )}
-            </div>
-
-            <div className="order-1 flex items-center gap-2 sm:order-2">
-              {/* Prev Button */}
-              <button
-                onClick={handlePrevPage}
-                disabled={!hasPrevPage || isFetching}
-                className={`inline-flex items-center gap-1 rounded-xl border px-3.5 py-2 text-xs font-semibold shadow-2xs transition ${
-                  hasPrevPage && !isFetching
-                    ? "cursor-pointer border-neutral-300 bg-white text-neutral-800 hover:border-amber-300 hover:bg-neutral-50"
-                    : "cursor-not-allowed border-neutral-200 bg-neutral-100 text-neutral-400 opacity-60"
-                }`}
-                aria-label="Trang trước"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span>Trang trước</span>
-              </button>
-
-              {/* Page Numbers */}
-              {totalPages > 1 && (
-                <div className="hidden items-center gap-1 sm:flex">
-                  {Array.from({ length: Math.min(totalPages, 5) }).map((_, index) => {
-                    const pageNum = index + 1;
-                    const isActive = pageNum === currentPage;
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handleGoToPage(pageNum)}
-                        disabled={isFetching}
-                        className={`h-8 w-8 cursor-pointer rounded-xl text-xs font-semibold transition ${
-                          isActive
-                            ? "bg-amber-800 text-white shadow-xs"
-                            : "border border-neutral-200/80 bg-white text-neutral-700 hover:bg-amber-50 hover:text-amber-900"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                  {totalPages > 5 && <span className="px-1 text-xs text-neutral-400">...</span>}
-                </div>
-              )}
-
-              {/* Next Button */}
-              <button
-                onClick={handleNextPage}
-                disabled={!hasNextPage || isFetching}
-                className={`inline-flex items-center gap-1 rounded-xl border px-3.5 py-2 text-xs font-semibold shadow-2xs transition ${
-                  hasNextPage && !isFetching
-                    ? "cursor-pointer border-amber-700 bg-amber-800 text-white hover:bg-amber-900"
-                    : "cursor-not-allowed border-neutral-200 bg-neutral-100 text-neutral-400 opacity-60"
-                }`}
-                aria-label="Trang sau"
-              >
-                <span>Trang sau</span>
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={meta?.total}
+            hasPrevPage={hasPrevPage}
+            hasNextPage={hasNextPage}
+            isFetching={isFetching}
+            onPrevPage={handlePrevPage}
+            onNextPage={handleNextPage}
+            onGoToPage={handleGoToPage}
+          />
         )}
       </div>
     </MainLayout>
