@@ -18,6 +18,7 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
   { id: "kinh-sach", label: "Kinh sách", iconName: "BookText", href: "/kinh-sach" },
   { id: "khai-thi", label: "Khai thị", iconName: "Sparkles", href: "/khai-thi" },
   { id: "favorites", label: "Bài viết đã lưu", iconName: "Bookmark", href: "/yeu-thich" },
+  { id: "history", label: "Lịch sử nghe", iconName: "History", href: "/lich-su-nghe" },
   { id: "hop-phap", label: "Bạch thoại hợp pháp", iconName: "Compass", href: "#hop-phap" },
   { id: "search", label: "Tìm kiếm", iconName: "Search", href: "#tim-kiem" },
 ];

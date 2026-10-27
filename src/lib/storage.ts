@@ -5,6 +5,7 @@ export interface AppStoredData {
   "refresh-token"?: string | null;
   favorites?: any[];
   user?: any;
+  "listening-history"?: any[];
 }
 
 /**

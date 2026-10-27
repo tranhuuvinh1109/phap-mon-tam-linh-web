@@ -28,7 +28,7 @@ import { isBachThoaiPhatPhapCategory } from "@/app/admin/post/utils/content-type
 import { MainLayout } from "@/components/layout";
 import {
   BachThoaiAudioPlayer,
-  CategorizedPosts,
+  BachThoaiHistorySidebar,
   PostContentRenderer,
   PdfViewer,
 } from "@/components/post";
@@ -105,9 +105,7 @@ export const PostDetailClient: React.FC = () => {
       type: displayPost.type,
     });
     setToastMessage(
-      isSaved
-        ? "Đã lưu vào danh sách yêu thích!"
-        : "Đã xóa khỏi danh sách yêu thích!"
+      isSaved ? "Đã lưu vào danh sách yêu thích!" : "Đã xóa khỏi danh sách yêu thích!"
     );
     setTimeout(() => setToastMessage(null), 2500);
   };
@@ -122,10 +120,10 @@ export const PostDetailClient: React.FC = () => {
 
   const formattedDate = displayPost?.createdAt
     ? new Date(displayPost.createdAt).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
     : null;
 
   const currentCategorySlug = useMemo(() => {
@@ -156,16 +154,14 @@ export const PostDetailClient: React.FC = () => {
   const pdfAttachment = useMemo(() => {
     if (!displayPost) return null;
 
-    const isPdf = (att?: { fileUrl?: string | null; fileName?: string | null; mimeType?: string | null } | null) => {
+    const isPdf = (
+      att?: { fileUrl?: string | null; fileName?: string | null; mimeType?: string | null } | null
+    ) => {
       if (!att || !att.fileUrl) return false;
       const mime = att.mimeType?.toLowerCase() || "";
       const name = att.fileName?.toLowerCase() || "";
       const url = att.fileUrl.toLowerCase();
-      return (
-        mime.includes("pdf") ||
-        name.endsWith(".pdf") ||
-        url.includes(".pdf")
-      );
+      return mime.includes("pdf") || name.endsWith(".pdf") || url.includes(".pdf");
     };
 
     if (displayPost.attachments && displayPost.attachments.length > 0) {
@@ -190,7 +186,7 @@ export const PostDetailClient: React.FC = () => {
             <button
               type="button"
               onClick={() => router.back()}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[#EDE5D8] bg-white/90 px-3.5 py-2 font-medium text-neutral-700 transition hover:bg-neutral-50 hover:text-amber-800 shadow-2xs"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#EDE5D8] bg-white/90 px-3.5 py-2 font-medium text-neutral-700 shadow-2xs transition hover:bg-neutral-50 hover:text-amber-800"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               <span>Quay lại</span>
@@ -198,23 +194,20 @@ export const PostDetailClient: React.FC = () => {
 
             {/* Breadcrumbs */}
             <div className="flex items-center gap-1.5 truncate">
-              <Link href="/" className="hover:text-amber-700 flex items-center gap-1">
+              <Link href="/" className="flex items-center gap-1 hover:text-amber-700">
                 <Home className="h-3 w-3" />
                 <span>Trang chủ</span>
               </Link>
               <span>/</span>
               {(displayPost?.category?.name || categoryName) && (
                 <>
-                  <Link
-                    href={categoryHref}
-                    className="text-amber-800 font-medium hover:underline"
-                  >
+                  <Link href={categoryHref} className="font-medium text-amber-800 hover:underline">
                     {displayPost?.category?.name || categoryName}
                   </Link>
                   <span>/</span>
                 </>
               )}
-              <span className="truncate max-w-[180px] sm:max-w-xs text-neutral-400">
+              <span className="max-w-[180px] truncate text-neutral-400 sm:max-w-xs">
                 {displayPost?.title || slug}
               </span>
             </div>
@@ -222,7 +215,7 @@ export const PostDetailClient: React.FC = () => {
 
           {/* Loading State */}
           {isLoading && !displayPost && (
-            <div className="rounded-3xl border border-[#EDE5D8]/90 bg-white/90 p-8 sm:p-12 text-center shadow-xs">
+            <div className="rounded-3xl border border-[#EDE5D8]/90 bg-white/90 p-8 text-center shadow-xs sm:p-12">
               <Loader2 className="mx-auto h-8 w-8 animate-spin text-amber-600" />
               <p className="mt-3 text-sm font-medium text-neutral-600">
                 Đang tải nội dung bài viết...
@@ -234,24 +227,21 @@ export const PostDetailClient: React.FC = () => {
           {isError && !displayPost && (
             <div className="rounded-3xl border border-red-200 bg-red-50/70 p-8 text-center shadow-xs">
               <AlertCircle className="mx-auto h-9 w-9 text-red-500" />
-              <h3 className="mt-3 text-base font-bold text-red-900">
-                Không tìm thấy bài viết
-              </h3>
+              <h3 className="mt-3 text-base font-bold text-red-900">Không tìm thấy bài viết</h3>
               <p className="mt-1 text-xs text-red-600">
-                {(error as any)?.message ||
-                  "Bài viết không tồn tại hoặc đã được gỡ bỏ."}
+                {(error as any)?.message || "Bài viết không tồn tại hoặc đã được gỡ bỏ."}
               </p>
               <div className="mt-4 flex items-center justify-center gap-3">
                 <button
                   type="button"
                   onClick={() => refetch()}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-red-100 px-4 py-2 text-xs font-semibold text-red-800 hover:bg-red-200 transition"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-red-100 px-4 py-2 text-xs font-semibold text-red-800 transition hover:bg-red-200"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
                   <span>Thử lại</span>
                 </button>
                 <Link href="/">
-                  <Button variant="outline" className="text-xs px-4 py-2 rounded-xl">
+                  <Button variant="outline" className="rounded-xl px-4 py-2 text-xs">
                     Về trang chủ
                   </Button>
                 </Link>
@@ -263,19 +253,14 @@ export const PostDetailClient: React.FC = () => {
           {displayPost && isBachThoai && (
             <div className="space-y-6">
               {/* Embedded Bach Thoai Audio Player */}
-              <BachThoaiAudioPlayer
-                post={displayPost}
-                onBack={() => router.back()}
-              />
+              <BachThoaiAudioPlayer post={displayPost} onBack={() => router.back()} />
 
               {/* If the post contains an attached PDF document */}
               {pdfAttachment?.fileUrl && (
                 <div className="pt-2">
                   <PdfViewer
                     fileUrl={pdfAttachment.fileUrl}
-                    fileName={
-                      pdfAttachment.fileName || displayPost.title
-                    }
+                    fileName={pdfAttachment.fileName || displayPost.title}
                     fileSize={pdfAttachment.fileSize}
                     slug={displayPost.slug}
                   />
@@ -284,8 +269,8 @@ export const PostDetailClient: React.FC = () => {
 
               {/* If the post also contains written text/HTML content */}
               {displayPost.content && (
-                <div className="rounded-3xl border border-[#EDE5D8]/90 bg-white/95 p-6 sm:p-8 shadow-xs space-y-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-800 flex items-center gap-2 border-b border-neutral-100 pb-3">
+                <div className="space-y-4 rounded-3xl border border-[#EDE5D8]/90 bg-white/95 p-6 shadow-xs sm:p-8">
+                  <h3 className="flex items-center gap-2 border-b border-neutral-100 pb-3 text-xs font-bold tracking-wider text-amber-800 uppercase">
                     <BookOpen className="h-4 w-4" />
                     <span>Nội dung bài viết / Lời thoại</span>
                   </h3>
@@ -297,7 +282,7 @@ export const PostDetailClient: React.FC = () => {
 
           {/* 4. CASE B: STANDARD ARTICLE VIEW FOR NON-BACH THOAI POSTS */}
           {displayPost && !isBachThoai && (
-            <article className="overflow-hidden rounded-3xl border border-[#EDE5D8]/90 bg-white/95 p-5 shadow-xs sm:p-8 space-y-6">
+            <article className="space-y-6 overflow-hidden rounded-3xl border border-[#EDE5D8]/90 bg-white/95 p-5 shadow-xs sm:p-8">
               {/* Category & Type Badges */}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2">
@@ -309,10 +294,11 @@ export const PostDetailClient: React.FC = () => {
                   )}
 
                   <span
-                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${displayPost.type === ContentType.NORMAL
-                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                      : "bg-sky-50 text-sky-800 border border-sky-200"
-                      }`}
+                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
+                      displayPost.type === ContentType.NORMAL
+                        ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                        : "border border-sky-200 bg-sky-50 text-sky-800"
+                    }`}
                   >
                     {displayPost.type === ContentType.NORMAL ? (
                       <>
@@ -335,14 +321,16 @@ export const PostDetailClient: React.FC = () => {
                     type="button"
                     onClick={handleToggleFavorite}
                     title={isBookmarked ? "Bỏ lưu bài viết" : "Lưu vào bài viết yêu thích"}
-                    className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition cursor-pointer ${isBookmarked
-                      ? "border-amber-300 bg-amber-50 text-amber-850 shadow-2xs"
-                      : "border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-                      }`}
+                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition ${
+                      isBookmarked
+                        ? "text-amber-850 border-amber-300 bg-amber-50 shadow-2xs"
+                        : "border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                    }`}
                   >
                     <Bookmark
-                      className={`h-3.5 w-3.5 ${isBookmarked ? "fill-amber-600 text-amber-600" : ""
-                        }`}
+                      className={`h-3.5 w-3.5 ${
+                        isBookmarked ? "fill-amber-600 text-amber-600" : ""
+                      }`}
                     />
                     <span>{isBookmarked ? "Đã lưu" : "Lưu bài viết"}</span>
                   </button>
@@ -351,7 +339,7 @@ export const PostDetailClient: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleCopyLink}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 transition cursor-pointer"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-medium text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900"
                   >
                     <Share2 className="h-3.5 w-3.5" />
                     <span>{isCopied ? "Đã sao chép!" : "Chia sẻ"}</span>
@@ -361,7 +349,7 @@ export const PostDetailClient: React.FC = () => {
 
               {/* Article Title */}
               <h1
-                className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-neutral-900 leading-snug"
+                className="text-2xl leading-snug font-bold tracking-tight text-neutral-900 sm:text-3xl lg:text-4xl"
                 style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
               >
                 {displayPost.title}
@@ -374,7 +362,7 @@ export const PostDetailClient: React.FC = () => {
                     <button
                       type="button"
                       onClick={toggleAudio}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-600 text-white shadow-xs transition hover:bg-amber-700 cursor-pointer"
+                      className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-amber-600 text-white shadow-xs transition hover:bg-amber-700"
                     >
                       {isCurrentPostPlaying ? (
                         <Pause className="h-4 w-4 fill-current" />
@@ -387,7 +375,9 @@ export const PostDetailClient: React.FC = () => {
                         {isCurrentPostPlaying ? "Đang phát bài giảng..." : "Nghe thuyết giảng"}
                       </h4>
                       <span className="text-[11px] text-amber-800/80">
-                        {displayPost.audio.duration ? formatTime(displayPost.audio.duration) : "Audio"}
+                        {displayPost.audio.duration
+                          ? formatTime(displayPost.audio.duration)
+                          : "Audio"}
                       </span>
                     </div>
                   </div>
@@ -400,7 +390,7 @@ export const PostDetailClient: React.FC = () => {
                   <img
                     src={displayPost.thumbnailUrl}
                     alt={displayPost.title}
-                    className="w-full max-h-96 object-cover object-center"
+                    className="max-h-96 w-full object-cover object-center"
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).style.display = "none";
                     }}
@@ -413,9 +403,7 @@ export const PostDetailClient: React.FC = () => {
                 <div className="pt-2">
                   <PdfViewer
                     fileUrl={pdfAttachment.fileUrl}
-                    fileName={
-                      pdfAttachment.fileName || displayPost.title
-                    }
+                    fileName={pdfAttachment.fileName || displayPost.title}
                     fileSize={pdfAttachment.fileSize}
                     slug={displayPost.slug}
                   />
@@ -428,16 +416,21 @@ export const PostDetailClient: React.FC = () => {
                   <PostContentRenderer content={displayPost.content} />
                 </div>
               )}
-
             </article>
           )}
         </div>
 
+        {/* Right Sidebar: Listening History (Only for Bach Thoai posts) */}
+        {isBachThoai && (
+          <div className="w-full shrink-0 xl:sticky xl:top-20 xl:w-80 2xl:w-96">
+            <BachThoaiHistorySidebar currentPostId={displayPost?.id} />
+          </div>
+        )}
       </div>
 
       {/* Toast Alert */}
       {(isCopied || toastMessage) && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-neutral-900/90 text-white border border-neutral-700 px-4 py-2 text-xs font-semibold shadow-xl backdrop-blur-md z-50 animate-in fade-in slide-in-from-bottom-2">
+        <div className="animate-in fade-in slide-in-from-bottom-2 fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border border-neutral-700 bg-neutral-900/90 px-4 py-2 text-xs font-semibold text-white shadow-xl backdrop-blur-md">
           {toastMessage || "Đã sao chép liên kết bài viết!"}
         </div>
       )}

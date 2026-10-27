@@ -7,6 +7,7 @@ import {
   Compass,
   Download,
   Flame,
+  History,
   Home,
   Search,
   Settings,
@@ -20,7 +21,7 @@ import { LotusLogo } from "@/components/shared/lotus-logo";
 import { BOTTOM_NAV_ITEMS, MAIN_NAV_ITEMS, NavItem } from "@/constants/home.constants";
 import { FEATURE_FLAG_BACH_THOAI_PHAT_PHAP_WEB_ID } from "@/constants";
 import { useGetSettingById } from "@/api/setting";
-import { useFavoritesCount } from "@/stores";
+import { useFavoritesCount, useListeningHistoryCount } from "@/stores";
 
 interface SidebarProps {
   activeId?: string;
@@ -39,6 +40,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Search,
   Download,
   Bookmark,
+  History,
   Settings,
 };
 
@@ -48,6 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
 }) => {
   const favoritesCount = useFavoritesCount();
+  const historyCount = useListeningHistoryCount();
   const { data: bachThoaiSetting } = useGetSettingById(
     FEATURE_FLAG_BACH_THOAI_PHAT_PHAP_WEB_ID
   );
@@ -62,9 +65,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const Icon = ICON_MAP[item.iconName] || Home;
     const isActive =
       item.id === activeId ||
+      (item.id === "history" && activeId === "history") ||
       (item.id === "bach-thoai-phat-phap" && (activeId === "bach-thoai" || activeId === "bach-thoai-phat-phap")) ||
       (item.id === "kinh-sach" && (activeId === "kinh-sach" || activeId === "kinh-sach-detail"));
     const isFavoriteNav = item.id === "favorites" || item.id === "bookmarks";
+    const isHistoryNav = item.id === "history";
 
     return (
       <Link
@@ -90,6 +95,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {isFavoriteNav && favoritesCount > 0 && (
           <span className="flex h-5 min-w-5 px-1.5 items-center justify-center rounded-full bg-[#B86E0E] text-[10px] font-bold text-white shadow-2xs">
             {favoritesCount}
+          </span>
+        )}
+
+        {/* Dynamic Badge for History Count */}
+        {isHistoryNav && historyCount > 0 && (
+          <span className="flex h-5 min-w-5 px-1.5 items-center justify-center rounded-full bg-amber-700/80 text-[10px] font-bold text-white shadow-2xs">
+            {historyCount}
           </span>
         )}
       </Link>

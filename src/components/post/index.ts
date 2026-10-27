@@ -5,3 +5,4 @@ export * from "./post-detail-modal";
 export * from "./post-detail-client";
 export * from "./niem-kinh-accordion";
 export * from "./pdf-viewer";
+export * from "./bach-thoai-history-sidebar";

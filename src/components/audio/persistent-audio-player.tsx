@@ -7,12 +7,17 @@ import React, { useEffect, useRef, useState } from "react";
 import { formatTime } from "@/lib/utils";
 import { trackAudioClick } from "@/lib/gtm";
 import { useEvent } from "@/hooks";
-import { useAudioPlayerStore } from "@/stores";
+import { useAudioPlayerStore, useListeningHistoryStore } from "@/stores";
 
 export const PersistentAudioPlayer: React.FC = () => {
   const router = useRouter();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [thumbSrc, setThumbSrc] = useState<string>("/images/lotus-thumb.jpg");
+  const lastSavedTimeRef = useRef<number>(0);
+
+  // Listening History Store
+  const recordListening = useListeningHistoryStore((s) => s.recordListening);
+  const updateProgress = useListeningHistoryStore((s) => s.updateProgress);
 
   // Atomic selectors from Zustand store (Rule 1 & Rule 4)
   const currentTrack = useAudioPlayerStore((s) => s.currentTrack);
@@ -95,11 +100,37 @@ export const PersistentAudioPlayer: React.FC = () => {
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
+      // Throttle updating listening history progress to localStorage every 4 seconds
+      if (
+        currentTrack?.id &&
+        Math.abs(audio.currentTime - lastSavedTimeRef.current) >= 4
+      ) {
+        lastSavedTimeRef.current = audio.currentTime;
+        updateProgress(currentTrack.id, audio.currentTime);
+      }
     };
 
     const handlePlay = () => {
       if (currentTrack?.id) {
         trackListen(currentTrack.id);
+        recordListening({
+          id: currentTrack.id,
+          title: currentTrack.title,
+          slug: currentTrack.slug || currentTrack.id,
+          authorName: currentTrack.authorName,
+          categoryName: currentTrack.categoryName,
+          thumbnailUrl: currentTrack.thumbnailUrl,
+          audioUrl: currentTrack.audioUrl,
+          duration: currentTrack.duration,
+          time: audio.currentTime,
+        });
+        lastSavedTimeRef.current = audio.currentTime;
+      }
+    };
+
+    const handlePause = () => {
+      if (currentTrack?.id) {
+        updateProgress(currentTrack.id, audio.currentTime);
       }
     };
 
@@ -110,9 +141,12 @@ export const PersistentAudioPlayer: React.FC = () => {
     };
 
     const handleEnded = () => {
+      if (currentTrack?.id) {
+        updateProgress(currentTrack.id, audio.duration || audio.currentTime);
+      }
       if (isRepeat) {
         audio.currentTime = 0;
-        audio.play().catch(() => { });
+        audio.play().catch(() => {});
       } else {
         pause();
       }
@@ -121,6 +155,7 @@ export const PersistentAudioPlayer: React.FC = () => {
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("playing", handlePlay);
     audio.addEventListener("play", handlePlay);
+    audio.addEventListener("pause", handlePause);
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("ended", handleEnded);
 
@@ -128,10 +163,20 @@ export const PersistentAudioPlayer: React.FC = () => {
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("playing", handlePlay);
       audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [isRepeat, pause, setCurrentTime, setDuration, currentTrack?.id, trackListen]);
+  }, [
+    isRepeat,
+    pause,
+    setCurrentTime,
+    setDuration,
+    currentTrack,
+    trackListen,
+    recordListening,
+    updateProgress,
+  ]);
 
   // Seek bar click handler
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {

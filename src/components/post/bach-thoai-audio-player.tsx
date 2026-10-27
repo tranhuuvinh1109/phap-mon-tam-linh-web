@@ -12,8 +12,8 @@ import {
   Shuffle,
   SkipForward,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import React, { useEffect, useRef, useState } from "react";
 
 import type { PostItemType } from "@/api/post/post.type";
 import { formatTime } from "@/lib/utils";
@@ -31,6 +31,8 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
   className = "",
 }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const hasSeekedFromParamRef = useRef(false);
 
   // Global Audio Store (Atomic selectors)
   const currentTrack = useAudioPlayerStore((s) => s.currentTrack);
@@ -74,6 +76,32 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
       : post.audio?.duration && post.audio.duration > 0
       ? post.audio.duration
       : 1965; // fallback ~32:45
+
+  // Auto seek if arriving from listening history with ?time=...
+  useEffect(() => {
+    const timeParam = searchParams.get("time") || searchParams.get("t");
+    if (!timeParam || hasSeekedFromParamRef.current) return;
+
+    const parsedTime = parseFloat(timeParam);
+    if (!isNaN(parsedTime) && parsedTime > 0) {
+      hasSeekedFromParamRef.current = true;
+      if (!isCurrentActive) {
+        playTrack({
+          id: post.id,
+          title: post.title,
+          slug: post.slug || post.id,
+          authorName: post.author?.name || "TT. Thích Minh Niệm",
+          categoryName: post.category?.name || "Bạch thoại Phật pháp",
+          thumbnailUrl: post.thumbnailUrl || "/images/lotus-thumb.jpg",
+          audioUrl: audioSource,
+          duration: post.audio?.duration || 1965,
+        });
+      }
+      setTimeout(() => {
+        seek(parsedTime);
+      }, 200);
+    }
+  }, [searchParams, isCurrentActive, post, audioSource, playTrack, seek]);
 
   // Play / Pause toggle
   const handleTogglePlay = () => {
