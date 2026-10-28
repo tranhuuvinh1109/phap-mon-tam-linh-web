@@ -1,13 +1,17 @@
 import { API_URL } from "@/constants";
 import { apiClient } from "@/lib/axios";
 import {
+  ApprovePostPayloadType,
   CreatePostPayloadType,
   GetPostsByCategoryParams,
   GetPostsResponse,
+  PendingPostsCountResponse,
   PostItemType,
+  RejectPostPayloadType,
   SearchPostsParams,
   SearchPostsResponse,
   UpdatePostPayloadType,
+  VerifyPostPayloadType,
 } from "./post.type";
 
 /**
@@ -187,3 +191,80 @@ export const deletePost = async (id: string): Promise<any> => {
   const response = await apiClient.delete(API_URL.postById(id));
   return response.data;
 };
+
+/**
+ * API call to get pending posts count via GET /posts/pending-count
+ */
+export const getPendingPostsCount = async (): Promise<PendingPostsCountResponse> => {
+  const response = await apiClient.get<PendingPostsCountResponse>(
+    API_URL.postsPendingCount
+  );
+  return response.data;
+};
+
+/**
+ * API call to approve a post via PATCH /posts/:id/approve
+ */
+export const approvePost = async ({
+  id,
+  payload = {},
+}: {
+  id: string;
+  payload?: ApprovePostPayloadType;
+}): Promise<PostItemType> => {
+  const response = await apiClient.patch<
+    PostItemType | { data: PostItemType }
+  >(API_URL.postApprove(id), payload);
+
+  const data = response.data;
+  if (data && typeof data === "object" && "data" in data) {
+    return (data as { data: PostItemType }).data;
+  }
+
+  return data as PostItemType;
+};
+
+/**
+ * API call to reject a post via PATCH /posts/:id/reject
+ */
+export const rejectPost = async ({
+  id,
+  payload,
+}: {
+  id: string;
+  payload: RejectPostPayloadType;
+}): Promise<PostItemType> => {
+  const response = await apiClient.patch<
+    PostItemType | { data: PostItemType }
+  >(API_URL.postReject(id), payload);
+
+  const data = response.data;
+  if (data && typeof data === "object" && "data" in data) {
+    return (data as { data: PostItemType }).data;
+  }
+
+  return data as PostItemType;
+};
+
+/**
+ * API call to update origin verification via PATCH /posts/:id/verify
+ */
+export const verifyPost = async ({
+  id,
+  payload,
+}: {
+  id: string;
+  payload: VerifyPostPayloadType;
+}): Promise<PostItemType> => {
+  const response = await apiClient.patch<
+    PostItemType | { data: PostItemType }
+  >(API_URL.postVerify(id), payload);
+
+  const data = response.data;
+  if (data && typeof data === "object" && "data" in data) {
+    return (data as { data: PostItemType }).data;
+  }
+
+  return data as PostItemType;
+};
+

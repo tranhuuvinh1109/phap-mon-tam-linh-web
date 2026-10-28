@@ -3,6 +3,7 @@
 import {
   BookOpen,
   BookText,
+  Clock,
   FileText,
   Flame,
   Folder,
@@ -17,6 +18,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import React, { useMemo } from "react";
 
 import { useGetCategories } from "@/api/category";
+import { useGetPendingPostsCount } from "@/api/post";
 import { DEFAULT_CATEGORY_NAMES } from "@/constants";
 import { slugify } from "@/lib/utils";
 
@@ -117,7 +119,11 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
   }, [categories]);
 
   const isDashboardActive = pathname === "/admin";
+  const isPendingPostsActive = pathname === "/admin/post/pending";
   const isAllPostsActive = pathname === "/admin/post" && !currentCategory;
+
+  const { data: pendingData } = useGetPendingPostsCount();
+  const pendingCount = pendingData?.count || 0;
 
   return (
     <nav className="space-y-6">
@@ -170,6 +176,33 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
             }`}
           />
           <span>Tất cả bài viết</span>
+        </Link>
+
+        {/* Pending Posts tab */}
+        <Link
+          href="/admin/post/pending"
+          onClick={onItemClick}
+          className={`group flex items-center justify-between px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+            isPendingPostsActive
+              ? "bg-[#F3E8D8] text-[#9C5812] font-semibold shadow-xs"
+              : "text-[#6C6356] hover:bg-[#F8F2E8] hover:text-[#9C5812]"
+          }`}
+        >
+          <div className="flex items-center gap-3.5 min-w-0">
+            <Clock
+              className={`h-4 w-4 shrink-0 ${
+                isPendingPostsActive
+                  ? "text-[#9C5812]"
+                  : "text-[#7D7364] group-hover:text-[#9C5812]"
+              }`}
+            />
+            <span className="truncate">Bài viết chờ duyệt</span>
+          </div>
+          {pendingCount > 0 && (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1.5 text-[10px] font-bold text-white shadow-xs">
+              {pendingCount > 99 ? "99+" : pendingCount}
+            </span>
+          )}
         </Link>
 
         {/* Category Tabs */}

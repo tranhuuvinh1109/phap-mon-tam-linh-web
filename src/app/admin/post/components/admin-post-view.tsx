@@ -16,7 +16,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import { useDeletePost, useGetPosts, useSearchPosts } from "@/api/post";
-import type { PostItemType } from "@/api/post/post.type";
+import type { PostItemType, PostApprovalStatus } from "@/api/post/post.type";
 import { Button } from "@/components/ui";
 import { BACH_THOAI_PHAT_PHAP_ID, BACH_THOAI_PHAT_PHAP_SLUG } from "@/constants";
 import { ContentType } from "@/enums";
@@ -39,6 +39,7 @@ export const AdminPostView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState(urlSearch);
   const [debouncedSearch, setDebouncedSearch] = useState(urlSearch);
   const [typeFilter, setTypeFilter] = useState<"ALL" | ContentType>("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | PostApprovalStatus>("ALL");
 
   // Keep state synced if URL changes externally
   useEffect(() => {
@@ -131,8 +132,9 @@ export const AdminPostView: React.FC = () => {
       limit: PAGE_SIZE,
       search: debouncedSearch || undefined,
       type: typeFilter === "ALL" ? undefined : typeFilter,
+      status: statusFilter,
     };
-  }, [currentPage, debouncedSearch, typeFilter]);
+  }, [currentPage, debouncedSearch, typeFilter, statusFilter]);
 
   // 1. When categoryParam is present -> call GET /posts/search?category=...&page=...&limit=15
   const categorySearchQuery = useSearchPosts(
@@ -162,6 +164,11 @@ export const AdminPostView: React.FC = () => {
 
   const handleTypeChange = (type: "ALL" | ContentType) => {
     setTypeFilter(type);
+    setCurrentPage(1);
+  };
+
+  const handleStatusChange = (status: "ALL" | PostApprovalStatus) => {
+    setStatusFilter(status);
     setCurrentPage(1);
   };
 
@@ -300,41 +307,90 @@ export const AdminPostView: React.FC = () => {
             )}
           </div>
 
-          {/* Filter by Type */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Filter className="h-4 w-4 text-neutral-400 shrink-0" />
-            <span className="text-xs font-medium text-neutral-500">Loại:</span>
-            <div className="flex rounded-lg border border-neutral-200 bg-neutral-50 p-0.5 text-xs">
-              <button
-                type="button"
-                onClick={() => handleTypeChange("ALL")}
-                className={`rounded-md px-2.5 py-1 font-semibold transition ${typeFilter === "ALL"
-                    ? "bg-white text-amber-800 shadow-2xs"
-                    : "text-neutral-600 hover:text-neutral-900"
-                  }`}
-              >
-                Tất cả ({total})
-              </button>
-              <button
-                type="button"
-                onClick={() => handleTypeChange(ContentType.NORMAL)}
-                className={`rounded-md px-2.5 py-1 font-semibold transition ${typeFilter === ContentType.NORMAL
-                    ? "bg-white text-emerald-800 shadow-2xs"
-                    : "text-neutral-600 hover:text-neutral-900"
-                  }`}
-              >
-                Bài viết
-              </button>
-              <button
-                type="button"
-                onClick={() => handleTypeChange(ContentType.AUDIO)}
-                className={`rounded-md px-2.5 py-1 font-semibold transition ${typeFilter === ContentType.AUDIO
-                    ? "bg-white text-sky-800 shadow-2xs"
-                    : "text-neutral-600 hover:text-neutral-900"
-                  }`}
-              >
-                Audio
-              </button>
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            {/* Filter by Type */}
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-neutral-400 shrink-0" />
+              <span className="text-xs font-medium text-neutral-500">Loại:</span>
+              <div className="flex rounded-lg border border-neutral-200 bg-neutral-50 p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => handleTypeChange("ALL")}
+                  className={`rounded-md px-2.5 py-1 font-semibold transition ${typeFilter === "ALL"
+                      ? "bg-white text-amber-800 shadow-2xs"
+                      : "text-neutral-600 hover:text-neutral-900"
+                    }`}
+                >
+                  Tất cả ({total})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTypeChange(ContentType.NORMAL)}
+                  className={`rounded-md px-2.5 py-1 font-semibold transition ${typeFilter === ContentType.NORMAL
+                      ? "bg-white text-emerald-800 shadow-2xs"
+                      : "text-neutral-600 hover:text-neutral-900"
+                    }`}
+                >
+                  Bài viết
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTypeChange(ContentType.AUDIO)}
+                  className={`rounded-md px-2.5 py-1 font-semibold transition ${typeFilter === ContentType.AUDIO
+                      ? "bg-white text-sky-800 shadow-2xs"
+                      : "text-neutral-600 hover:text-neutral-900"
+                    }`}
+                >
+                  Audio
+                </button>
+              </div>
+            </div>
+
+            {/* Filter by Status */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-neutral-500">Trạng thái:</span>
+              <div className="flex rounded-lg border border-neutral-200 bg-neutral-50 p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange("ALL")}
+                  className={`rounded-md px-2 py-1 font-semibold transition ${statusFilter === "ALL"
+                      ? "bg-white text-amber-800 shadow-2xs"
+                      : "text-neutral-600 hover:text-neutral-900"
+                    }`}
+                >
+                  Tất cả
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange("APPROVED")}
+                  className={`rounded-md px-2 py-1 font-semibold transition ${statusFilter === "APPROVED"
+                      ? "bg-white text-emerald-800 shadow-2xs"
+                      : "text-neutral-600 hover:text-neutral-900"
+                    }`}
+                >
+                  Đã duyệt
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange("PENDING")}
+                  className={`rounded-md px-2 py-1 font-semibold transition ${statusFilter === "PENDING"
+                      ? "bg-white text-amber-800 shadow-2xs"
+                      : "text-neutral-600 hover:text-neutral-900"
+                    }`}
+                >
+                  Chờ duyệt
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStatusChange("REJECTED")}
+                  className={`rounded-md px-2 py-1 font-semibold transition ${statusFilter === "REJECTED"
+                      ? "bg-white text-rose-800 shadow-2xs"
+                      : "text-neutral-600 hover:text-neutral-900"
+                    }`}
+                >
+                  Từ chối
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -349,6 +405,8 @@ export const AdminPostView: React.FC = () => {
                   <th className="py-3 px-4 min-w-[130px] w-[130px]">Danh mục</th>
                   <th className="py-3 px-4 min-w-[110px] w-[110px]">Loại</th>
                   <th className="py-3 px-4 min-w-[170px] w-[170px]">Nhóm</th>
+                  <th className="py-3 px-4 min-w-[125px] w-[125px]">Trạng thái</th>
+                  <th className="py-3 px-4 min-w-[135px] w-[135px]">Đã xác minh</th>
                   <th className="py-3 px-4 min-w-[200px]">Trích đoạn nội dung</th>
                   <th className="py-3 px-4 min-w-[100px] w-[100px]">Ngày tạo</th>
                   <th className="py-3 px-4 text-right min-w-[120px] w-[120px]">Thao tác</th>
@@ -357,7 +415,7 @@ export const AdminPostView: React.FC = () => {
               <tbody className="divide-y divide-[#EDE5D8]/60">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-neutral-500">
+                    <td colSpan={9} className="py-12 text-center text-neutral-500">
                       <div className="flex flex-col items-center gap-2">
                         <div className="h-7 w-7 animate-spin rounded-full border-2 border-amber-800 border-t-transparent" />
                         <span>Đang tải danh sách bài viết...</span>
@@ -366,7 +424,7 @@ export const AdminPostView: React.FC = () => {
                   </tr>
                 ) : posts.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-neutral-500">
+                    <td colSpan={9} className="py-12 text-center text-neutral-500">
                       Không tìm thấy bài viết phù hợp.
                     </td>
                   </tr>

@@ -23,6 +23,7 @@ import { trackRedirect } from "@/lib/gtm";
 import { useAuthStore } from "@/stores/auth-store";
 import { AdminUserProfile } from "./components/admin-user-profile";
 import { AdminSidebarNav } from "./components/admin-sidebar-nav";
+import { AdminNotificationBell } from "./components/admin-notification-bell";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -194,6 +195,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                       <span className="text-amber-900 font-semibold">Tạo mới</span>
                     </>
                   )}
+                  {pathname === "/admin/post/pending" && (
+                    <>
+                      <ChevronRight className="h-3.5 w-3.5 text-neutral-400" />
+                      <span className="text-amber-900 font-semibold">Chờ duyệt</span>
+                    </>
+                  )}
                 </>
               )}
               {pathname.startsWith("/admin/category") && (
@@ -209,8 +216,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </div>
           </div>
 
-          {/* User Profile Info on Right */}
-          <AdminUserProfile />
+          {/* Actions & User Profile on Right */}
+          <div className="flex items-center gap-3">
+            <AdminNotificationBell />
+            <AdminUserProfile />
+          </div>
         </header>
 
         {/* Child Page Content */}
