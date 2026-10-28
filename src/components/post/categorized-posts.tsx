@@ -478,7 +478,7 @@ export const CategorizedPosts: React.FC<CategorizedPostsProps> = ({
                       </div>
 
                       <div className="max-h-60 overflow-y-auto pr-1">
-                        <PostContentRenderer content={post.content} />
+                        <PostContentRenderer content={post.content} category={post.category} post={post} />
                       </div>
                     </div>
                   )}

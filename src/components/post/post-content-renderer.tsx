@@ -1,16 +1,91 @@
+"use client";
+
 import React, { useMemo } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { parseNiemKinhContent } from "@/app/admin/post/types";
+import { isKhaiThi } from "@/app/admin/post/utils/content-type";
+import { KHAI_THI_ID, KHAI_THI_SLUG } from "@/constants";
+import type { PostCategoryType, PostItemType } from "@/api/post/post.type";
 import { NiemKinhAccordion } from "./niem-kinh-accordion";
 
 interface PostContentRendererProps {
   content?: unknown;
   className?: string;
+  category?: PostCategoryType | string | null;
+  post?: PostItemType | null;
+  isKhaiThi?: boolean;
 }
 
 export const PostContentRenderer: React.FC<PostContentRendererProps> = ({
   content,
   className = "",
+  category,
+  post,
+  isKhaiThi: isKhaiThiProp,
 }) => {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Determine whether this post belongs to category "khai-thi"
+  const isKhaiThiPost = useMemo(() => {
+    // 1. Explicit boolean prop takes highest precedence
+    if (typeof isKhaiThiProp === "boolean") return isKhaiThiProp;
+
+    // 2. Check post object
+    if (post) {
+      if (
+        isKhaiThi(post.categoryId || post.category?.id, post.category?.slug, post.category?.name)
+      ) {
+        return true;
+      }
+      if (post.slug && (post.slug === KHAI_THI_SLUG || post.slug.includes("khai-thi"))) {
+        return true;
+      }
+    }
+
+    // 3. Check category prop (object, slug string, id string, or name string)
+    if (category) {
+      if (typeof category === "string") {
+        const lower = category.toLowerCase();
+        if (
+          lower === KHAI_THI_SLUG ||
+          lower.includes("khai-thi") ||
+          lower.includes("khai thị") ||
+          category === KHAI_THI_ID
+        ) {
+          return true;
+        }
+      } else if (typeof category === "object") {
+        if (isKhaiThi(category.id, category.slug, category.name)) return true;
+      }
+    }
+
+    // 4. Check pathname (/khai-thi or /khai-thi/...)
+    if (
+      pathname &&
+      (pathname.startsWith("/khai-thi") ||
+        pathname.includes("/khai-thi") ||
+        pathname.includes("khai-thi"))
+    ) {
+      return true;
+    }
+
+    // 5. Check searchParams (?category=khai-thi or ?category=...)
+    try {
+      const catParam = searchParams?.get("category")?.toLowerCase();
+      if (
+        catParam &&
+        (catParam === KHAI_THI_SLUG || catParam.includes("khai-thi") || catParam === KHAI_THI_ID)
+      ) {
+        return true;
+      }
+    } catch {
+      // Ignore during SSR
+    }
+
+    return false;
+  }, [category, isKhaiThiProp, pathname, post, searchParams]);
+
   // Check if content is Niem Kinh steps data
   const niemKinhData = useMemo(() => {
     return parseNiemKinhContent(content);
@@ -93,37 +168,54 @@ export const PostContentRenderer: React.FC<PostContentRendererProps> = ({
     }
 
     return String(content);
-  }, [content]);
+  }, [content, niemKinhData]);
 
-  // Clean non-breaking spaces so browser line-break engine treats them as normal breakable spaces
+  // Clean non-breaking spaces and inject 8px spacer after br for Khai Thi
   const cleanHtml = useMemo(() => {
     if (!htmlString) return "";
-    return htmlString
+    let cleaned = htmlString
       .replace(/&nbsp;/g, " ")
       .replace(/\u00a0/g, " ")
       .replace(/&ZeroWidthSpace;/g, "")
       .replace(/\u200B/g, "");
-  }, [htmlString]);
+
+    if (isKhaiThiPost) {
+      // For Khai Thi posts, inject an 10px block spacer after each <br> that is followed by more content
+      cleaned = cleaned.replace(
+        /<br\s*\/?>\s*(?!<\/p>|<span class="rich-post-br-spacer")/gi,
+        '<br class="rich-br" /><span class="rich-post-br-spacer" style="display:block;height:10px;line-height:0;font-size:0;" aria-hidden="true"></span>'
+      );
+    }
+
+    return cleaned;
+  }, [htmlString, isKhaiThiPost]);
 
   if (niemKinhData) {
-    return (
-      <NiemKinhAccordion data={niemKinhData} className={className} />
-    );
+    return <NiemKinhAccordion data={niemKinhData} className={className} />;
   }
 
   if (!cleanHtml || !cleanHtml.trim()) {
     return (
-      <p className="italic text-neutral-400 text-sm">
-        Bài viết này chưa có nội dung văn bản.
-      </p>
+      <p className="text-sm text-neutral-400 italic">Bài viết này chưa có nội dung văn bản.</p>
     );
   }
 
   return (
-    <div
-      className={`rich-post-content w-full max-w-full ${className}`}
-      dangerouslySetInnerHTML={{ __html: cleanHtml }}
-    />
+    <>
+      <div
+        className={`rich-post-content ${isKhaiThiPost ? "rich-post-content-khai-thi" : ""} w-full max-w-full ${className}`}
+        dangerouslySetInnerHTML={{ __html: cleanHtml }}
+      />
+      {isKhaiThiPost && (
+        <style jsx global>{`
+          .rich-post-content-khai-thi .rich-post-br-spacer {
+            display: block;
+            height: 10px;
+            line-height: 0;
+            font-size: 0;
+          }
+        `}</style>
+      )}
+    </>
   );
 };
-

@@ -253,7 +253,10 @@ export const KinhSachDetailClient: React.FC = () => {
                   <Sparkles className="h-4 w-4 text-amber-600" />
                   <span>Lời giới thiệu / Giảng giải chi tiết</span>
                 </div>
-                <PostContentRenderer content={displayPost.content} />
+                <PostContentRenderer
+                  content={displayPost.content}
+                  category={displayPost.category || "kinh-sach"}
+                />
               </article>
             )}
           </div>

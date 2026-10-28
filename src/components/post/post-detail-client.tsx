@@ -274,7 +274,11 @@ export const PostDetailClient: React.FC = () => {
                     <BookOpen className="h-4 w-4" />
                     <span>Nội dung bài viết / Lời thoại</span>
                   </h3>
-                  <PostContentRenderer content={displayPost.content} />
+                  <PostContentRenderer
+                    content={displayPost.content}
+                    category={displayPost.category || currentCategorySlug}
+                    post={displayPost}
+                  />
                 </div>
               )}
             </div>
@@ -413,7 +417,11 @@ export const PostDetailClient: React.FC = () => {
               {/* Article HTML Content */}
               {displayPost.content && (
                 <div className="pt-2">
-                  <PostContentRenderer content={displayPost.content} />
+                  <PostContentRenderer
+                    content={displayPost.content}
+                    category={displayPost.category || currentCategorySlug}
+                    post={displayPost}
+                  />
                 </div>
               )}
             </article>

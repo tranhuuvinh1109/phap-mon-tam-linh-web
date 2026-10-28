@@ -201,7 +201,7 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({
             </h3>
 
             {/* Rich Content Renderer */}
-            <PostContentRenderer content={post.content} />
+            <PostContentRenderer content={post.content} category={post.category} post={post} />
           </div>
         </div>
 
