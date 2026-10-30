@@ -201,7 +201,7 @@ export function SearchClient() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Nhập từ khóa tìm kiếm..."
-                className="w-full rounded-2xl border border-[#E5DCBE] bg-white py-3 pl-11 pr-28 text-sm text-neutral-900 shadow-sm transition placeholder:text-neutral-400 focus:border-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                className="w-full rounded-2xl border border-[#E5DCBE] bg-white py-3 pl-11 pr-28 text-base sm:text-sm text-neutral-900 shadow-sm transition placeholder:text-neutral-400 focus:border-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                 {searchInput && (

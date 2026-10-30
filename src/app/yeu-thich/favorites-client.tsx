@@ -231,7 +231,7 @@ export const FavoritesClient: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Lọc trong mục đã lưu..."
-                  className="w-full rounded-xl border border-[#EDE5D8] bg-white/80 py-1.5 pr-3 pl-8 text-xs text-neutral-800 placeholder:text-neutral-400 focus:border-amber-600 focus:bg-white focus:outline-none shadow-2xs"
+                  className="w-full rounded-xl border border-[#EDE5D8] bg-white/80 py-1.5 pr-3 pl-8 text-base sm:text-xs text-neutral-800 placeholder:text-neutral-400 focus:border-amber-600 focus:bg-white focus:outline-none shadow-2xs"
                 />
               </div>
             )}

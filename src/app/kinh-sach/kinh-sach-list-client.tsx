@@ -123,7 +123,7 @@ export const KinhSachListClient: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tìm kiếm tựa đề kinh, tác phẩm..."
-                className="w-full rounded-2xl border border-amber-900/15 bg-white/90 pl-10 pr-9 py-2.5 text-xs sm:text-sm text-neutral-800 placeholder-neutral-400 shadow-2xs outline-none transition focus:border-amber-600 focus:bg-white focus:ring-2 focus:ring-amber-500/20"
+                className="w-full rounded-2xl border border-amber-900/15 bg-white/90 pl-10 pr-9 py-2.5 text-base sm:text-sm text-neutral-800 placeholder-neutral-400 shadow-2xs outline-none transition focus:border-amber-600 focus:bg-white focus:ring-2 focus:ring-amber-500/20"
               />
               {searchQuery && (
                 <button

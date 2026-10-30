@@ -394,7 +394,7 @@ export const BachThoaiClient: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm bài giảng..."
-              className="w-full rounded-2xl border border-amber-200/80 bg-white/90 py-2 pr-9 pl-10 text-xs text-neutral-800 placeholder-neutral-400 shadow-2xs transition outline-none focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-200/60 sm:text-sm"
+              className="w-full rounded-2xl border border-amber-200/80 bg-white/90 py-2 pr-9 pl-10 text-base text-neutral-800 placeholder-neutral-400 shadow-2xs transition outline-none focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-200/60 sm:text-sm"
             />
             {searchQuery && (
               <button

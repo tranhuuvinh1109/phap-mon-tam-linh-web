@@ -11,11 +11,16 @@ import {
 import { geistMono, geistSans } from "@/config";
 
 import "@/styles/globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
   title: "Phap Mon Tam Linh",
   description: "Phap Mon Tam Linh application",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 type TProps = Readonly<IChildren>;

@@ -124,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileSidebar, onSearch })
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             placeholder="Tìm kiếm kinh, bài giảng, khai thị..."
-            className="w-full rounded-full border border-[#E5DCBE]/80 bg-white/80 py-2 pr-24 pl-10 text-sm text-neutral-800 shadow-2xs transition-all placeholder:text-[#9B9182] focus:border-[#C6892A] focus:bg-white focus:ring-2 focus:ring-[#C6892A]/20 focus:outline-none sm:pr-28"
+            className="w-full rounded-full border border-[#E5DCBE]/80 bg-white/80 py-2 pr-24 pl-10 text-base sm:text-sm text-neutral-800 shadow-2xs transition-all placeholder:text-[#9B9182] focus:border-[#C6892A] focus:bg-white focus:ring-2 focus:ring-[#C6892A]/20 focus:outline-none sm:pr-28"
           />
 
           <div className="absolute top-1/2 right-1.5 flex -translate-y-1/2 items-center gap-1">

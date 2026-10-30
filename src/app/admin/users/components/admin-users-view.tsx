@@ -276,7 +276,7 @@ export const AdminUsersView: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm theo tên, email, hoặc UUID..."
-              className="w-full rounded-xl border border-neutral-200 bg-[#FAF7F0]/40 pl-10 pr-4 py-2 text-sm text-neutral-800 placeholder-neutral-400 focus:border-amber-600 focus:bg-white focus:outline-none transition"
+              className="w-full rounded-xl border border-neutral-200 bg-[#FAF7F0]/40 pl-10 pr-4 py-2 text-base sm:text-sm text-neutral-800 placeholder-neutral-400 focus:border-amber-600 focus:bg-white focus:outline-none transition"
             />
           </div>
 

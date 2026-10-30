@@ -159,7 +159,7 @@ export function LoginForm() {
                 }
               }}
               placeholder="Nhập email hoặc số điện thoại"
-              className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-neutral-900 transition-colors placeholder:text-neutral-400 focus:ring-2 focus:outline-none disabled:bg-neutral-100 disabled:text-neutral-500 ${fieldErrors.emailOrPhone
+              className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-base sm:text-sm text-neutral-900 transition-colors placeholder:text-neutral-400 focus:ring-2 focus:outline-none disabled:bg-neutral-100 disabled:text-neutral-500 ${fieldErrors.emailOrPhone
                   ? "border-red-400 focus:border-red-500 focus:ring-red-200"
                   : "border-neutral-200 focus:border-amber-600 focus:ring-amber-500/20"
                 }`}
@@ -189,7 +189,7 @@ export function LoginForm() {
                 }
               }}
               placeholder="Nhập mật khẩu"
-              className={`w-full rounded-xl border bg-white px-3.5 py-2.5 pr-10 text-sm text-neutral-900 transition-colors placeholder:text-neutral-400 focus:ring-2 focus:outline-none disabled:bg-neutral-100 disabled:text-neutral-500 ${fieldErrors.password
+              className={`w-full rounded-xl border bg-white px-3.5 py-2.5 pr-10 text-base sm:text-sm text-neutral-900 transition-colors placeholder:text-neutral-400 focus:ring-2 focus:outline-none disabled:bg-neutral-100 disabled:text-neutral-500 ${fieldErrors.password
                   ? "border-red-400 focus:border-red-500 focus:ring-red-200"
                   : "border-neutral-200 focus:border-amber-600 focus:ring-amber-500/20"
                 }`}
