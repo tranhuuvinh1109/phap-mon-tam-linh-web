@@ -24,6 +24,7 @@ import { slugify } from "@/lib/utils";
 
 interface AdminSidebarNavProps {
   onItemClick?: () => void;
+  isCollapsed?: boolean;
 }
 
 export interface CategoryNavItem {
@@ -48,6 +49,7 @@ const getCategoryIcon = (nameOrSlug: string): React.ElementType => {
 
 export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
   onItemClick,
+  isCollapsed = false,
 }) => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -126,13 +128,18 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
   const pendingCount = pendingData?.count || 0;
 
   return (
-    <nav className="space-y-6">
+    <nav className={isCollapsed ? "space-y-3" : "space-y-6"}>
       {/* 1. Main Dashboard */}
       <div className="space-y-1">
         <Link
           href="/admin"
           onClick={onItemClick}
-          className={`group flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+          title={isCollapsed ? "Tổng quan" : undefined}
+          className={`group relative flex items-center rounded-xl text-sm font-medium transition-all ${
+            isCollapsed
+              ? "justify-center p-2.5"
+              : "gap-3.5 px-4 py-2.5"
+          } ${
             isDashboardActive
               ? "bg-[#F3E8D8] text-[#9C5812] font-semibold shadow-xs"
               : "text-[#6C6356] hover:bg-[#F8F2E8] hover:text-[#9C5812]"
@@ -145,24 +152,38 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
                 : "text-[#7D7364] group-hover:text-[#9C5812]"
             }`}
           />
-          <span>Tổng quan</span>
+          {!isCollapsed && <span>Tổng quan</span>}
+          {isCollapsed && (
+            <div className="pointer-events-none absolute left-full ml-3 z-50 hidden group-hover:block whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white shadow-xl animate-in fade-in-0 duration-150">
+              Tổng quan
+            </div>
+          )}
         </Link>
       </div>
 
       {/* 2. Posts by Categories Tabs */}
       <div className="space-y-1">
-        <div className="flex items-center justify-between px-3 pb-2 text-[11px] font-bold text-amber-900/70 uppercase tracking-wider">
-          <span>Chuyên mục bài viết</span>
-          <span className="text-[10px] bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded-full">
-            {categoryNavItems.length}
-          </span>
-        </div>
+        {!isCollapsed ? (
+          <div className="flex items-center justify-between px-3 pb-2 text-[11px] font-bold text-amber-900/70 uppercase tracking-wider">
+            <span>Chuyên mục bài viết</span>
+            <span className="text-[10px] bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded-full">
+              {categoryNavItems.length}
+            </span>
+          </div>
+        ) : (
+          <div className="my-2 border-t border-[#EDE5D8]/80 mx-1" />
+        )}
 
         {/* All Posts tab */}
         <Link
           href="/admin/post"
           onClick={onItemClick}
-          className={`group flex items-center gap-3.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+          title={isCollapsed ? "Tất cả bài viết" : undefined}
+          className={`group relative flex items-center rounded-xl text-sm font-medium transition-all ${
+            isCollapsed
+              ? "justify-center p-2.5"
+              : "gap-3.5 px-4 py-2"
+          } ${
             isAllPostsActive
               ? "bg-[#F3E8D8] text-[#9C5812] font-semibold shadow-xs"
               : "text-[#6C6356] hover:bg-[#F8F2E8] hover:text-[#9C5812]"
@@ -175,33 +196,68 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
                 : "text-[#7D7364] group-hover:text-[#9C5812]"
             }`}
           />
-          <span>Tất cả bài viết</span>
+          {!isCollapsed && <span>Tất cả bài viết</span>}
+          {isCollapsed && (
+            <div className="pointer-events-none absolute left-full ml-3 z-50 hidden group-hover:block whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white shadow-xl animate-in fade-in-0 duration-150">
+              Tất cả bài viết
+            </div>
+          )}
         </Link>
 
         {/* Pending Posts tab */}
         <Link
           href="/admin/post/pending"
           onClick={onItemClick}
-          className={`group flex items-center justify-between px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+          title={isCollapsed ? `Bài viết chờ duyệt (${pendingCount})` : undefined}
+          className={`group relative flex items-center rounded-xl text-sm font-medium transition-all ${
+            isCollapsed
+              ? "justify-center p-2.5"
+              : "justify-between px-4 py-2"
+          } ${
             isPendingPostsActive
               ? "bg-[#F3E8D8] text-[#9C5812] font-semibold shadow-xs"
               : "text-[#6C6356] hover:bg-[#F8F2E8] hover:text-[#9C5812]"
           }`}
         >
-          <div className="flex items-center gap-3.5 min-w-0">
-            <Clock
-              className={`h-4 w-4 shrink-0 ${
-                isPendingPostsActive
-                  ? "text-[#9C5812]"
-                  : "text-[#7D7364] group-hover:text-[#9C5812]"
-              }`}
-            />
-            <span className="truncate">Bài viết chờ duyệt</span>
-          </div>
-          {pendingCount > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1.5 text-[10px] font-bold text-white shadow-xs">
-              {pendingCount > 99 ? "99+" : pendingCount}
-            </span>
+          {!isCollapsed ? (
+            <>
+              <div className="flex items-center gap-3.5 min-w-0">
+                <Clock
+                  className={`h-4 w-4 shrink-0 ${
+                    isPendingPostsActive
+                      ? "text-[#9C5812]"
+                      : "text-[#7D7364] group-hover:text-[#9C5812]"
+                  }`}
+                />
+                <span className="truncate">Bài viết chờ duyệt</span>
+              </div>
+              {pendingCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1.5 text-[10px] font-bold text-white shadow-xs">
+                  {pendingCount > 99 ? "99+" : pendingCount}
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <Clock
+                className={`h-4.5 w-4.5 shrink-0 ${
+                  isPendingPostsActive
+                    ? "text-[#9C5812]"
+                    : "text-[#7D7364] group-hover:text-[#9C5812]"
+                }`}
+              />
+              {pendingCount > 0 && (
+                <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white shadow-xs ring-2 ring-[#FBF9F4]">
+                  {pendingCount > 99 ? "99+" : pendingCount}
+                </span>
+              )}
+              <div className="pointer-events-none absolute left-full ml-3 z-50 hidden group-hover:block whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white shadow-xl animate-in fade-in-0 duration-150">
+                Bài viết chờ duyệt
+                {pendingCount > 0 && (
+                  <span className="ml-1 text-rose-300 font-bold">({pendingCount})</span>
+                )}
+              </div>
+            </>
           )}
         </Link>
 
@@ -217,27 +273,47 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
               key={tab.id}
               href={tab.href}
               onClick={onItemClick}
-              className={`group flex items-center justify-between px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              title={isCollapsed ? tab.name : undefined}
+              className={`group relative flex items-center rounded-xl text-sm font-medium transition-all ${
+                isCollapsed
+                  ? "justify-center p-2.5"
+                  : "justify-between px-4 py-2"
+              } ${
                 isActive
                   ? "bg-[#F3E8D8] text-[#9C5812] font-semibold shadow-xs"
                   : "text-[#6C6356] hover:bg-[#F8F2E8] hover:text-[#9C5812]"
               }`}
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <Icon
-                  className={`h-4 w-4 shrink-0 ${
-                    isActive
-                      ? "text-[#9C5812]"
-                      : "text-[#7D7364] group-hover:text-[#9C5812]"
-                  }`}
-                />
-                <span className="truncate">{tab.name}</span>
-              </div>
+              {!isCollapsed ? (
+                <div className="flex items-center gap-3 min-w-0">
+                  <Icon
+                    className={`h-4 w-4 shrink-0 ${
+                      isActive
+                        ? "text-[#9C5812]"
+                        : "text-[#7D7364] group-hover:text-[#9C5812]"
+                    }`}
+                  />
+                  <span className="truncate">{tab.name}</span>
+                </div>
+              ) : (
+                <>
+                  <Icon
+                    className={`h-4.5 w-4.5 shrink-0 ${
+                      isActive
+                        ? "text-[#9C5812]"
+                        : "text-[#7D7364] group-hover:text-[#9C5812]"
+                    }`}
+                  />
+                  <div className="pointer-events-none absolute left-full ml-3 z-50 hidden group-hover:block whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white shadow-xl animate-in fade-in-0 duration-150">
+                    {tab.name}
+                  </div>
+                </>
+              )}
             </Link>
           );
         })}
 
-        {isLoading && categoryNavItems.length === 0 && (
+        {isLoading && categoryNavItems.length === 0 && !isCollapsed && (
           <div className="space-y-1.5 px-3 py-2">
             <div className="h-6 w-3/4 rounded-lg bg-neutral-200/60 animate-pulse" />
             <div className="h-6 w-2/3 rounded-lg bg-neutral-200/60 animate-pulse" />
@@ -247,14 +323,24 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
 
       {/* 3. System Management */}
       <div className="space-y-1">
-        <div className="px-3 pb-2 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
-          Hệ thống
-        </div>
+        {!isCollapsed ? (
+          <div className="px-3 pb-2 text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+            Hệ thống
+          </div>
+        ) : (
+          <div className="my-2 border-t border-[#EDE5D8]/80 mx-1" />
+        )}
 
+        {/* Quản lý danh mục */}
         <Link
           href="/admin/category"
           onClick={onItemClick}
-          className={`group flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+          title={isCollapsed ? "Quản lý danh mục" : undefined}
+          className={`group relative flex items-center rounded-xl text-sm font-medium transition-all ${
+            isCollapsed
+              ? "justify-center p-2.5"
+              : "gap-3.5 px-4 py-2.5"
+          } ${
             pathname.startsWith("/admin/category")
               ? "bg-[#F3E8D8] text-[#9C5812] font-semibold shadow-xs"
               : "text-[#6C6356] hover:bg-[#F8F2E8] hover:text-[#9C5812]"
@@ -267,13 +353,24 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
                 : "text-[#7D7364] group-hover:text-[#9C5812]"
             }`}
           />
-          <span>Quản lý danh mục</span>
+          {!isCollapsed && <span>Quản lý danh mục</span>}
+          {isCollapsed && (
+            <div className="pointer-events-none absolute left-full ml-3 z-50 hidden group-hover:block whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white shadow-xl animate-in fade-in-0 duration-150">
+              Quản lý danh mục
+            </div>
+          )}
         </Link>
 
+        {/* Người dùng */}
         <Link
           href="/admin/users"
           onClick={onItemClick}
-          className={`group flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+          title={isCollapsed ? "Người dùng" : undefined}
+          className={`group relative flex items-center rounded-xl text-sm font-medium transition-all ${
+            isCollapsed
+              ? "justify-center p-2.5"
+              : "gap-3.5 px-4 py-2.5"
+          } ${
             pathname.startsWith("/admin/users")
               ? "bg-[#F3E8D8] text-[#9C5812] font-semibold shadow-xs"
               : "text-[#6C6356] hover:bg-[#F8F2E8] hover:text-[#9C5812]"
@@ -286,13 +383,24 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
                 : "text-[#7D7364] group-hover:text-[#9C5812]"
             }`}
           />
-          <span>Người dùng</span>
+          {!isCollapsed && <span>Người dùng</span>}
+          {isCollapsed && (
+            <div className="pointer-events-none absolute left-full ml-3 z-50 hidden group-hover:block whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white shadow-xl animate-in fade-in-0 duration-150">
+              Người dùng
+            </div>
+          )}
         </Link>
 
+        {/* Cài đặt */}
         <Link
           href="/admin/settings"
           onClick={onItemClick}
-          className={`group flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+          title={isCollapsed ? "Cài đặt" : undefined}
+          className={`group relative flex items-center rounded-xl text-sm font-medium transition-all ${
+            isCollapsed
+              ? "justify-center p-2.5"
+              : "gap-3.5 px-4 py-2.5"
+          } ${
             pathname.startsWith("/admin/settings")
               ? "bg-[#F3E8D8] text-[#9C5812] font-semibold shadow-xs"
               : "text-[#6C6356] hover:bg-[#F8F2E8] hover:text-[#9C5812]"
@@ -305,7 +413,12 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
                 : "text-[#7D7364] group-hover:text-[#9C5812]"
             }`}
           />
-          <span>Cài đặt</span>
+          {!isCollapsed && <span>Cài đặt</span>}
+          {isCollapsed && (
+            <div className="pointer-events-none absolute left-full ml-3 z-50 hidden group-hover:block whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white shadow-xl animate-in fade-in-0 duration-150">
+              Cài đặt
+            </div>
+          )}
         </Link>
       </div>
     </nav>
