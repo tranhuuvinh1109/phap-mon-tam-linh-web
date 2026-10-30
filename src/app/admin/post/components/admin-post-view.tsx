@@ -7,7 +7,10 @@ import {
   Filter,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
+  Tag,
+  Users,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -15,6 +18,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
+import { useGetCategories } from "@/api/category";
+import { useGetGroups } from "@/api/group";
 import { useDeletePost, useGetPosts, useSearchPosts } from "@/api/post";
 import type { PostItemType, PostApprovalStatus } from "@/api/post/post.type";
 import { Button } from "@/components/ui";
@@ -23,6 +28,7 @@ import { ContentType } from "@/enums";
 import { trackSearch } from "@/lib/gtm";
 import { isBachThoaiPhatPhap } from "../utils/content-type";
 import { ConfirmModal } from "./confirm-modal";
+import { PostFilterDrawer, type PostFilterState } from "./post-filter-drawer";
 import { PostTableItem } from "./post-table-item";
 import { UpdatePostModal } from "./update-post-modal";
 
@@ -38,14 +44,34 @@ export const AdminPostView: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState(urlSearch);
   const [debouncedSearch, setDebouncedSearch] = useState(urlSearch);
-  const [typeFilter, setTypeFilter] = useState<"ALL" | ContentType>("ALL");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | PostApprovalStatus>("ALL");
+
+  // Advanced Filters State
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+  const [filters, setFilters] = useState<PostFilterState>({
+    categoryId: categoryParam || undefined,
+    groupId: undefined,
+    status: "ALL",
+    type: "ALL",
+    startDate: undefined,
+    endDate: undefined,
+  });
 
   // Keep state synced if URL changes externally
   useEffect(() => {
     setSearchQuery(urlSearch);
     setDebouncedSearch(urlSearch);
   }, [urlSearch]);
+
+  // Sync categoryParam from URL if present
+  useEffect(() => {
+    if (categoryParam) {
+      setFilters((prev) => ({ ...prev, categoryId: categoryParam }));
+    }
+  }, [categoryParam]);
+
+  // Fetch categories and groups for badge labels
+  const { data: categories = [] } = useGetCategories();
+  const { data: groups = [] } = useGetGroups();
 
   // State for Update Modal
   const [editingPost, setEditingPost] = useState<PostItemType | null>(null);
@@ -131,26 +157,31 @@ export const AdminPostView: React.FC = () => {
       page: currentPage,
       limit: PAGE_SIZE,
       search: debouncedSearch || undefined,
-      type: typeFilter === "ALL" ? undefined : typeFilter,
-      status: statusFilter,
+      category: filters.categoryId ? undefined : categoryParam || undefined,
+      categoryId: filters.categoryId || undefined,
+      groupId: filters.groupId || undefined,
+      type: filters.type === "ALL" ? undefined : filters.type,
+      status: filters.status,
+      startDate: filters.startDate || undefined,
+      endDate: filters.endDate || undefined,
     };
-  }, [currentPage, debouncedSearch, typeFilter, statusFilter]);
+  }, [currentPage, debouncedSearch, categoryParam, filters]);
 
-  // 1. When categoryParam is present -> call GET /posts/search?category=...&page=...&limit=15
+  // When categoryParam is present and no custom categoryId is selected in drawer
   const categorySearchQuery = useSearchPosts(
-    {
-      category: categoryParam || "",
-      ...queryParams,
-    },
-    { enabled: !!categoryParam }
+    queryParams,
+    { enabled: !!categoryParam && !filters.categoryId }
   );
 
-  // 2. When categoryParam is absent -> call GET /posts?page=...&limit=15
+  // Default query via GET /posts
   const allPostsQuery = useGetPosts(queryParams, {
-    enabled: !categoryParam,
+    enabled: !categoryParam || !!filters.categoryId,
   });
 
-  const activeQuery = categoryParam ? categorySearchQuery : allPostsQuery;
+  const activeQuery =
+    categoryParam && !filters.categoryId
+      ? categorySearchQuery
+      : allPostsQuery;
   const isLoading = activeQuery.isLoading;
   const isFetching = activeQuery.isFetching;
 
@@ -162,13 +193,31 @@ export const AdminPostView: React.FC = () => {
   const totalPages =
     activeQuery.data?.meta?.totalPages || Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const handleTypeChange = (type: "ALL" | ContentType) => {
-    setTypeFilter(type);
+  // Count active filters (excluding URL categoryParam)
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.categoryId && filters.categoryId !== categoryParam) count++;
+    if (filters.groupId) count++;
+    if (filters.status && filters.status !== "ALL") count++;
+    if (filters.type && filters.type !== "ALL") count++;
+    if (filters.startDate || filters.endDate) count++;
+    return count;
+  }, [filters, categoryParam]);
+
+  const handleApplyFilters = (newFilters: PostFilterState) => {
+    setFilters(newFilters);
     setCurrentPage(1);
   };
 
-  const handleStatusChange = (status: "ALL" | PostApprovalStatus) => {
-    setStatusFilter(status);
+  const handleResetFilters = () => {
+    setFilters({
+      categoryId: categoryParam || undefined,
+      groupId: undefined,
+      status: "ALL",
+      type: "ALL",
+      startDate: undefined,
+      endDate: undefined,
+    });
     setCurrentPage(1);
   };
 
@@ -284,9 +333,9 @@ export const AdminPostView: React.FC = () => {
       {/* Table View with Filters and Pagination */}
       <div className="space-y-4">
         {/* Search & Filter Toolbar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-[#EDE5D8]/90 bg-white/90 p-3.5 shadow-2xs backdrop-blur-xs">
-          {/* Search Input */}
-          <div className="relative w-full sm:w-80">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-2xl border border-[#EDE5D8]/90 bg-white/90 p-3.5 shadow-2xs backdrop-blur-xs">
+          {/* Search Input - Main search */}
+          <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
             <input
               type="text"
@@ -307,93 +356,162 @@ export const AdminPostView: React.FC = () => {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-            {/* Filter by Type */}
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-neutral-400 shrink-0" />
-              <span className="text-xs font-medium text-neutral-500">Loại:</span>
-              <div className="flex rounded-lg border border-neutral-200 bg-neutral-50 p-0.5 text-xs">
-                <button
-                  type="button"
-                  onClick={() => handleTypeChange("ALL")}
-                  className={`rounded-md px-2.5 py-1 font-semibold transition ${typeFilter === "ALL"
-                      ? "bg-white text-amber-800 shadow-2xs"
-                      : "text-neutral-600 hover:text-neutral-900"
-                    }`}
-                >
-                  Tất cả ({total})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleTypeChange(ContentType.NORMAL)}
-                  className={`rounded-md px-2.5 py-1 font-semibold transition ${typeFilter === ContentType.NORMAL
-                      ? "bg-white text-emerald-800 shadow-2xs"
-                      : "text-neutral-600 hover:text-neutral-900"
-                    }`}
-                >
-                  Bài viết
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleTypeChange(ContentType.AUDIO)}
-                  className={`rounded-md px-2.5 py-1 font-semibold transition ${typeFilter === ContentType.AUDIO
-                      ? "bg-white text-sky-800 shadow-2xs"
-                      : "text-neutral-600 hover:text-neutral-900"
-                    }`}
-                >
-                  Audio
-                </button>
-              </div>
-            </div>
-
-            {/* Filter by Status */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-neutral-500">Trạng thái:</span>
-              <div className="flex rounded-lg border border-neutral-200 bg-neutral-50 p-0.5 text-xs">
-                <button
-                  type="button"
-                  onClick={() => handleStatusChange("ALL")}
-                  className={`rounded-md px-2 py-1 font-semibold transition ${statusFilter === "ALL"
-                      ? "bg-white text-amber-800 shadow-2xs"
-                      : "text-neutral-600 hover:text-neutral-900"
-                    }`}
-                >
-                  Tất cả
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleStatusChange("APPROVED")}
-                  className={`rounded-md px-2 py-1 font-semibold transition ${statusFilter === "APPROVED"
-                      ? "bg-white text-emerald-800 shadow-2xs"
-                      : "text-neutral-600 hover:text-neutral-900"
-                    }`}
-                >
-                  Đã duyệt
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleStatusChange("PENDING")}
-                  className={`rounded-md px-2 py-1 font-semibold transition ${statusFilter === "PENDING"
-                      ? "bg-white text-amber-800 shadow-2xs"
-                      : "text-neutral-600 hover:text-neutral-900"
-                    }`}
-                >
-                  Chờ duyệt
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleStatusChange("REJECTED")}
-                  className={`rounded-md px-2 py-1 font-semibold transition ${statusFilter === "REJECTED"
-                      ? "bg-white text-rose-800 shadow-2xs"
-                      : "text-neutral-600 hover:text-neutral-900"
-                    }`}
-                >
-                  Từ chối
-                </button>
-              </div>
-            </div>
+          {/* Filter Drawer Trigger Button */}
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <Button
+              type="button"
+              variant={activeFilterCount > 0 ? "golden" : "outline"}
+              onClick={() => setIsFilterDrawerOpen(true)}
+              className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold shadow-2xs transition-all cursor-pointer"
+            >
+              <Filter className="h-4 w-4" />
+              <span>Bộ lọc</span>
+              {activeFilterCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[11px] font-bold text-amber-900 shadow-xs">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
           </div>
         </div>
+
+        {/* Active Filter Chips */}
+        {activeFilterCount > 0 && (
+          <div className="flex flex-wrap items-center gap-2 px-1">
+            <span className="text-xs font-medium text-neutral-500">Đang lọc theo:</span>
+
+            {/* Category Chip */}
+            {filters.categoryId && (
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50/80 px-2.5 py-1 text-xs font-medium text-amber-900">
+                <Tag className="h-3 w-3 text-amber-700" />
+                <span>
+                  {categories.find((c) => c.id === filters.categoryId)?.name ||
+                    "Chuyên mục"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilters((prev) => ({
+                      ...prev,
+                      categoryId: undefined,
+                      groupId: undefined,
+                    }));
+                    setCurrentPage(1);
+                  }}
+                  className="rounded-full p-0.5 hover:bg-amber-200/80 text-amber-800"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {/* Group Chip */}
+            {filters.groupId && (
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50/80 px-2.5 py-1 text-xs font-medium text-amber-900">
+                <Users className="h-3 w-3 text-amber-700" />
+                <span>
+                  {groups.find((g) => g.id === filters.groupId)?.name || "Nhóm"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilters((prev) => ({ ...prev, groupId: undefined }));
+                    setCurrentPage(1);
+                  }}
+                  className="rounded-full p-0.5 hover:bg-amber-200/80 text-amber-800"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {/* Status Chip */}
+            {filters.status && filters.status !== "ALL" && (
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-2.5 py-1 text-xs font-medium text-neutral-800">
+                <span>
+                  Trạng thái:{" "}
+                  <strong className="text-amber-900">
+                    {filters.status === "APPROVED"
+                      ? "Đã duyệt"
+                      : filters.status === "PENDING"
+                      ? "Chờ duyệt"
+                      : "Từ chối"}
+                  </strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilters((prev) => ({ ...prev, status: "ALL" }));
+                    setCurrentPage(1);
+                  }}
+                  className="rounded-full p-0.5 hover:bg-neutral-200 text-neutral-600"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {/* Type Chip */}
+            {filters.type && filters.type !== "ALL" && (
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-2.5 py-1 text-xs font-medium text-neutral-800">
+                <span>
+                  Loại:{" "}
+                  <strong className="text-amber-900">
+                    {filters.type === ContentType.NORMAL ? "Bài viết" : "Audio"}
+                  </strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilters((prev) => ({ ...prev, type: "ALL" }));
+                    setCurrentPage(1);
+                  }}
+                  className="rounded-full p-0.5 hover:bg-neutral-200 text-neutral-600"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {/* Date Range Chip */}
+            {(filters.startDate || filters.endDate) && (
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-2.5 py-1 text-xs font-medium text-neutral-800">
+                <Calendar className="h-3 w-3 text-neutral-600" />
+                <span>
+                  {filters.startDate && filters.endDate
+                    ? `${filters.startDate} → ${filters.endDate}`
+                    : filters.startDate
+                    ? `Từ ${filters.startDate}`
+                    : `Đến ${filters.endDate}`}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilters((prev) => ({
+                      ...prev,
+                      startDate: undefined,
+                      endDate: undefined,
+                    }));
+                    setCurrentPage(1);
+                  }}
+                  className="rounded-full p-0.5 hover:bg-neutral-200 text-neutral-600"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {/* Reset All Filters Button */}
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-amber-800 hover:text-amber-950 underline cursor-pointer ml-1"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span>Xóa tất cả</span>
+            </button>
+          </div>
+        )}
 
         {/* Table Container */}
         <div className="overflow-hidden rounded-2xl border border-[#EDE5D8]/90 bg-white shadow-2xs">
@@ -533,6 +651,16 @@ export const AdminPostView: React.FC = () => {
             setDeletingPost(null);
           }
         }}
+      />
+
+      {/* Advanced Filter Drawer */}
+      <PostFilterDrawer
+        isOpen={isFilterDrawerOpen}
+        onClose={() => setIsFilterDrawerOpen(false)}
+        filters={filters}
+        onApplyFilters={handleApplyFilters}
+        onResetFilters={handleResetFilters}
+        totalResults={total}
       />
     </div>
   );

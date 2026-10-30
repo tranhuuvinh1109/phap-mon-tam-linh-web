@@ -180,6 +180,10 @@ export interface GetPostsParams {
   limit?: number;
   search?: string;
   q?: string;
+  startDate?: string;
+  endDate?: string;
+  fromDate?: string;
+  toDate?: string;
   [key: string]: any;
 }
 
@@ -231,6 +235,10 @@ export interface SearchPostsParams {
   isVerifiedFromOrigin?: boolean;
   publishedOnly?: boolean;
   type?: ContentType;
+  startDate?: string;
+  endDate?: string;
+  fromDate?: string;
+  toDate?: string;
 }
 
 export type SearchPostsResponse = GetPostsResponse;
