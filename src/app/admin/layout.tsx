@@ -7,6 +7,8 @@ import {
   FolderTree,
   LayoutDashboard,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   Settings,
   Users,
   X,
@@ -23,6 +25,7 @@ import { trackRedirect } from "@/lib/gtm";
 import { useAuthStore } from "@/stores/auth-store";
 import { AdminUserProfile } from "./components/admin-user-profile";
 import { AdminSidebarNav } from "./components/admin-sidebar-nav";
+import { AdminNotificationBell } from "./components/admin-notification-bell";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -32,6 +35,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -39,7 +43,27 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   useEffect(() => {
     setIsMounted(true);
+    try {
+      const saved = localStorage.getItem("admin_sidebar_collapsed");
+      if (saved !== null) {
+        setIsSidebarCollapsed(saved === "true");
+      }
+    } catch {
+      // ignore
+    }
   }, []);
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("admin_sidebar_collapsed", String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
 
   // Auth Guard: Redirect unauthenticated users to login with pre-url
   useEffect(() => {
@@ -77,26 +101,67 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div className="flex min-h-screen w-full bg-[#FAF7F0] text-neutral-800">
       {/* Desktop Admin Sidebar */}
-      <aside className="hidden lg:flex w-64 shrink-0 flex-col justify-between border-r border-[#EDE5D8] bg-[#FBF9F4] p-5 sticky top-0 h-screen select-none">
+      <aside
+        className={`hidden lg:flex shrink-0 flex-col justify-between border-r border-[#EDE5D8] bg-[#FBF9F4] sticky top-0 h-screen select-none transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? "w-[72px] px-2.5 py-4" : "w-64 p-5"
+        }`}
+      >
         <div className="flex flex-col h-full min-h-0">
-          {/* Logo & Portal Title */}
-          <div className="flex items-center gap-3 px-2 pb-5 border-b border-[#EDE5D8]/80 shrink-0">
-            <LotusLogo size={36} />
-            <div>
-              <h2
-                className="text-base font-bold text-amber-950 leading-tight"
-                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-              >
-                Phật Pháp
-              </h2>
-              <span className="text-[11px] font-medium text-amber-700 tracking-wider uppercase">
-                Quản trị hệ thống
-              </span>
+          {/* Logo, Title & Collapse/Extend Toggle Button */}
+          <div
+            className={`flex items-center pb-4 border-b border-[#EDE5D8]/80 shrink-0 ${
+              isSidebarCollapsed
+                ? "flex-col justify-center gap-2 px-1"
+                : "justify-between px-2"
+            }`}
+          >
+            <div
+              className={`flex items-center gap-3 overflow-hidden ${
+                isSidebarCollapsed ? "justify-center" : ""
+              }`}
+            >
+              <LotusLogo size={isSidebarCollapsed ? 30 : 36} />
+              {!isSidebarCollapsed && (
+                <div className="min-w-0 transition-opacity duration-200">
+                  <h2
+                    className="text-base font-bold text-amber-950 leading-tight truncate"
+                    style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                  >
+                    Phật Pháp
+                  </h2>
+                  <span className="text-[11px] font-medium text-amber-700 tracking-wider uppercase block truncate">
+                    Quản trị hệ thống
+                  </span>
+                </div>
+              )}
             </div>
+
+            {/* Toggle Button (Collapse/Extend) */}
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="flex items-center justify-center rounded-lg p-1.5 text-neutral-500 hover:bg-[#F2EADB] hover:text-amber-900 transition-colors cursor-pointer"
+              title={
+                isSidebarCollapsed
+                  ? "Mở rộng thanh bên (Extend sidebar)"
+                  : "Thu gọn thanh bên (Collapse sidebar)"
+              }
+              aria-label={
+                isSidebarCollapsed
+                  ? "Mở rộng thanh bên"
+                  : "Thu gọn thanh bên"
+              }
+            >
+              {isSidebarCollapsed ? (
+                <PanelLeftOpen className="h-4.5 w-4.5" />
+              ) : (
+                <PanelLeftClose className="h-4.5 w-4.5" />
+              )}
+            </button>
           </div>
 
           {/* Navigation Links with smooth scroll */}
-          <div className="flex-1 overflow-y-auto pt-5 pr-1 space-y-1">
+          <div className="flex-1 overflow-y-auto pt-4 pr-0.5 space-y-1">
             <React.Suspense
               fallback={
                 <div className="space-y-3 p-2">
@@ -106,19 +171,34 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 </div>
               }
             >
-              <AdminSidebarNav onItemClick={() => setIsMobileOpen(false)} />
+              <AdminSidebarNav
+                isCollapsed={isSidebarCollapsed}
+                onItemClick={() => setIsMobileOpen(false)}
+              />
             </React.Suspense>
           </div>
         </div>
 
         {/* Back to Home Link */}
-        <div className="pt-4 border-t border-[#EDE5D8]/80 shrink-0">
+        <div className="pt-3 border-t border-[#EDE5D8]/80 shrink-0">
           <Link
             href="/"
-            className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-neutral-600 hover:text-amber-800 transition-colors"
+            title={isSidebarCollapsed ? "Trở về Trang chủ" : undefined}
+            className={`flex items-center rounded-xl text-xs font-semibold text-neutral-600 hover:text-amber-800 hover:bg-[#F2EADB]/60 transition-all ${
+              isSidebarCollapsed
+                ? "justify-center p-2.5 relative group"
+                : "gap-2.5 px-3 py-2"
+            }`}
           >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Trở về Trang chủ</span>
+            <ArrowLeft className="h-4 w-4 shrink-0" />
+            {!isSidebarCollapsed && (
+              <span className="truncate">Trở về Trang chủ</span>
+            )}
+            {isSidebarCollapsed && (
+              <div className="pointer-events-none absolute left-full ml-3 z-50 hidden group-hover:block whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white shadow-xl animate-in fade-in-0 duration-150">
+                Trở về Trang chủ
+              </div>
+            )}
           </Link>
         </div>
       </aside>
@@ -146,7 +226,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </div>
               <div className="flex-1 overflow-y-auto pt-5 pr-1">
                 <React.Suspense fallback={null}>
-                  <AdminSidebarNav onItemClick={() => setIsMobileOpen(false)} />
+                  <AdminSidebarNav isCollapsed={false} onItemClick={() => setIsMobileOpen(false)} />
                 </React.Suspense>
               </div>
             </div>
@@ -165,13 +245,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       )}
 
       {/* Main Admin Content Viewport */}
-      <div className="flex flex-1 flex-col min-w-0 min-h-screen">
+      <div className="flex flex-1 flex-col min-w-0 min-h-screen overflow-x-hidden">
         {/* Top Header */}
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[#EDE5D8]/80 bg-[#FAF7F0]/90 px-4 py-3.5 backdrop-blur-md sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsMobileOpen(true)}
-              className="rounded-lg p-2 text-neutral-600 hover:bg-[#F2EADB] lg:hidden"
+              className="rounded-lg p-2 text-neutral-600 hover:bg-[#F2EADB] lg:hidden cursor-pointer"
               aria-label="Mở menu quản trị"
             >
               <Menu className="h-5 w-5" />
@@ -194,6 +274,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                       <span className="text-amber-900 font-semibold">Tạo mới</span>
                     </>
                   )}
+                  {pathname === "/admin/post/pending" && (
+                    <>
+                      <ChevronRight className="h-3.5 w-3.5 text-neutral-400" />
+                      <span className="text-amber-900 font-semibold">Chờ duyệt</span>
+                    </>
+                  )}
                 </>
               )}
               {pathname.startsWith("/admin/category") && (
@@ -209,12 +295,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </div>
           </div>
 
-          {/* User Profile Info on Right */}
-          <AdminUserProfile />
+          {/* Actions & User Profile on Right */}
+          <div className="flex items-center gap-3">
+            <AdminNotificationBell />
+            <AdminUserProfile />
+          </div>
         </header>
 
         {/* Child Page Content */}
-        <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-5xl w-full mx-auto">
+        <div className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-5xl w-full mx-auto min-w-0">
           {children}
         </div>
       </div>

@@ -12,23 +12,31 @@ import { AxiosError } from "axios";
 
 import { QueryKeyEnum } from "@/enums";
 import {
+  approvePost,
   createPost,
   deletePost,
+  getPendingPostsCount,
   getPostBySlug,
   getPosts,
   getPostsByCategory,
+  rejectPost,
   searchPostBySlug,
   searchPosts,
   updatePost,
+  verifyPost,
 } from "./post.api";
 import {
+  ApprovePostPayloadType,
   CreatePostPayloadType,
   GetPostsByCategoryParams,
   GetPostsResponse,
+  PendingPostsCountResponse,
   PostItemType,
+  RejectPostPayloadType,
   SearchPostsParams,
   SearchPostsResponse,
   UpdatePostPayloadType,
+  VerifyPostPayloadType,
 } from "./post.type";
 
 export type UseCreatePostOptions = Omit<
@@ -251,5 +259,88 @@ export const useDeletePost = (
     },
   });
 };
+
+/**
+ * Hook to get count of pending posts with auto-polling
+ */
+export const useGetPendingPostsCount = (
+  options?: Omit<UseQueryOptions<PendingPostsCountResponse, AxiosError>, "queryKey" | "queryFn">
+): UseQueryResult<PendingPostsCountResponse, AxiosError> => {
+  return useQuery({
+    queryKey: [QueryKeyEnum.GET_PENDING_POSTS_COUNT],
+    queryFn: getPendingPostsCount,
+    refetchInterval: 30000,
+    ...options,
+  });
+};
+
+/**
+ * Mutation hook to approve a post via PATCH /posts/:id/approve
+ */
+export const useApprovePost = (
+  options?: Omit<
+    UseMutationOptions<PostItemType, AxiosError, { id: string; payload?: ApprovePostPayloadType }>,
+    "mutationFn"
+  >
+): UseMutationResult<PostItemType, AxiosError, { id: string; payload?: ApprovePostPayloadType }> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: approvePost,
+    ...options,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_POSTS] });
+      queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_PENDING_POSTS_COUNT] });
+      queryClient.invalidateQueries({ queryKey: ["posts-search"] });
+      options?.onSuccess?.(...args);
+    },
+  });
+};
+
+/**
+ * Mutation hook to reject a post via PATCH /posts/:id/reject
+ */
+export const useRejectPost = (
+  options?: Omit<
+    UseMutationOptions<PostItemType, AxiosError, { id: string; payload: RejectPostPayloadType }>,
+    "mutationFn"
+  >
+): UseMutationResult<PostItemType, AxiosError, { id: string; payload: RejectPostPayloadType }> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: rejectPost,
+    ...options,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_POSTS] });
+      queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_PENDING_POSTS_COUNT] });
+      queryClient.invalidateQueries({ queryKey: ["posts-search"] });
+      options?.onSuccess?.(...args);
+    },
+  });
+};
+
+/**
+ * Mutation hook to update origin verification via PATCH /posts/:id/verify
+ */
+export const useVerifyPost = (
+  options?: Omit<
+    UseMutationOptions<PostItemType, AxiosError, { id: string; payload: VerifyPostPayloadType }>,
+    "mutationFn"
+  >
+): UseMutationResult<PostItemType, AxiosError, { id: string; payload: VerifyPostPayloadType }> => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: verifyPost,
+    ...options,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_POSTS] });
+      queryClient.invalidateQueries({ queryKey: ["posts-search"] });
+      options?.onSuccess?.(...args);
+    },
+  });
+};
+
 
 

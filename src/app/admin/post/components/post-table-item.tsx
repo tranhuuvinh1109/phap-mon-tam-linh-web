@@ -1,6 +1,16 @@
 "use client";
 
-import { BookOpen, Pencil, Trash2, Volume2 } from "lucide-react";
+import {
+  BookOpen,
+  CheckCircle2,
+  Clock,
+  Pencil,
+  ShieldAlert,
+  ShieldCheck,
+  Trash2,
+  Volume2,
+  XCircle,
+} from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
@@ -121,6 +131,44 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
         >
           {groupDisplayName}
         </span>
+      </td>
+
+      {/* Approval Status */}
+      <td className="py-3.5 px-4 min-w-[125px] whitespace-nowrap">
+        {post.status === "APPROVED" ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 shadow-2xs">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+            <span>Đã duyệt</span>
+          </span>
+        ) : post.status === "REJECTED" ? (
+          <span
+            title={post.rejectReason ? `Lý do: ${post.rejectReason}` : "Đã bị từ chối"}
+            className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 shadow-2xs cursor-help"
+          >
+            <XCircle className="h-3.5 w-3.5 text-rose-600 shrink-0" />
+            <span>Từ chối</span>
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 shadow-2xs">
+            <Clock className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+            <span>Chờ duyệt</span>
+          </span>
+        )}
+      </td>
+
+      {/* Verified from Origin */}
+      <td className="py-3.5 px-4 min-w-[135px] whitespace-nowrap">
+        {post.isVerifiedFromOrigin ? (
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+            <span>Đã xác minh</span>
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-semibold text-neutral-500">
+            <ShieldAlert className="h-3.5 w-3.5 text-neutral-400 shrink-0" />
+            <span>Chưa xác minh</span>
+          </span>
+        )}
       </td>
 
       {/* Content Excerpt */}

@@ -1,4 +1,7 @@
-import { ContentType } from "@/enums";
+import { ContentType, ApprovalStatusEnum } from "@/enums";
+
+export { ApprovalStatusEnum };
+export type PostApprovalStatus = ApprovalStatusEnum | "PENDING" | "APPROVED" | "REJECTED";
 
 /**
  * Payload for audio details in CreatePostDto
@@ -25,6 +28,22 @@ export interface CreatePostAttachmentPayloadType {
   mimeType?: string;
 }
 
+export interface ApprovePostPayloadType {
+  isVerifiedFromOrigin?: boolean;
+}
+
+export interface RejectPostPayloadType {
+  rejectReason: string;
+}
+
+export interface VerifyPostPayloadType {
+  isVerifiedFromOrigin: boolean;
+}
+
+export interface PendingPostsCountResponse {
+  count: number;
+}
+
 /**
  * Payload for creating a new post (POST /posts)
  */
@@ -38,6 +57,8 @@ export interface CreatePostPayloadType {
   authorId?: string;
   categoryId?: string;
   groupId?: string | null;
+  status?: PostApprovalStatus;
+  isVerifiedFromOrigin?: boolean;
   audio?: CreatePostAudioPayloadType;
   video?: CreatePostVideoPayloadType;
   attachment?: CreatePostAttachmentPayloadType | null;
@@ -47,7 +68,9 @@ export interface CreatePostPayloadType {
 /**
  * Payload for updating an existing post (PATCH /posts/:id)
  */
-export type UpdatePostPayloadType = Partial<CreatePostPayloadType>;
+export interface UpdatePostPayloadType extends Partial<CreatePostPayloadType> {
+  rejectReason?: string | null;
+}
 
 export interface PostAudioType {
   id: string;
@@ -130,9 +153,34 @@ export interface PostItemType {
   video?: PostVideoType | null;
   attachment?: PostAttachmentType | null;
   attachments?: PostAttachmentType[];
+  status: PostApprovalStatus;
+  isVerifiedFromOrigin: boolean;
+  rejectReason?: string | null;
   deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface GetPostsParams {
+  id?: string;
+  slug?: string;
+  category?: string;
+  categoryId?: string;
+  category_id?: string;
+  groupId?: string;
+  group_id?: string;
+  type?: ContentType;
+  authorId?: string;
+  status?: PostApprovalStatus | "ALL";
+  isVerifiedFromOrigin?: boolean;
+  publishedOnly?: boolean;
+  includeDeleted?: boolean;
+  cursor?: string | null;
+  page?: number;
+  limit?: number;
+  search?: string;
+  q?: string;
+  [key: string]: any;
 }
 
 export interface GetPostsMetaType {
@@ -154,6 +202,8 @@ export interface GetPostsByCategoryParams {
   category_name?: string;
   groupId?: string;
   group_id?: string;
+  status?: PostApprovalStatus | "ALL";
+  isVerifiedFromOrigin?: boolean;
   limit?: number;
   cursor?: string | null;
   page?: number;
@@ -177,6 +227,8 @@ export interface SearchPostsParams {
   cursor?: string | null;
   limit?: number;
   page?: number;
+  status?: PostApprovalStatus | "ALL";
+  isVerifiedFromOrigin?: boolean;
   publishedOnly?: boolean;
   type?: ContentType;
 }
