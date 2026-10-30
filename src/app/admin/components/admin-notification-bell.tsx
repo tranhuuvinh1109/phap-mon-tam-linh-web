@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Bell, Clock, CheckCircle2, ChevronRight } from "lucide-react";
+import { Bell, Clock, CheckCircle2, ChevronRight, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useGetPendingPostsCount } from "@/api/post";
 
@@ -21,11 +21,19 @@ export const AdminNotificationBell: React.FC = () => {
       }
     };
 
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscape);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, [isOpen]);
 
@@ -39,7 +47,7 @@ export const AdminNotificationBell: React.FC = () => {
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[#EDE5D8] bg-[#FBF9F4] text-neutral-600 transition-all hover:bg-[#F2EADB] hover:text-amber-900 focus:ring-2 focus:ring-amber-500/20 focus:outline-none active:scale-95"
+        className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[#EDE5D8] bg-[#FBF9F4] text-neutral-600 transition-all hover:bg-[#F2EADB] hover:text-amber-900 focus:ring-2 focus:ring-amber-500/20 focus:outline-none active:scale-95 cursor-pointer"
         aria-label="Thông báo hệ thống"
         aria-expanded={isOpen}
       >
@@ -51,9 +59,18 @@ export const AdminNotificationBell: React.FC = () => {
         )}
       </button>
 
+      {/* Mobile Backdrop Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 backdrop-blur-2xs sm:hidden"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Notification Dropdown Popup */}
       {isOpen && (
-        <div className="animate-in fade-in slide-in-from-top-2 absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-24px)] rounded-2xl border border-[#EDE5D8] bg-[#FBF9F4] p-3 shadow-xl duration-150 sm:w-96">
+        <div className="animate-in fade-in slide-in-from-top-2 fixed inset-x-3.5 top-[68px] z-50 mx-auto w-auto max-w-sm rounded-2xl border border-[#EDE5D8] bg-[#FBF9F4] p-3 shadow-xl duration-150 sm:absolute sm:inset-x-auto sm:top-full sm:right-0 sm:left-auto sm:mx-0 sm:mt-2 sm:w-96 sm:max-w-[calc(100vw-24px)]">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-[#EDE5D8] px-1.5 pb-2.5">
             <div className="flex items-center gap-2">
@@ -64,14 +81,25 @@ export const AdminNotificationBell: React.FC = () => {
                 </span>
               )}
             </div>
-            {pendingCount > 0 && (
+            <div className="flex items-center gap-2">
+              {pendingCount > 0 && (
+                <button
+                  onClick={handleNotificationClick}
+                  className="text-xs font-medium text-amber-800 transition-colors hover:text-amber-950 cursor-pointer"
+                >
+                  Xem tất cả
+                </button>
+              )}
+              {/* Close button for mobile */}
               <button
-                onClick={handleNotificationClick}
-                className="text-xs font-medium text-amber-800 transition-colors hover:text-amber-950"
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="flex h-6 w-6 items-center justify-center rounded-lg text-neutral-400 hover:bg-[#F2EADB] hover:text-neutral-700 transition-colors sm:hidden cursor-pointer"
+                aria-label="Đóng thông báo"
               >
-                Xem tất cả
+                <X className="h-4 w-4" />
               </button>
-            )}
+            </div>
           </div>
 
           {/* Notification List */}

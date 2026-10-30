@@ -44,10 +44,10 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({
 
   const formattedDate = post.createdAt
     ? new Date(post.createdAt).toLocaleDateString("vi-VN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      })
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    })
     : null;
 
   const isNormalPost = post.type === ContentType.NORMAL;
@@ -81,13 +81,12 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({
 
             {/* Content Type Badge */}
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                isNormalPost
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${isNormalPost
                   ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                   : isAudioPost
-                  ? "bg-sky-50 text-sky-800 border border-sky-200"
-                  : "bg-neutral-100 text-neutral-700 border border-neutral-200"
-              }`}
+                    ? "bg-sky-50 text-sky-800 border border-sky-200"
+                    : "bg-neutral-100 text-neutral-700 border border-neutral-200"
+                }`}
             >
               {isNormalPost ? (
                 <>
@@ -207,9 +206,6 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({
 
         {/* Modal Footer */}
         <div className="flex items-center justify-between border-t border-[#EDE5D8] bg-white/95 px-5 py-3 sm:px-6">
-          <p className="text-xs text-neutral-500 italic">
-            Nam Mô A Di Đà Phật
-          </p>
           <Button
             type="button"
             variant="outline"
