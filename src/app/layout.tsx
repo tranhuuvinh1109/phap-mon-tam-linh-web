@@ -12,10 +12,31 @@ import { geistMono, geistSans } from "@/config";
 
 import "@/styles/globals.css";
 import type { Metadata, Viewport } from "next";
+import {
+  DEFAULT_META_IMAGE,
+  DEFAULT_SITE_DESCRIPTION,
+  DEFAULT_SITE_TITLE,
+  createOpenGraphMetadata,
+} from "@/constants";
+
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "https://quantheambotat-pmtl.com");
 
 export const metadata: Metadata = {
-  title: "Phap Mon Tam Linh",
-  description: "Phap Mon Tam Linh application",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: DEFAULT_SITE_TITLE,
+    template: `%s | ${DEFAULT_SITE_TITLE}`,
+  },
+  description: DEFAULT_SITE_DESCRIPTION,
+  ...createOpenGraphMetadata({
+    title: DEFAULT_SITE_TITLE,
+    description: DEFAULT_SITE_DESCRIPTION,
+    imageUrl: DEFAULT_META_IMAGE,
+  }),
 };
 
 export const viewport: Viewport = {

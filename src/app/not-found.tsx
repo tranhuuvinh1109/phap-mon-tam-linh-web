@@ -34,10 +34,16 @@ export default function NotFound() {
           <div className="absolute h-24 w-24 rounded-full border border-dashed border-amber-300/60 animate-[spin_20s_linear_infinite]" />
 
           {/* Lotus Logo */}
-          <LotusLogo
-            size={60}
-            className="relative z-10 drop-shadow-sm transition-transform duration-300 hover:scale-105"
-          />
+          <Link
+            href="/"
+            title="Về trang chủ"
+            className="relative z-10 cursor-pointer transition-transform duration-300 hover:scale-105"
+          >
+            <LotusLogo
+              size={60}
+              className="drop-shadow-sm"
+            />
+          </Link>
         </div>
 
         {/* 404 Pill Badge */}

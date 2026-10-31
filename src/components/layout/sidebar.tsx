@@ -113,7 +113,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Top Header Logo & Navigation */}
       <div>
         <div className="flex items-center justify-between px-2 pb-6">
-          <div className="flex items-center gap-2.5">
+          <Link
+            href="/"
+            onClick={onCloseMobile}
+            className="flex items-center gap-2.5 transition-transform hover:scale-105 cursor-pointer"
+            title="Về trang chủ"
+          >
             <LotusLogo size={36} />
             <span
               className="text-lg font-bold tracking-wide text-amber-950"
@@ -121,7 +126,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               Pháp Môn Tâm Linh
             </span>
-          </div>
+          </Link>
 
           {/* Close Button on Mobile Drawer */}
           {onCloseMobile && (

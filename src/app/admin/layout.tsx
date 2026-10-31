@@ -115,8 +115,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 : "justify-between px-2"
             }`}
           >
-            <div
-              className={`flex items-center gap-3 overflow-hidden ${
+            <Link
+              href="/"
+              title="Về trang chủ"
+              className={`flex items-center gap-3 overflow-hidden cursor-pointer transition-transform hover:scale-105 ${
                 isSidebarCollapsed ? "justify-center" : ""
               }`}
             >
@@ -134,7 +136,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   </span>
                 </div>
               )}
-            </div>
+            </Link>
 
             {/* Toggle Button (Collapse/Extend) */}
             <button
@@ -213,10 +215,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <aside className="fixed inset-y-0 left-0 w-72 max-w-[80vw] bg-[#FBF9F4] p-5 shadow-2xl z-10 flex flex-col justify-between">
             <div className="flex flex-col h-full min-h-0">
               <div className="flex items-center justify-between pb-5 border-b border-[#EDE5D8] shrink-0">
-                <div className="flex items-center gap-2.5">
+                <Link
+                  href="/"
+                  title="Về trang chủ"
+                  onClick={() => setIsMobileOpen(false)}
+                  className="flex items-center gap-2.5 cursor-pointer transition-transform hover:scale-105"
+                >
                   <LotusLogo size={32} />
                   <span className="font-bold text-amber-950">Quản trị</span>
-                </div>
+                </Link>
                 <button
                   onClick={() => setIsMobileOpen(false)}
                   className="rounded-lg p-1 text-neutral-500 hover:bg-neutral-100"

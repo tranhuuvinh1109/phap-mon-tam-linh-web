@@ -2,12 +2,22 @@ import type { Metadata } from "next";
 import React, { Suspense } from "react";
 
 import { SingleCategoryPostView } from "@/components/post";
-import { PHAT_NGUYEN_SLUG } from "@/constants";
+import {
+  DEFAULT_META_IMAGE,
+  PHAT_NGUYEN_SLUG,
+  createOpenGraphMetadata,
+} from "@/constants";
 
 export const metadata: Metadata = {
   title: "Phát Nguyện | Nghi thức phát nguyện từ tâm | Phật Pháp",
   description:
     "Hướng dẫn phát nguyện từ tâm trên bước đường tu học Phật Pháp và thực hành tâm linh.",
+  ...createOpenGraphMetadata({
+    title: "Phát Nguyện | Nghi thức phát nguyện từ tâm | Phật Pháp",
+    description:
+      "Hướng dẫn phát nguyện từ tâm trên bước đường tu học Phật Pháp và thực hành tâm linh.",
+    imageUrl: DEFAULT_META_IMAGE,
+  }),
 };
 
 export default function PhatNguyenPage() {

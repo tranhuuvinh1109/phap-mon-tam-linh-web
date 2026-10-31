@@ -1,12 +1,21 @@
 import type { Metadata } from "next";
 import React, { Suspense } from "react";
 
+import { DEFAULT_META_IMAGE, createOpenGraphMetadata } from "@/constants";
 import { KhaiThiClient } from "./khai-thi-client";
 
+const TITLE = "Khai thị | Phật Pháp";
+const DESCRIPTION =
+  "Danh sách các bài viết Khai thị Phật pháp, lời vàng soi sáng tâm thức và mở lối tu tập.";
+
 export const metadata: Metadata = {
-  title: "Khai thị | Phật Pháp",
-  description:
-    "Danh sách các bài viết Khai thị Phật pháp, lời vàng soi sáng tâm thức và mở lối tu tập.",
+  title: TITLE,
+  description: DESCRIPTION,
+  ...createOpenGraphMetadata({
+    title: TITLE,
+    description: DESCRIPTION,
+    imageUrl: DEFAULT_META_IMAGE,
+  }),
 };
 
 export default function KhaiThiPage() {

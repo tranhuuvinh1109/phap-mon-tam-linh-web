@@ -2,12 +2,22 @@ import type { Metadata } from "next";
 import React, { Suspense } from "react";
 
 import { SingleCategoryPostView } from "@/components/post";
-import { THAP_HUONG_BAN_THO_PHAT_SLUG } from "@/constants";
+import {
+  DEFAULT_META_IMAGE,
+  THAP_HUONG_BAN_THO_PHAT_SLUG,
+  createOpenGraphMetadata,
+} from "@/constants";
 
 export const metadata: Metadata = {
   title: "Thắp Hương Bàn Thờ Phật | Nghi thức trang nghiêm | Phật Pháp",
   description:
     "Hướng dẫn nghi thức thắp hương bàn thờ Phật trang nghiêm, thể hiện lòng thành kính thanh tịnh.",
+  ...createOpenGraphMetadata({
+    title: "Thắp Hương Bàn Thờ Phật | Nghi thức trang nghiêm | Phật Pháp",
+    description:
+      "Hướng dẫn nghi thức thắp hương bàn thờ Phật trang nghiêm, thể hiện lòng thành kính thanh tịnh.",
+    imageUrl: DEFAULT_META_IMAGE,
+  }),
 };
 
 export default function ThapHuongBanThoPhatPage() {

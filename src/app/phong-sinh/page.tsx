@@ -2,12 +2,18 @@ import type { Metadata } from "next";
 import React, { Suspense } from "react";
 
 import { SingleCategoryPostView } from "@/components/post";
-import { PHONG_SINH_SLUG } from "@/constants";
+import { DEFAULT_META_IMAGE, PHONG_SINH_SLUG, createOpenGraphMetadata } from "@/constants";
 
 export const metadata: Metadata = {
   title: "Phóng Sanh | Nghi thức và ý nghĩa phóng sinh | Phật Pháp",
   description:
     "Hướng dẫn nghi thức và ý nghĩa phóng sanh từ bi, cứu giúp muôn loài và gieo duyên lành.",
+  ...createOpenGraphMetadata({
+    title: "Phóng Sanh | Nghi thức và ý nghĩa phóng sinh | Phật Pháp",
+    description:
+      "Hướng dẫn nghi thức và ý nghĩa phóng sanh từ bi, cứu giúp muôn loài và gieo duyên lành.",
+    imageUrl: DEFAULT_META_IMAGE,
+  }),
 };
 
 export default function PhongSinhPage() {

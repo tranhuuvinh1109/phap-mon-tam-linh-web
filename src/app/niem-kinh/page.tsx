@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
 import React, { Suspense } from "react";
 
+import { DEFAULT_META_IMAGE, createOpenGraphMetadata } from "@/constants";
 import { NiemKinhClient } from "./niem-kinh-client";
 
 export const metadata: Metadata = {
   title: "Niệm Kinh | Thời khóa tụng niệm hàng ngày | Phật Pháp",
   description:
     "Hướng dẫn các bước Niệm kinh Phật giáo hàng ngày từng bước cho người mới bắt đầu.",
+  ...createOpenGraphMetadata({
+    title: "Niệm Kinh | Thời khóa tụng niệm hàng ngày | Phật Pháp",
+    description:
+      "Hướng dẫn các bước Niệm kinh Phật giáo hàng ngày từng bước cho người mới bắt đầu.",
+    imageUrl: DEFAULT_META_IMAGE,
+  }),
 };
 
 export default function NiemKinhPage() {

@@ -1,12 +1,21 @@
 import type { Metadata } from "next";
 import React, { Suspense } from "react";
 
+import { DEFAULT_META_IMAGE, createOpenGraphMetadata } from "@/constants";
 import { NgoiNhaNhoClient } from "./ngoi-nha-nho-client";
 
+const TITLE = "Ngôi Nhà Nhỏ | Học cách sống an lành | Phật Pháp";
+const DESCRIPTION =
+  "Tổng hợp bài viết hướng dẫn về Ngôi Nhà Nhỏ, phương pháp tu tập tiêu trừ nghiệp chướng, tích lũy công đức và tu dưỡng thân tâm.";
+
 export const metadata: Metadata = {
-  title: "Ngôi Nhà Nhỏ | Học cách sống an lành | Phật Pháp",
-  description:
-    "Tổng hợp bài viết hướng dẫn về Ngôi Nhà Nhỏ, phương pháp tu tập tiêu trừ nghiệp chướng, tích lũy công đức và tu dưỡng thân tâm.",
+  title: TITLE,
+  description: DESCRIPTION,
+  ...createOpenGraphMetadata({
+    title: TITLE,
+    description: DESCRIPTION,
+    imageUrl: DEFAULT_META_IMAGE,
+  }),
 };
 
 export default function NgoiNhaNhoPage() {

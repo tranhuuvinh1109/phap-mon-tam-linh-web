@@ -1,4 +1,5 @@
 import { PostDetailClient } from "@/components/post";
+import { DEFAULT_META_IMAGE, createOpenGraphMetadata } from "@/constants";
 import { Metadata } from "next";
 
 interface PostPageProps {
@@ -10,10 +11,17 @@ export async function generateMetadata({
 }: PostPageProps): Promise<Metadata> {
   const resolvedParams = await params;
   const decodedSlug = decodeURIComponent(resolvedParams.slug || "");
+  const title = `${decodedSlug} | Niệm Kinh | Phật Pháp`;
+  const description = `Nội dung bài viết Niệm Kinh Phật Pháp: ${decodedSlug}`;
 
   return {
-    title: `${decodedSlug} | Niệm Kinh | Phật Pháp`,
-    description: `Nội dung bài viết Niệm Kinh Phật Pháp: ${decodedSlug}`,
+    title,
+    description,
+    ...createOpenGraphMetadata({
+      title,
+      description,
+      imageUrl: DEFAULT_META_IMAGE,
+    }),
   };
 }
 
