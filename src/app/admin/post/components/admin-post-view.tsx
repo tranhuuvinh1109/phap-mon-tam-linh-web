@@ -20,7 +20,7 @@ import toast from "react-hot-toast";
 
 import { useGetCategories } from "@/api/category";
 import { useGetGroups } from "@/api/group";
-import { useDeletePost, useGetPosts, useSearchPosts } from "@/api/post";
+import { useDeletePost, useGetPosts } from "@/api/post";
 import type { PostItemType, PostApprovalStatus } from "@/api/post/post.type";
 import { Button } from "@/components/ui";
 import { BACH_THOAI_PHAT_PHAP_ID, BACH_THOAI_PHAT_PHAP_SLUG } from "@/constants";
@@ -56,17 +56,27 @@ export const AdminPostView: React.FC = () => {
     endDate: undefined,
   });
 
+  // Helper to test if a string is a standard UUID
+  const isUuid = (val?: string): boolean =>
+    Boolean(
+      val &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
+    );
+
   // Keep state synced if URL changes externally
   useEffect(() => {
     setSearchQuery(urlSearch);
     setDebouncedSearch(urlSearch);
   }, [urlSearch]);
 
-  // Sync categoryParam from URL if present
+  // Sync categoryParam from URL when URL changes
   useEffect(() => {
-    if (categoryParam) {
-      setFilters((prev) => ({ ...prev, categoryId: categoryParam }));
-    }
+    setFilters((prev) => ({
+      ...prev,
+      categoryId: categoryParam || undefined,
+      groupId: undefined,
+    }));
+    setCurrentPage(1);
   }, [categoryParam]);
 
   // Fetch categories and groups for badge labels
@@ -82,13 +92,14 @@ export const AdminPostView: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const isBachThoaiTab = useMemo(() => {
+    const targetCat = filters.categoryId || categoryParam;
     return (
-      categoryParam === "bach-thoai-phat-phap" ||
-      categoryParam === BACH_THOAI_PHAT_PHAP_SLUG ||
-      categoryParam === BACH_THOAI_PHAT_PHAP_ID ||
-      isBachThoaiPhatPhap(undefined, categoryParam || undefined)
+      targetCat === "bach-thoai-phat-phap" ||
+      targetCat === BACH_THOAI_PHAT_PHAP_SLUG ||
+      targetCat === BACH_THOAI_PHAT_PHAP_ID ||
+      isBachThoaiPhatPhap(undefined, targetCat || undefined)
     );
-  }, [categoryParam]);
+  }, [categoryParam, filters.categoryId]);
 
   // Delete mutation
   const deletePostMutation = useDeletePost({
@@ -153,12 +164,17 @@ export const AdminPostView: React.FC = () => {
 
   // Request parameters for backend pagination
   const queryParams = useMemo(() => {
+    const targetCategory = filters.categoryId || categoryParam || undefined;
+    const isTargetUuid = isUuid(targetCategory);
+
     return {
       page: currentPage,
       limit: PAGE_SIZE,
       search: debouncedSearch || undefined,
-      category: filters.categoryId ? undefined : categoryParam || undefined,
-      categoryId: filters.categoryId || undefined,
+      // If targetCategory is a slug (e.g. "niem-kinh", "khai-thi"), send `category`
+      category: !isTargetUuid ? targetCategory : undefined,
+      // If targetCategory is a UUID, send `categoryId`
+      categoryId: isTargetUuid ? targetCategory : undefined,
       groupId: filters.groupId || undefined,
       type: filters.type === "ALL" ? undefined : filters.type,
       status: filters.status,
@@ -167,42 +183,41 @@ export const AdminPostView: React.FC = () => {
     };
   }, [currentPage, debouncedSearch, categoryParam, filters]);
 
-  // When categoryParam is present and no custom categoryId is selected in drawer
-  const categorySearchQuery = useSearchPosts(
-    queryParams,
-    { enabled: !!categoryParam && !filters.categoryId }
-  );
-
-  // Default query via GET /posts
-  const allPostsQuery = useGetPosts(queryParams, {
-    enabled: !categoryParam || !!filters.categoryId,
-  });
-
-  const activeQuery =
-    categoryParam && !filters.categoryId
-      ? categorySearchQuery
-      : allPostsQuery;
-  const isLoading = activeQuery.isLoading;
-  const isFetching = activeQuery.isFetching;
+  // Main query via GET /posts
+  const {
+    data: postsData,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetPosts(queryParams);
 
   const posts: PostItemType[] = useMemo(() => {
-    return activeQuery.data?.data || [];
-  }, [activeQuery.data]);
+    return postsData?.data || [];
+  }, [postsData]);
 
-  const total = activeQuery.data?.meta?.total ?? posts.length;
+  const total = postsData?.meta?.total ?? posts.length;
   const totalPages =
-    activeQuery.data?.meta?.totalPages || Math.max(1, Math.ceil(total / PAGE_SIZE));
+    postsData?.meta?.totalPages || Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   // Count active filters (excluding URL categoryParam)
   const activeFilterCount = useMemo(() => {
     let count = 0;
-    if (filters.categoryId && filters.categoryId !== categoryParam) count++;
+    if (filters.categoryId) {
+      const matchCat = categories.find(
+        (c) => c.id === filters.categoryId || c.slug === filters.categoryId
+      );
+      const isSameAsUrl =
+        filters.categoryId === categoryParam ||
+        matchCat?.slug === categoryParam ||
+        matchCat?.id === categoryParam;
+      if (!isSameAsUrl) count++;
+    }
     if (filters.groupId) count++;
     if (filters.status && filters.status !== "ALL") count++;
     if (filters.type && filters.type !== "ALL") count++;
     if (filters.startDate || filters.endDate) count++;
     return count;
-  }, [filters, categoryParam]);
+  }, [filters, categoryParam, categories]);
 
   const handleApplyFilters = (newFilters: PostFilterState) => {
     setFilters(newFilters);
@@ -284,7 +299,7 @@ export const AdminPostView: React.FC = () => {
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            onClick={() => activeQuery.refetch()}
+            onClick={() => refetch()}
             disabled={isFetching}
             className="flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs sm:text-sm font-semibold border-[#EDE5D8] hover:bg-[#FAF7F0] shadow-2xs"
           >
@@ -385,8 +400,11 @@ export const AdminPostView: React.FC = () => {
               <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50/80 px-2.5 py-1 text-xs font-medium text-amber-900">
                 <Tag className="h-3 w-3 text-amber-700" />
                 <span>
-                  {categories.find((c) => c.id === filters.categoryId)?.name ||
-                    "Chuyên mục"}
+                  {categories.find(
+                    (c) =>
+                      c.id === filters.categoryId ||
+                      c.slug === filters.categoryId
+                  )?.name || filters.categoryId}
                 </span>
                 <button
                   type="button"
@@ -627,7 +645,7 @@ export const AdminPostView: React.FC = () => {
           setEditingPost(null);
         }}
         onSuccess={() => {
-          activeQuery.refetch();
+          refetch();
         }}
       />
 

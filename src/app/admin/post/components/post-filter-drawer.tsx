@@ -73,8 +73,10 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
   const { data: categories = [], isLoading: isLoadingCategories } =
     useGetCategories();
 
-  // Find selected category object
-  const selectedCategory = categories.find((c) => c.id === draft.categoryId);
+  // Find selected category object (by id or by slug)
+  const selectedCategory = categories.find(
+    (c) => c.id === draft.categoryId || c.slug === draft.categoryId
+  );
 
   // Check if selected category is "khai-thi"
   const isKhaiThi = Boolean(
@@ -210,7 +212,7 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
               </label>
 
               <select
-                value={draft.categoryId || ""}
+                value={selectedCategory?.id || draft.categoryId || ""}
                 onChange={(e) => handleCategoryChange(e.target.value)}
                 disabled={isLoadingCategories}
                 className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-base sm:text-sm text-neutral-800 shadow-2xs outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20"
