@@ -156,7 +156,11 @@ export const KinhSachListClient: React.FC = () => {
         {!isLoading && posts.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {posts.map((post) => (
-              <KinhSachItem key={post.id} post={post} />
+              <KinhSachItem
+                key={post.id}
+                post={post}
+                searchQuery={debouncedSearch}
+              />
             ))}
           </div>
         )}

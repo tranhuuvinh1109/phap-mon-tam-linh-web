@@ -19,7 +19,7 @@ import {
   Volume2,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useMemo, useState } from "react";
 
 import { useGetPostBySlug } from "@/api/post";
@@ -35,6 +35,7 @@ import {
 import { KhaiThiPostDetailSkeleton, NormalPostSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui";
 import { ContentType } from "@/enums";
+import { HighlightedText } from "@/lib/highlight";
 import { formatTime } from "@/lib/utils";
 import { useEvent } from "@/hooks";
 import { useAudioPlayerStore, useFavoritesStore, useIsFavorite } from "@/stores";
@@ -43,6 +44,8 @@ export const PostDetailClient: React.FC = () => {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams?.get("search") || searchParams?.get("q") || "";
   const slug = params?.slug ? decodeURIComponent(params.slug) : "";
 
   const { data: post, isLoading, isError, error, refetch } = useGetPostBySlug(slug);
@@ -365,7 +368,7 @@ export const PostDetailClient: React.FC = () => {
                 className="text-2xl leading-snug font-bold tracking-tight text-neutral-900 sm:text-3xl lg:text-4xl"
                 style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
               >
-                {displayPost.title}
+                <HighlightedText text={displayPost.title} highlight={searchQuery} />
               </h1>
 
               {/* Audio Player Card (If standard post has audio) */}
@@ -430,6 +433,7 @@ export const PostDetailClient: React.FC = () => {
                     content={displayPost.content}
                     category={displayPost.category || currentCategorySlug}
                     post={displayPost}
+                    searchQuery={searchQuery}
                   />
                 </div>
               )}

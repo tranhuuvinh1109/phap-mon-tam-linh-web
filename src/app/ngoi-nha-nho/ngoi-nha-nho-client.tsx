@@ -27,6 +27,7 @@ import { NgoiNhaNhoSkeleton } from "@/components/skeletons";
 import { NGOI_NHA_NHO_SLUG } from "@/constants";
 import { ContentType } from "@/enums";
 import { trackSearch } from "@/lib/gtm";
+import { HighlightedText } from "@/lib/highlight";
 import { formatTime } from "@/lib/utils";
 
 const PAGE_SIZE = 15;
@@ -321,7 +322,10 @@ export const NgoiNhaNhoClient: React.FC = () => {
             {paginatedPosts.map((post, index) => {
               const itemIndex = (page - 1) * PAGE_SIZE + index + 1;
               const postSlug = encodeURIComponent(post.slug || post.id || "");
-              const postUrl = `/ngoi-nha-nho/${postSlug}`;
+              const basePostUrl = `/ngoi-nha-nho/${postSlug}`;
+              const postUrl = debouncedSearch.trim()
+                ? `${basePostUrl}?search=${encodeURIComponent(debouncedSearch.trim())}`
+                : basePostUrl;
 
               const displayDate = post.updatedAt || post.createdAt;
               const formattedDate = displayDate
@@ -373,7 +377,7 @@ export const NgoiNhaNhoClient: React.FC = () => {
 
                       {/* Title */}
                       <h3 className="text-sm sm:text-base font-bold text-neutral-900 leading-snug group-hover:text-amber-800 transition-colors line-clamp-2">
-                        {post.title}
+                        <HighlightedText text={post.title} highlight={debouncedSearch} />
                       </h3>
 
                       {/* Author & Audio Meta */}

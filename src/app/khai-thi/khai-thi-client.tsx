@@ -565,7 +565,11 @@ export const KhaiThiClient: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {items.map((post) => (
-                    <KhaiThiItem key={post.id || post.slug} post={post} />
+                    <KhaiThiItem
+                      key={post.id || post.slug}
+                      post={post}
+                      searchQuery={debouncedSearch}
+                    />
                   ))}
                 </div>
               </div>
@@ -602,7 +606,11 @@ export const KhaiThiClient: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {posts.map((post) => (
-                <KhaiThiItem key={post.id || post.slug} post={post} />
+                <KhaiThiItem
+                  key={post.id || post.slug}
+                  post={post}
+                  searchQuery={debouncedSearch}
+                />
               ))}
             </div>
           </div>

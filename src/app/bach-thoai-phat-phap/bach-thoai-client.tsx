@@ -549,7 +549,11 @@ export const BachThoaiClient: React.FC = () => {
 
                 <div className="grid grid-cols-1 gap-3.5 sm:gap-4 md:grid-cols-2">
                   {items.map((item) => (
-                    <BachThoaiItem key={item.id} item={item} />
+                    <BachThoaiItem
+                      key={item.id}
+                      item={item}
+                      searchQuery={debouncedSearch}
+                    />
                   ))}
                 </div>
               </div>
@@ -584,7 +588,11 @@ export const BachThoaiClient: React.FC = () => {
 
             <div className="grid grid-cols-1 gap-3.5 sm:gap-4 md:grid-cols-2">
               {filteredItems.map((item) => (
-                <BachThoaiItem key={item.id} item={item} />
+                <BachThoaiItem
+                  key={item.id}
+                  item={item}
+                  searchQuery={debouncedSearch}
+                />
               ))}
             </div>
           </div>

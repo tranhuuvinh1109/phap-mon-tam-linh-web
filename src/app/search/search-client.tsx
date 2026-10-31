@@ -26,6 +26,7 @@ import {
   NIEM_KINH_SLUG,
 } from "@/constants";
 import { trackSearch } from "@/lib/gtm";
+import { HighlightedText, getSnippetWithContext } from "@/lib/highlight";
 
 const PAGE_SIZE = 12;
 
@@ -139,20 +140,25 @@ export function SearchClient() {
 
   // Determine link target for a post
   const getPostLink = (post: PostItemType) => {
+    let basePath = "";
     const catSlug = post.category?.slug?.toLowerCase() || "";
     if (catSlug.includes("bach-thoai") || catSlug.includes("bạch-thoại")) {
-      return `/bach-thoai-phat-phap/${post.slug}`;
+      basePath = `/bach-thoai-phat-phap/${post.slug}`;
+    } else if (catSlug.includes("khai-thi") || catSlug.includes("khai-thị")) {
+      basePath = `/khai-thi/${post.slug}`;
+    } else if (catSlug.includes("ngoi-nha-nho") || catSlug.includes("ngôi-nhà-nhỏ")) {
+      basePath = `/ngoi-nha-nho/${post.slug}`;
+    } else if (catSlug.includes("niem-kinh") || catSlug.includes("niệm-kinh")) {
+      basePath = `/niem-kinh`;
+    } else {
+      basePath = `/${post.category?.slug || "khai-thi"}/${post.slug}`;
     }
-    if (catSlug.includes("khai-thi") || catSlug.includes("khai-thị")) {
-      return `/khai-thi/${post.slug}`;
+
+    if (debouncedSearch.trim()) {
+      const glue = basePath.includes("?") ? "&" : "?";
+      return `${basePath}${glue}search=${encodeURIComponent(debouncedSearch.trim())}`;
     }
-    if (catSlug.includes("ngoi-nha-nho") || catSlug.includes("ngôi-nhà-nhỏ")) {
-      return `/ngoi-nha-nho/${post.slug}`;
-    }
-    if (catSlug.includes("niem-kinh") || catSlug.includes("niệm-kinh")) {
-      return `/niem-kinh`;
-    }
-    return `/${post.category?.slug || "khai-thi"}/${post.slug}`;
+    return basePath;
   };
 
   return (
@@ -303,6 +309,7 @@ export function SearchClient() {
             {posts.map((post) => {
               const hasAudio = Boolean(post.audio?.audioUrl);
               const postLink = getPostLink(post);
+              const snippet = getSnippetWithContext(post.content, debouncedSearch, 130);
 
               return (
                 <Link
@@ -344,7 +351,7 @@ export function SearchClient() {
                     </div>
 
                     {/* Meta info & title */}
-                    <div className="p-4">
+                    <div className="p-4 space-y-1.5">
                       {/* Category Badge */}
                       {post.category?.name && (
                         <span className="inline-block text-[11px] font-semibold text-amber-800 uppercase tracking-wide">
@@ -353,11 +360,18 @@ export function SearchClient() {
                       )}
 
                       <h4
-                        className="mt-1 line-clamp-2 text-sm sm:text-base font-bold text-neutral-900 group-hover:text-amber-900 transition-colors"
+                        className="line-clamp-2 text-sm sm:text-base font-bold text-neutral-900 group-hover:text-amber-900 transition-colors"
                         style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
                       >
-                        {post.title}
+                        <HighlightedText text={post.title} highlight={debouncedSearch} />
                       </h4>
+
+                      {/* Content Snippet */}
+                      {snippet ? (
+                        <p className="line-clamp-2 text-xs text-neutral-600 leading-relaxed font-normal">
+                          <HighlightedText text={snippet} highlight={debouncedSearch} />
+                        </p>
+                      ) : null}
                     </div>
                   </div>
 

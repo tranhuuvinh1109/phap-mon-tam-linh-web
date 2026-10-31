@@ -5,18 +5,24 @@ import Link from "next/link";
 import React from "react";
 
 import type { PostItemType } from "@/api/post/post.type";
+import { HighlightedText } from "@/lib/highlight";
 
 export interface KinhSachItemProps {
   post: PostItemType;
   className?: string;
+  searchQuery?: string;
 }
 
 export const KinhSachItem: React.FC<KinhSachItemProps> = ({
   post,
   className = "",
+  searchQuery,
 }) => {
   const hasPdf = Boolean(post.attachment?.fileUrl || (post as any).fileUrl);
-  const postUrl = `/kinh-sach/${encodeURIComponent(post.slug || post.id || "")}`;
+  const basePostUrl = `/kinh-sach/${encodeURIComponent(post.slug || post.id || "")}`;
+  const postUrl = searchQuery?.trim()
+    ? `${basePostUrl}?search=${encodeURIComponent(searchQuery.trim())}`
+    : basePostUrl;
 
   return (
     <Link
@@ -55,7 +61,7 @@ export const KinhSachItem: React.FC<KinhSachItemProps> = ({
 
         <div>
           <h3 className="text-sm font-bold text-neutral-900 group-hover:text-amber-800 transition line-clamp-2">
-            {post.title}
+            <HighlightedText text={post.title} highlight={searchQuery} />
           </h3>
           {post.author?.name && (
             <p className="text-xs text-neutral-500 mt-1 line-clamp-1">

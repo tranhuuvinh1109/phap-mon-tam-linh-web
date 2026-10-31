@@ -6,6 +6,7 @@ import { parseNiemKinhContent } from "@/app/admin/post/types";
 import { isKhaiThi } from "@/app/admin/post/utils/content-type";
 import { KHAI_THI_ID, KHAI_THI_SLUG } from "@/constants";
 import type { PostCategoryType, PostItemType } from "@/api/post/post.type";
+import { highlightInHtml } from "@/lib/highlight";
 import { NiemKinhAccordion } from "./niem-kinh-accordion";
 
 interface PostContentRendererProps {
@@ -14,6 +15,7 @@ interface PostContentRendererProps {
   category?: PostCategoryType | string | null;
   post?: PostItemType | null;
   isKhaiThi?: boolean;
+  searchQuery?: string;
 }
 
 export const PostContentRenderer: React.FC<PostContentRendererProps> = ({
@@ -22,9 +24,13 @@ export const PostContentRenderer: React.FC<PostContentRendererProps> = ({
   category,
   post,
   isKhaiThi: isKhaiThiProp,
+  searchQuery,
 }) => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const activeSearchQuery =
+    searchQuery ?? (searchParams?.get("search") || searchParams?.get("q") || "");
 
   // Determine whether this post belongs to category "khai-thi"
   const isKhaiThiPost = useMemo(() => {
@@ -170,7 +176,7 @@ export const PostContentRenderer: React.FC<PostContentRendererProps> = ({
     return String(content);
   }, [content, niemKinhData]);
 
-  // Clean non-breaking spaces and inject 8px spacer after br for Khai Thi
+  // Clean non-breaking spaces, inject br spacers for Khai Thi, and apply search highlight
   const cleanHtml = useMemo(() => {
     if (!htmlString) return "";
     let cleaned = htmlString
@@ -187,8 +193,12 @@ export const PostContentRenderer: React.FC<PostContentRendererProps> = ({
       );
     }
 
+    if (activeSearchQuery?.trim()) {
+      cleaned = highlightInHtml(cleaned, activeSearchQuery.trim());
+    }
+
     return cleaned;
-  }, [htmlString, isKhaiThiPost]);
+  }, [htmlString, isKhaiThiPost, activeSearchQuery]);
 
   if (niemKinhData) {
     return <NiemKinhAccordion data={niemKinhData} className={className} />;

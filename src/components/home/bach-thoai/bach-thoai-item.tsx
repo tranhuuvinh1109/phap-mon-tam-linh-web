@@ -12,6 +12,7 @@ import React from "react";
 
 import { ContentType } from "@/enums";
 import { getGroupBadgeStyle } from "@/lib/color-badge";
+import { HighlightedText } from "@/lib/highlight";
 import { useAudioPlayerStore } from "@/stores";
 
 export interface BachThoaiDisplayItem {
@@ -30,9 +31,10 @@ export interface BachThoaiDisplayItem {
 
 export interface BachThoaiItemProps {
   item: BachThoaiDisplayItem;
+  searchQuery?: string;
 }
 
-export const BachThoaiItem: React.FC<BachThoaiItemProps> = ({ item }) => {
+export const BachThoaiItem: React.FC<BachThoaiItemProps> = ({ item, searchQuery }) => {
   const currentTrack = useAudioPlayerStore((s) => s.currentTrack);
   const isAudioPlaying = useAudioPlayerStore((s) => s.isPlaying);
   const playTrack = useAudioPlayerStore((s) => s.playTrack);
@@ -40,7 +42,10 @@ export const BachThoaiItem: React.FC<BachThoaiItemProps> = ({ item }) => {
 
   const isCurrentPlaying = currentTrack?.id === item.id && isAudioPlaying;
   const isAudio = item.type === ContentType.AUDIO || !!item.audioUrl;
-  const postUrl = `/bach-thoai-phat-phap/${encodeURIComponent(item.slug || item.id)}`;
+  const basePostUrl = `/bach-thoai-phat-phap/${encodeURIComponent(item.slug || item.id)}`;
+  const postUrl = searchQuery?.trim()
+    ? `${basePostUrl}?search=${encodeURIComponent(searchQuery.trim())}`
+    : basePostUrl;
 
   const handleTogglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -138,7 +143,7 @@ export const BachThoaiItem: React.FC<BachThoaiItemProps> = ({ item }) => {
 
         {/* Title */}
         <h4 className="text-sm sm:text-base font-bold text-neutral-900 leading-snug line-clamp-2 transition-colors group-hover:text-amber-800">
-          {item.title}
+          <HighlightedText text={item.title} highlight={searchQuery} />
         </h4>
 
         {/* Author / Teacher Name */}
@@ -150,7 +155,7 @@ export const BachThoaiItem: React.FC<BachThoaiItemProps> = ({ item }) => {
             <>
               <span className="text-neutral-300">•</span>
               <span className="truncate text-neutral-500 hidden sm:inline">
-                {item.snippet}
+                <HighlightedText text={item.snippet} highlight={searchQuery} />
               </span>
             </>
           )}

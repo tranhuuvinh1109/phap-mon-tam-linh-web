@@ -6,15 +6,20 @@ import React, { useMemo } from "react";
 
 import type { PostItemType } from "@/api/post/post.type";
 import { getGroupBadgeStyle } from "@/lib/color-badge";
+import { HighlightedText } from "@/lib/highlight";
 import { stripHtml } from "@/lib/utils";
 
 export interface KhaiThiItemProps {
   post: PostItemType;
   hideImage?: boolean;
+  searchQuery?: string;
 }
 
-export const KhaiThiItem: React.FC<KhaiThiItemProps> = ({ post }) => {
-  const postUrl = `/khai-thi/${encodeURIComponent(post.slug || post.id || "")}`;
+export const KhaiThiItem: React.FC<KhaiThiItemProps> = ({ post, searchQuery }) => {
+  const basePostUrl = `/khai-thi/${encodeURIComponent(post.slug || post.id || "")}`;
+  const postUrl = searchQuery?.trim()
+    ? `${basePostUrl}?search=${encodeURIComponent(searchQuery.trim())}`
+    : basePostUrl;
 
   // Extract clean plain text snippet from editor HTML/JSON content
   const snippet = useMemo(() => {
@@ -65,13 +70,13 @@ export const KhaiThiItem: React.FC<KhaiThiItemProps> = ({ post }) => {
 
         {/* Title */}
         <h4 className="text-base sm:text-lg font-bold text-neutral-900 leading-snug line-clamp-2 transition-colors group-hover:text-amber-800">
-          {post.title}
+          <HighlightedText text={post.title} highlight={searchQuery} />
         </h4>
 
         {/* Snippet from Text Editor HTML / JSON */}
         {snippet ? (
           <p className="line-clamp-3 text-xs sm:text-sm text-neutral-600 leading-relaxed font-normal">
-            {snippet}
+            <HighlightedText text={snippet} highlight={searchQuery} />
           </p>
         ) : (
           <p className="text-xs text-neutral-400 italic">Chưa có trích dẫn nội dung.</p>
