@@ -6,3 +6,4 @@ export * from "./post-detail-client";
 export * from "./niem-kinh-accordion";
 export * from "./pdf-viewer";
 export * from "./bach-thoai-history-sidebar";
+export * from "./single-category-post-view";

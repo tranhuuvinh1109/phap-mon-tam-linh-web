@@ -24,7 +24,7 @@ import React, { useMemo, useState } from "react";
 
 import { useGetPostBySlug } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
-import { isBachThoaiPhatPhapCategory } from "@/app/admin/post/utils/content-type";
+import { isBachThoaiPhatPhapCategory, isKhaiThi } from "@/app/admin/post/utils/content-type";
 import { MainLayout } from "@/components/layout";
 import {
   BachThoaiAudioPlayer,
@@ -32,6 +32,7 @@ import {
   PostContentRenderer,
   PdfViewer,
 } from "@/components/post";
+import { KhaiThiPostDetailSkeleton, NormalPostSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui";
 import { ContentType } from "@/enums";
 import { formatTime } from "@/lib/utils";
@@ -67,6 +68,19 @@ export const PostDetailClient: React.FC = () => {
 
   // Check if post belongs to Bạch thoại Phật pháp
   const isBachThoai = displayPost ? isBachThoaiPhatPhapCategory(displayPost) : false;
+
+  // Check if post belongs to Khai thị
+  const isKhaiThiPost = useMemo(() => {
+    if (pathname?.includes("/khai-thi")) return true;
+    if (displayPost) {
+      return isKhaiThi(
+        displayPost.categoryId || displayPost.category?.id,
+        displayPost.category?.slug,
+        displayPost.category?.name
+      );
+    }
+    return false;
+  }, [displayPost, pathname]);
   const isCurrentPostPlaying =
     displayPost && currentTrack?.id === displayPost.id && isGlobalPlaying;
 
@@ -215,12 +229,7 @@ export const PostDetailClient: React.FC = () => {
 
           {/* Loading State */}
           {isLoading && !displayPost && (
-            <div className="rounded-3xl border border-[#EDE5D8]/90 bg-white/90 p-8 text-center shadow-xs sm:p-12">
-              <Loader2 className="mx-auto h-8 w-8 animate-spin text-amber-600" />
-              <p className="mt-3 text-sm font-medium text-neutral-600">
-                Đang tải nội dung bài viết...
-              </p>
-            </div>
+            isKhaiThiPost ? <KhaiThiPostDetailSkeleton /> : <NormalPostSkeleton />
           )}
 
           {/* Error State when post cannot be found */}

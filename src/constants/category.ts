@@ -10,6 +10,10 @@ export const NIEM_KINH_SLUG = 'niem-kinh';
 export const NGOI_NHA_NHO_SLUG = 'ngoi-nha-nho';
 export const KINH_SACH_SLUG = 'kinh-sach';
 
+export const PHONG_SINH_SLUG = 'phong-sinh';
+export const PHAT_NGUYEN_SLUG = 'phat-nguyen';
+export const THAP_HUONG_BAN_THO_PHAT_SLUG = 'thap-huong-ban-tho-phat';
+
 /**
  * Default categories used across the system and admin sidebar tabs
  */

@@ -8,7 +8,7 @@ export interface NavItem {
 
 export const MAIN_NAV_ITEMS: NavItem[] = [
   { id: "home", label: "Trang chủ", iconName: "Home", href: "/" },
-  { id: "practice", label: "Tu tập", iconName: "Flame", href: "#tu-tap" },
+  // { id: "practice", label: "Tu tập", iconName: "Flame", href: "#tu-tap" },
   {
     id: "bach-thoai-phat-phap",
     label: "Bạch thoại Phật pháp",
@@ -62,14 +62,14 @@ export const QUICK_PRACTICE_ITEMS: QuickPracticeItem[] = [
     href: "/ngoi-nha-nho",
   },
   {
-    id: "phong-sanh",
-    title: "Phóng sanh",
+    id: "phong-sinh",
+    title: "Phóng sinh",
     subtitle: "Giúp muôn loài, gieo duyên lành",
     iconType: "phong-sinh.png",
     bgClass: "bg-[#E6F7F5]",
     borderClass: "border-[#C5EFEA]",
     textClass: "text-[#168378]",
-    href: "#phong-sanh",
+    href: "/phong-sinh",
   },
   {
     id: "phat-nguyen",
@@ -79,7 +79,7 @@ export const QUICK_PRACTICE_ITEMS: QuickPracticeItem[] = [
     bgClass: "bg-[#FDF0ED]",
     borderClass: "border-[#FADCD5]",
     textClass: "text-[#B84E38]",
-    href: "#phat-nguyen",
+    href: "/phat-nguyen",
   },
   {
     id: "thap-huong",
@@ -89,7 +89,7 @@ export const QUICK_PRACTICE_ITEMS: QuickPracticeItem[] = [
     bgClass: "bg-[#FFF6E4]",
     borderClass: "border-[#FFE5BA]",
     textClass: "text-[#B86E0E]",
-    href: "#thap-huong",
+    href: "/thap-huong-ban-tho-phat",
   },
 ];
 
