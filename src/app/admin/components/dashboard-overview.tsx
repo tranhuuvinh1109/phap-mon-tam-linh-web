@@ -101,65 +101,6 @@ const STATS_DATA: StatCardData[] = [
   },
 ];
 
-// 2. Mock Top Viewed Posts
-const TOP_VIEWED_POSTS: TopViewedPostItem[] = [
-  {
-    id: "p-1",
-    title: "Buông bỏ muộn phiền để tìm lại sự an lạc và tự tại trong tâm hồn",
-    slug: "buong-bo-muon-phien-an-lac",
-    category: "Khai thị",
-    views: 42850,
-    audioPlays: 12400,
-    author: "TT. Thích Minh Niệm",
-    thumbnailUrl: "/images/lotus-thumb.jpg",
-    publishedAt: "08/10/2026",
-  },
-  {
-    id: "p-2",
-    title: "Ý nghĩa của lòng từ bi, hạnh nhẫn nhục và phương pháp nuôi dưỡng tâm bồ đề",
-    slug: "y-nghia-long-tu-bi-hanh-nhan-nhuc",
-    category: "Bạch thoại Phật pháp",
-    views: 38200,
-    audioPlays: 15800,
-    author: "TT. Thích Pháp Hòa",
-    thumbnailUrl: "/images/buddha-thumb.jpg",
-    publishedAt: "05/10/2026",
-  },
-  {
-    id: "p-3",
-    title: "Kinh Kim Cang: Bát Nhã Ba La Mật Đa và ánh sáng trí tuệ giải thoát",
-    slug: "kinh-kim-cang-tri-tue-giai-thoat",
-    category: "Kinh",
-    views: 29400,
-    audioPlays: 8900,
-    author: "TT. Thích Chân Quang",
-    thumbnailUrl: "/images/home-hero-banner.jpg",
-    publishedAt: "01/10/2026",
-  },
-  {
-    id: "p-4",
-    title: "Chánh niệm trong từng bước chân và hơi thở giữa nhịp sống bận rộn",
-    slug: "chanh-niem-tung-buoc-chan",
-    category: "Khai thị",
-    views: 24150,
-    audioPlays: 6200,
-    author: "Thiền sư Thích Nhất Hạnh",
-    thumbnailUrl: "/images/auth-banner.jpg",
-    publishedAt: "28/09/2026",
-  },
-  {
-    id: "p-5",
-    title: "Nhân quả ba đời và bài học thức tỉnh lương tri của người con Phật",
-    slug: "nhan-qua-ba-doi-bai-hoc-thuc-tinh",
-    category: "Bạch thoại Phật pháp",
-    views: 19800,
-    audioPlays: 7450,
-    author: "TT. Thích Minh Niệm",
-    thumbnailUrl: "/images/lotus-thumb.jpg",
-    publishedAt: "24/09/2026",
-  },
-];
-
 // 3. Mock Traffic Data for Week & Month
 const WEEK_TRAFFIC: TrafficDataPoint[] = [
   { label: "Thứ 2", shortLabel: "T2", visitors: 2150, views: 6800, heightPercent: 55 },
@@ -301,8 +242,8 @@ export const DashboardOverview: React.FC = () => {
               type="button"
               onClick={() => setPeriod("week")}
               className={`cursor-pointer rounded-lg px-3 py-1.5 font-semibold transition ${period === "week"
-                  ? "bg-amber-800 text-white shadow-2xs"
-                  : "text-neutral-600 hover:text-amber-900"
+                ? "bg-amber-800 text-white shadow-2xs"
+                : "text-neutral-600 hover:text-amber-900"
                 }`}
             >
               Trong tuần
@@ -311,8 +252,8 @@ export const DashboardOverview: React.FC = () => {
               type="button"
               onClick={() => setPeriod("month")}
               className={`cursor-pointer rounded-lg px-3 py-1.5 font-semibold transition ${period === "month"
-                  ? "bg-amber-800 text-white shadow-2xs"
-                  : "text-neutral-600 hover:text-amber-900"
+                ? "bg-amber-800 text-white shadow-2xs"
+                : "text-neutral-600 hover:text-amber-900"
                 }`}
             >
               Trong tháng
@@ -370,10 +311,10 @@ export const DashboardOverview: React.FC = () => {
                 {/* Tooltip on Hover / Tap - constrained position so it never overflows viewport */}
                 <div
                   className={`pointer-events-none mb-1 rounded-lg bg-neutral-900 px-2 py-1 text-[10px] font-medium whitespace-nowrap text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100 sm:text-[11px] z-20 absolute bottom-full ${idx === 0
-                      ? "left-0"
-                      : idx === trafficData.length - 1
-                        ? "right-0"
-                        : "left-1/2 -translate-x-1/2"
+                    ? "left-0"
+                    : idx === trafficData.length - 1
+                      ? "right-0"
+                      : "left-1/2 -translate-x-1/2"
                     }`}
                 >
                   <div>{pt.visitors.toLocaleString()} người</div>
