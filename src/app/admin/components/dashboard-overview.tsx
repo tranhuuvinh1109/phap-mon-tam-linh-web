@@ -258,9 +258,8 @@ export const DashboardOverview: React.FC = () => {
                     {stat.value}
                   </span>
                   <span
-                    className={`inline-flex items-center text-[10px] font-semibold sm:text-xs ${
-                      stat.isPositive ? "text-emerald-700" : "text-rose-700"
-                    }`}
+                    className={`inline-flex items-center text-[10px] font-semibold sm:text-xs ${stat.isPositive ? "text-emerald-700" : "text-rose-700"
+                      }`}
                   >
                     {stat.isPositive ? (
                       <ArrowUpRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -301,22 +300,20 @@ export const DashboardOverview: React.FC = () => {
             <button
               type="button"
               onClick={() => setPeriod("week")}
-              className={`cursor-pointer rounded-lg px-3 py-1.5 font-semibold transition ${
-                period === "week"
+              className={`cursor-pointer rounded-lg px-3 py-1.5 font-semibold transition ${period === "week"
                   ? "bg-amber-800 text-white shadow-2xs"
                   : "text-neutral-600 hover:text-amber-900"
-              }`}
+                }`}
             >
               Trong tuần
             </button>
             <button
               type="button"
               onClick={() => setPeriod("month")}
-              className={`cursor-pointer rounded-lg px-3 py-1.5 font-semibold transition ${
-                period === "month"
+              className={`cursor-pointer rounded-lg px-3 py-1.5 font-semibold transition ${period === "month"
                   ? "bg-amber-800 text-white shadow-2xs"
                   : "text-neutral-600 hover:text-amber-900"
-              }`}
+                }`}
             >
               Trong tháng
             </button>
@@ -372,13 +369,12 @@ export const DashboardOverview: React.FC = () => {
               >
                 {/* Tooltip on Hover / Tap - constrained position so it never overflows viewport */}
                 <div
-                  className={`pointer-events-none mb-1 rounded-lg bg-neutral-900 px-2 py-1 text-[10px] font-medium whitespace-nowrap text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100 sm:text-[11px] z-20 absolute bottom-full ${
-                    idx === 0
+                  className={`pointer-events-none mb-1 rounded-lg bg-neutral-900 px-2 py-1 text-[10px] font-medium whitespace-nowrap text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100 sm:text-[11px] z-20 absolute bottom-full ${idx === 0
                       ? "left-0"
                       : idx === trafficData.length - 1
-                      ? "right-0"
-                      : "left-1/2 -translate-x-1/2"
-                  }`}
+                        ? "right-0"
+                        : "left-1/2 -translate-x-1/2"
+                    }`}
                 >
                   <div>{pt.visitors.toLocaleString()} người</div>
                   <div className="font-bold text-amber-300">
@@ -402,128 +398,6 @@ export const DashboardOverview: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* 4. Top Most Viewed Posts Section */}
-      <div className="rounded-2xl border border-[#EDE5D8]/90 bg-white/95 p-4 shadow-2xs sm:p-6 overflow-hidden">
-        <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-          <div className="min-w-0 pr-2">
-            <h3 className="text-base font-bold text-neutral-900 sm:text-lg break-words">
-              Bài viết được xem nhiều nhất
-            </h3>
-            <p className="mt-0.5 text-xs text-neutral-500 break-words">
-              Xếp hạng theo tổng lượt xem và số lượt phát âm thanh trực tuyến
-            </p>
-          </div>
-
-          <Link
-            href="/admin/post"
-            className="flex items-center gap-1 text-xs font-semibold text-amber-800 transition hover:text-amber-900 shrink-0"
-          >
-            <span>Quản lý tất cả</span>
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        {/* Posts Table / Responsive List with Full Text Wrapping */}
-        <div className="divide-y divide-neutral-100">
-          {TOP_VIEWED_POSTS.map((post, index) => (
-            <div
-              key={post.id}
-              className="group flex flex-col justify-between gap-3 rounded-xl p-2.5 sm:p-3 transition hover:bg-[#FAF7F0]/80 sm:flex-row sm:items-center"
-            >
-              {/* Left: Rank, Image & Details (items-start for clean multi-line wrapping) */}
-              <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-3.5">
-                {/* Rank Number Badge */}
-                <span
-                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold sm:h-7 sm:w-7 ${
-                    index === 0
-                      ? "bg-amber-600 text-white shadow-2xs"
-                      : index === 1
-                        ? "bg-amber-500/80 text-white"
-                        : index === 2
-                          ? "bg-amber-400/80 text-neutral-900"
-                          : "bg-neutral-100 text-neutral-500"
-                  }`}
-                >
-                  {index + 1}
-                </span>
-
-                {/* Thumbnail */}
-                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-[#EDE5D8] bg-amber-50 sm:h-14 sm:w-14">
-                  <Image
-                    src={post.thumbnailUrl}
-                    alt={post.title}
-                    fill
-                    className="object-cover transition group-hover:scale-105"
-                  />
-                </div>
-
-                {/* Info Text with Full Text Display and Clean Multi-line Wrap */}
-                <div className="min-w-0 flex-1 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-md border border-amber-200 bg-amber-100/80 px-2 py-0.5 text-[10px] font-semibold text-amber-900">
-                      {post.category}
-                    </span>
-                    <span className="text-[11px] font-medium text-neutral-400">
-                      {post.publishedAt}
-                    </span>
-                  </div>
-
-                  {/* Full title displayed, allowed to wrap without breaking layout */}
-                  <h4 className="text-xs sm:text-sm font-bold text-neutral-900 leading-snug break-words transition group-hover:text-amber-800">
-                    {post.title}
-                  </h4>
-
-                  {/* Author information */}
-                  <p className="text-[11px] text-neutral-500 break-words">
-                    Tác giả: <span className="font-medium text-neutral-700">{post.author}</span>
-                  </p>
-
-                  {/* Mobile Metrics (Rendered neatly under the author to prevent detached self-end lines) */}
-                  <div className="flex flex-wrap items-center gap-3.5 pt-1 sm:hidden">
-                    <div className="flex items-center gap-1 text-[11px] font-semibold text-neutral-700">
-                      <Eye className="h-3 w-3 text-neutral-400" />
-                      <span>{post.views.toLocaleString()}</span>
-                      <span className="text-[10px] text-neutral-400 font-normal">lượt xem</span>
-                    </div>
-
-                    {post.audioPlays ? (
-                      <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-800">
-                        <Headphones className="h-3 w-3 text-emerald-600" />
-                        <span>{post.audioPlays.toLocaleString()}</span>
-                        <span className="text-[10px] text-neutral-400 font-normal">lượt nghe</span>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-
-              {/* Desktop Metrics Stats (Hidden on mobile, cleanly aligned on desktop) */}
-              <div className="hidden sm:flex shrink-0 items-center gap-6 sm:self-center">
-                {/* Views Count */}
-                <div className="text-right">
-                  <div className="flex items-center justify-end gap-1 text-xs font-bold text-neutral-900 sm:text-sm">
-                    <Eye className="h-3.5 w-3.5 text-neutral-400" />
-                    <span>{post.views.toLocaleString()}</span>
-                  </div>
-                  <span className="text-[10px] text-neutral-400">lượt xem</span>
-                </div>
-
-                {/* Audio Plays Count */}
-                {post.audioPlays ? (
-                  <div className="text-right">
-                    <div className="flex items-center justify-end gap-1 text-xs font-bold text-emerald-800 sm:text-sm">
-                      <Headphones className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>{post.audioPlays.toLocaleString()}</span>
-                    </div>
-                    <span className="text-[10px] text-neutral-400">lượt nghe</span>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </div>
