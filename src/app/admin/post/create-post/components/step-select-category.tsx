@@ -13,10 +13,11 @@ import {
 } from "lucide-react";
 import React, { useId, useState } from "react";
 
-import { useGetCategories } from "@/api/category";
+import { useGetCategories, useGetCategoryTree } from "@/api/category";
 import { Button } from "@/components/ui";
 import { ContentType } from "@/enums";
 import { getContentTypeByCategory, isNiemKinh } from "../../utils/content-type";
+import { FolderTree } from "lucide-react";
 
 interface StepSelectCategoryProps {
   selectedCategoryId: string;
@@ -42,8 +43,22 @@ export const StepSelectCategory: React.FC<StepSelectCategoryProps> = ({
     refetch,
   } = useGetCategories();
 
+  const { data: categoryTree = [] } = useGetCategoryTree();
+
   // Filter out soft-deleted categories
   const activeCategories = categories.filter((cat) => !cat.deletedAt);
+
+  // Organize categories into hierarchy
+  const organizedCategories = React.useMemo(() => {
+    if (categoryTree && categoryTree.length > 0) {
+      return categoryTree.filter((cat) => !cat.deletedAt);
+    }
+    const rootCats = activeCategories.filter((c) => !c.parentId);
+    return rootCats.map((root) => ({
+      ...root,
+      children: activeCategories.filter((c) => c.parentId === root.id),
+    }));
+  }, [categoryTree, activeCategories]);
 
   // Determine content type from currently selected categoryId
   const determinedContentType = categoryId
@@ -158,11 +173,26 @@ export const StepSelectCategory: React.FC<StepSelectCategoryProps> = ({
                 }`}
               >
                 <option value="">-- Chọn danh mục cho bài viết --</option>
-                {activeCategories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name} ({category.slug})
-                  </option>
-                ))}
+                {organizedCategories.map((group) => {
+                  const hasChildren = group.children && group.children.length > 0;
+                  if (hasChildren) {
+                    return (
+                      <optgroup key={group.id} label={`📁 ${group.name}`}>
+                        <option value={group.id}>[Chính danh mục] {group.name}</option>
+                        {group.children?.map((child) => (
+                          <option key={child.id} value={child.id}>
+                            &nbsp;&nbsp;&nbsp;&nbsp;↳ {child.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  }
+                  return (
+                    <option key={group.id} value={group.id}>
+                      📁 {group.name}
+                    </option>
+                  );
+                })}
               </select>
 
               {/* Chevron icon */}
@@ -170,6 +200,21 @@ export const StepSelectCategory: React.FC<StepSelectCategoryProps> = ({
                 <Tag className="h-4 w-4" />
               </div>
             </div>
+
+            {selectedCategoryObj && (
+              <div className="mt-2 flex items-center gap-1.5 text-xs text-neutral-500">
+                <FolderTree className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                {selectedCategoryObj.parent || selectedCategoryObj.parentId ? (
+                  <span>
+                    Cây danh mục: <strong className="text-neutral-700">{selectedCategoryObj.parent?.name || organizedCategories.find((g) => g.id === selectedCategoryObj.parentId)?.name}</strong> › <strong className="text-amber-800">{selectedCategoryObj.name}</strong>
+                  </span>
+                ) : (
+                  <span>
+                    Cây danh mục: <strong className="text-neutral-700">{selectedCategoryObj.name}</strong> (Danh mục gốc)
+                  </span>
+                )}
+              </div>
+            )}
 
             {categoryError && (
               <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-red-600">

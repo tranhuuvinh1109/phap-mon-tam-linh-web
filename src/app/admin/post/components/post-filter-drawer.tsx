@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 
-import { useGetCategories } from "@/api/category";
+import { useGetCategories, useGetCategoryTree } from "@/api/category";
 import { useGetGroups } from "@/api/group";
 import { PostApprovalStatus } from "@/api/post";
 import { Button } from "@/components/ui";
@@ -72,6 +72,18 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
   // Fetch categories
   const { data: categories = [], isLoading: isLoadingCategories } =
     useGetCategories();
+  const { data: categoryTree = [] } = useGetCategoryTree();
+
+  const organizedCategories = React.useMemo(() => {
+    if (categoryTree && categoryTree.length > 0) {
+      return categoryTree.filter((cat) => !cat.deletedAt);
+    }
+    const rootCats = categories.filter((c) => !c.deletedAt && !c.parentId);
+    return rootCats.map((root) => ({
+      ...root,
+      children: categories.filter((c) => !c.deletedAt && c.parentId === root.id),
+    }));
+  }, [categoryTree, categories]);
 
   // Find selected category object (by id or by slug)
   const selectedCategory = categories.find(
@@ -218,11 +230,26 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
                 className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-base sm:text-sm text-neutral-800 shadow-2xs outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20"
               >
                 <option value="">-- Tất cả chuyên mục --</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
+                {organizedCategories.map((group) => {
+                  const hasChildren = group.children && group.children.length > 0;
+                  if (hasChildren) {
+                    return (
+                      <optgroup key={group.id} label={`📁 ${group.name}`}>
+                        <option value={group.id}>[Cả nhóm] {group.name}</option>
+                        {group.children?.map((child) => (
+                          <option key={child.id} value={child.id}>
+                            &nbsp;&nbsp;&nbsp;&nbsp;↳ {child.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  }
+                  return (
+                    <option key={group.id} value={group.id}>
+                      📁 {group.name}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 

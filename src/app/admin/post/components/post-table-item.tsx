@@ -61,6 +61,7 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
   const groupDisplayName = isUndefinedGroup ? "không xác định" : groupName;
 
   const categoryName = post.category?.name || "Chưa phân loại";
+  const parentCategoryName = post.category?.parent?.name;
 
   const defaultThumbnail = isBachThoai
     ? "/images/bach-thoai-phat-phap.png"
@@ -98,15 +99,39 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
       </td>
 
       {/* Category */}
-      <td className="py-3.5 px-4 min-w-[130px]">
-        <span
-          title={categoryName}
-          className={`inline-block w-full max-w-[130px] rounded-md border px-2.5 py-1 text-xs font-medium text-center leading-normal cursor-default ${getCategoryBadgeStyle(
-            post.category?.slug || post.category?.name
-          )}`}
-        >
-          {categoryName}
-        </span>
+      <td className="py-3.5 px-4 min-w-[150px]">
+        {post.category ? (
+          parentCategoryName ? (
+            <div
+              className="flex flex-col items-center gap-0.5"
+              title={`${parentCategoryName} › ${post.category.name}`}
+            >
+              <span className="text-[10px] font-medium text-neutral-400 truncate max-w-[150px] flex items-center gap-1">
+                <span className="text-[9px]">📁</span> {parentCategoryName}
+              </span>
+              <span
+                className={`inline-block w-full max-w-[150px] rounded-md border px-2 py-0.5 text-xs font-semibold text-center leading-normal cursor-default ${getCategoryBadgeStyle(
+                  post.category?.slug || post.category?.name
+                )}`}
+              >
+                ↳ {post.category.name}
+              </span>
+            </div>
+          ) : (
+            <span
+              title={categoryName}
+              className={`inline-block w-full max-w-[150px] rounded-md border px-2.5 py-1 text-xs font-semibold text-center leading-normal cursor-default ${getCategoryBadgeStyle(
+                post.category?.slug || post.category?.name
+              )}`}
+            >
+              {categoryName}
+            </span>
+          )
+        ) : (
+          <span className="inline-block w-full max-w-[150px] rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs font-medium text-center text-neutral-400">
+            Chưa phân loại
+          </span>
+        )}
       </td>
 
       {/* Type */}
