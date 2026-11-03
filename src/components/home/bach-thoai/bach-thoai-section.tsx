@@ -40,7 +40,7 @@ export const BachThoaiSection: React.FC<BachThoaiSectionProps> = ({
         slug: post.slug || post.id,
         authorName: post.author?.name || "Đại sư Lư Quân Hoành",
         durationText,
-        thumbnailUrl: post.thumbnailUrl || "/images/lotus-thumb.jpg",
+        thumbnailUrl: post.thumbnailUrl || "/images/bach-thoai-phat-phap.png",
         type: post.type || (post.audio?.audioUrl ? ContentType.AUDIO : ContentType.NORMAL),
         audioUrl: post.audio?.audioUrl,
         snippet,

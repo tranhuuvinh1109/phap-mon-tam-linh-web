@@ -65,12 +65,12 @@ export const BachThoaiHistorySidebar: React.FC<BachThoaiHistorySidebarProps> = (
                   {/* Thumbnail */}
                   <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-amber-100 shadow-2xs">
                     <img
-                      src={item.thumbnailUrl || "/images/lotus-thumb.jpg"}
+                      src={item.thumbnailUrl || "/images/bach-thoai-phat-phap.png"}
                       alt={item.title}
                       className="h-full w-full object-cover"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src =
-                          "/images/lotus-thumb.jpg";
+                          "/images/bach-thoai-phat-phap.png";
                       }}
                     />
                     {isCurrent && (

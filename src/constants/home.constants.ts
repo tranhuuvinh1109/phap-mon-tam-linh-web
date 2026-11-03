@@ -106,21 +106,21 @@ export const BACH_THOAI_ITEMS: PlaylistItem[] = [
     id: "bt-1",
     title: "Sống an lạc trong hiện tại",
     duration: "28:16",
-    thumbnail: "/images/lotus-thumb.jpg",
+    thumbnail: "/images/bach-thoai-phat-phap.png",
     href: "#",
   },
   {
     id: "bt-2",
     title: "Khởi nguồn của lòng từ bi",
     duration: "24:32",
-    thumbnail: "/images/buddha-thumb.jpg",
+    thumbnail: "/images/bach-thoai-phat-phap.png",
     href: "#",
   },
   {
     id: "bt-3",
     title: "Phật pháp trong đời sống",
     duration: "31:45",
-    thumbnail: "/images/auth-banner.jpg",
+    thumbnail: "/images/bach-thoai-phat-phap.png",
     href: "#",
   },
 ];
@@ -200,5 +200,5 @@ export const CONTINUE_LISTENING_DATA = {
 export const HERO_BANNER_DATA = {
   quote: "“Pháp môn tâm linh - Quảng Độ Chúng Sanh Hữu Duyên.”",
   author: "",
-  bannerImage: "/images/home-hero-banner.jpg",
+  bannerImage: "/images/hero-banner.jpg",
 };

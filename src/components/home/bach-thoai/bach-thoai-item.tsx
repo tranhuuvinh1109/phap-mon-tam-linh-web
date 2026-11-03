@@ -66,7 +66,7 @@ export const BachThoaiItem: React.FC<BachThoaiItemProps> = ({ item, searchQuery 
         categoryName: "Bạch thoại Phật pháp",
         categorySlug: "bach-thoai-phat-phap",
         postUrl,
-        thumbnailUrl: item.thumbnailUrl,
+        thumbnailUrl: item.thumbnailUrl || "/images/bach-thoai-phat-phap.png",
         audioUrl: item.audioUrl,
       });
     }
@@ -84,11 +84,12 @@ export const BachThoaiItem: React.FC<BachThoaiItemProps> = ({ item, searchQuery 
       {/* Left: Thumbnail with Play Hover */}
       <div className="relative h-18 w-18 sm:h-20 sm:w-20 md:h-22 md:w-22 shrink-0 overflow-hidden rounded-xl sm:rounded-2xl border border-amber-900/10 bg-amber-50 shadow-2xs">
         <img
-          src={item.thumbnailUrl}
+          src={item.thumbnailUrl || "/images/bach-thoai-phat-phap.png"}
           alt={item.title}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="h-full w-full object-cover object-right transition-transform duration-300 group-hover:scale-105 origin-right"
+          style={{ objectPosition: "center right" }}
           onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = "/images/lotus-thumb.jpg";
+            (e.currentTarget as HTMLImageElement).src = "/images/bach-thoai-phat-phap.png";
           }}
         />
 

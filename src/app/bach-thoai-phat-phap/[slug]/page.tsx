@@ -23,7 +23,7 @@ export async function generateMetadata({
     const postDesc = post?.content
       ? stripHtml(post.content).slice(0, 160)
       : `Nội dung bài viết Bạch Thoại Phật Pháp: ${decodedSlug}`;
-    const metaImage = post?.thumbnailUrl || DEFAULT_META_IMAGE;
+    const metaImage = post?.thumbnailUrl || "/images/bach-thoai-phat-phap.png";
 
     return {
       title: postTitle,
@@ -44,7 +44,7 @@ export async function generateMetadata({
       ...createOpenGraphMetadata({
         title: fallbackTitle,
         description: fallbackDesc,
-        imageUrl: DEFAULT_META_IMAGE,
+        imageUrl: "/images/bach-thoai-phat-phap.png",
       }),
     };
   }

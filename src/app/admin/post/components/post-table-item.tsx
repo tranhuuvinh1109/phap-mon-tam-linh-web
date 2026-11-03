@@ -62,6 +62,10 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
 
   const categoryName = post.category?.name || "Chưa phân loại";
 
+  const defaultThumbnail = isBachThoai
+    ? "/images/bach-thoai-phat-phap.png"
+    : "/images/lotus-thumb.jpg";
+
   return (
     <tr className="hover:bg-amber-50/40 transition-colors">
       {/* Title & Thumbnail */}
@@ -69,12 +73,11 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
         <div className="flex items-center gap-3">
           <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-amber-900/10 bg-amber-50">
             <img
-              src={post.thumbnailUrl || "/images/lotus-thumb.jpg"}
+              src={post.thumbnailUrl || defaultThumbnail}
               alt={post.title}
               className="h-full w-full object-cover"
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src =
-                  "/images/lotus-thumb.jpg";
+                (e.currentTarget as HTMLImageElement).src = defaultThumbnail;
               }}
             />
           </div>

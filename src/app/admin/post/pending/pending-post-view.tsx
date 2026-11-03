@@ -216,12 +216,19 @@ export const PendingPostView: React.FC = () => {
                         <div className="flex items-center gap-3">
                           <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-amber-900/10 bg-amber-50">
                             <img
-                              src={post.thumbnailUrl || "/images/lotus-thumb.jpg"}
+                              src={
+                                post.thumbnailUrl ||
+                                (post.category?.slug === "bach-thoai-phat-phap"
+                                  ? "/images/bach-thoai-phat-phap.png"
+                                  : "/images/lotus-thumb.jpg")
+                              }
                               alt={post.title}
                               className="h-full w-full object-cover"
                               onError={(e) => {
                                 (e.currentTarget as HTMLImageElement).src =
-                                  "/images/lotus-thumb.jpg";
+                                  post.category?.slug === "bach-thoai-phat-phap"
+                                    ? "/images/bach-thoai-phat-phap.png"
+                                    : "/images/lotus-thumb.jpg";
                               }}
                             />
                           </div>

@@ -45,9 +45,12 @@ export const PersistentAudioPlayer: React.FC = () => {
     if (currentTrack?.thumbnailUrl) {
       setThumbSrc(currentTrack.thumbnailUrl);
     } else {
-      setThumbSrc("/images/lotus-thumb.jpg");
+      const isBachThoai =
+        currentTrack?.categorySlug === "bach-thoai-phat-phap" ||
+        currentTrack?.categoryName?.toLowerCase().includes("bạch thoại");
+      setThumbSrc(isBachThoai ? "/images/bach-thoai-phat-phap.png" : "/images/lotus-thumb.jpg");
     }
-  }, [currentTrack?.thumbnailUrl]);
+  }, [currentTrack]);
 
   // Handle source & play state updates
   useEffect(() => {
@@ -272,7 +275,12 @@ export const PersistentAudioPlayer: React.FC = () => {
             <img
               src={thumbSrc}
               alt={currentTrack.title}
-              onError={() => setThumbSrc("/images/lotus-thumb.jpg")}
+              onError={() => {
+                const isBachThoai =
+                  currentTrack?.categorySlug === "bach-thoai-phat-phap" ||
+                  currentTrack?.categoryName?.toLowerCase().includes("bạch thoại");
+                setThumbSrc(isBachThoai ? "/images/bach-thoai-phat-phap.png" : "/images/lotus-thumb.jpg");
+              }}
               className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
             />
           </div>

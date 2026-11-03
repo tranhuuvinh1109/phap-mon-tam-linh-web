@@ -316,11 +316,17 @@ export const CategorizedPosts: React.FC<CategorizedPostsProps> = ({
                 postCategorySlug,
                 post.category?.name
               );
+              const isBachThoaiPost =
+                postCategorySlug === "bach-thoai-phat-phap" || group.isBachThoai;
               const postUrl = isNiemKinhPost
                 ? `/niem-kinh/${encodeURIComponent(post.slug || post.id)}`
-                : postCategorySlug === "bach-thoai-phat-phap"
+                : isBachThoaiPost
                 ? `/bach-thoai-phat-phap/${encodeURIComponent(post.slug || post.id)}`
                 : `/khai-thi/${encodeURIComponent(post.slug || post.id)}`;
+
+              const defaultThumbnail = isBachThoaiPost
+                ? "/images/bach-thoai-phat-phap.png"
+                : "/images/lotus-thumb.jpg";
 
               return (
                 <div
@@ -352,11 +358,14 @@ export const CategorizedPosts: React.FC<CategorizedPostsProps> = ({
                       className="relative h-13 w-13 shrink-0 overflow-hidden rounded-xl border border-amber-900/10 bg-amber-50/50 mt-0.5 block"
                     >
                       <img
-                        src={post.thumbnailUrl || "/images/lotus-thumb.jpg"}
+                        src={post.thumbnailUrl || defaultThumbnail}
                         alt={post.title}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+                          isBachThoaiPost ? "object-right origin-right" : "object-center"
+                        }`}
+                        style={isBachThoaiPost ? { objectPosition: "center right" } : undefined}
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = "/images/lotus-thumb.jpg";
+                          (e.currentTarget as HTMLImageElement).src = defaultThumbnail;
                         }}
                       />
                     </Link>

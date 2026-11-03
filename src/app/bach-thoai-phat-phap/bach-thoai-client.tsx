@@ -199,7 +199,7 @@ export const BachThoaiClient: React.FC = () => {
         slug: post.slug || post.id,
         authorName: post.author?.name || "Bạch thoại Phật pháp",
         durationText,
-        thumbnailUrl: post.thumbnailUrl || "/images/lotus-thumb.jpg",
+        thumbnailUrl: post.thumbnailUrl || "/images/bach-thoai-phat-phap.png",
         type: post.type || (post.audio?.audioUrl ? ContentType.AUDIO : ContentType.NORMAL),
         audioUrl: post.audio?.audioUrl,
         snippet,
@@ -231,8 +231,8 @@ export const BachThoaiClient: React.FC = () => {
     for (const item of filteredItems) {
       const key =
         item.groupName &&
-        item.groupName.toLowerCase() !== "undefined" &&
-        item.groupName.toLowerCase() !== "không xác định"
+          item.groupName.toLowerCase() !== "undefined" &&
+          item.groupName.toLowerCase() !== "không xác định"
           ? item.groupName
           : "Chưa phân nhóm";
       if (!groupsMap.has(key)) {
@@ -311,7 +311,7 @@ export const BachThoaiClient: React.FC = () => {
         <div className="relative overflow-hidden rounded-3xl border border-amber-900/10 shadow-sm">
           <div className="relative h-48 w-full sm:h-60">
             <Image
-              src="/images/home-hero-banner.jpg"
+              src="/images/hero-banner.jpg"
               alt="Bạch thoại Phật pháp"
               fill
               priority
@@ -361,11 +361,10 @@ export const BachThoaiClient: React.FC = () => {
               type="button"
               onClick={() => handleSelectGroup("ALL")}
               title="Tất cả nhóm"
-              className={`flex h-14 w-[140px] max-w-[140px] min-w-[140px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-left text-xs leading-tight font-semibold transition ${
-                !selectedGroupObj
-                  ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
-                  : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
-              }`}
+              className={`flex h-14 w-[140px] max-w-[140px] min-w-[140px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-left text-xs leading-tight font-semibold transition ${!selectedGroupObj
+                ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
+                : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
+                }`}
             >
               <Sparkles className="h-4 w-4 shrink-0" />
               <span className="line-clamp-2 leading-tight break-words">Tất cả nhóm</span>

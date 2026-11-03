@@ -101,7 +101,11 @@ export const PostDetailClient: React.FC = () => {
         categoryName: displayPost.category?.name || "Audio Phật pháp",
         categorySlug: displayPost.category?.slug,
         postUrl: pathname,
-        thumbnailUrl: displayPost.thumbnailUrl || "/images/lotus-thumb.jpg",
+        thumbnailUrl:
+          displayPost.thumbnailUrl ||
+          (displayPost.category?.slug === "bach-thoai-phat-phap" || pathname.includes("/bach-thoai")
+            ? "/images/bach-thoai-phat-phap.png"
+            : "/images/lotus-thumb.jpg"),
         audioUrl: displayPost.audio.audioUrl,
         duration: displayPost.audio.duration || undefined,
       });
@@ -110,13 +114,17 @@ export const PostDetailClient: React.FC = () => {
 
   const handleToggleFavorite = () => {
     if (!displayPost) return;
+    const isBachThoai =
+      displayPost.category?.slug === "bach-thoai-phat-phap" || pathname.includes("/bach-thoai");
     const isSaved = toggleFavorite({
       id: displayPost.id,
       title: displayPost.title,
       slug: displayPost.slug || displayPost.id,
       authorName: displayPost.author?.name || "Tác giả",
       categoryName: displayPost.category?.name || "Bạch thoại Phật pháp",
-      thumbnailUrl: displayPost.thumbnailUrl || "/images/lotus-thumb.jpg",
+      thumbnailUrl:
+        displayPost.thumbnailUrl ||
+        (isBachThoai ? "/images/bach-thoai-phat-phap.png" : "/images/lotus-thumb.jpg"),
       audioUrl: displayPost.audio?.audioUrl,
       duration: displayPost.audio?.duration || undefined,
       type: displayPost.type,
@@ -402,11 +410,11 @@ export const PostDetailClient: React.FC = () => {
 
               {/* Featured Thumbnail */}
               {displayPost.thumbnailUrl && (
-                <div className="relative max-h-96 w-full overflow-hidden rounded-2xl border border-amber-900/10 bg-amber-50 shadow-xs">
+                <div className="relative w-full overflow-hidden rounded-2xl border border-amber-900/10 bg-amber-50/50 shadow-xs">
                   <img
                     src={displayPost.thumbnailUrl}
                     alt={displayPost.title}
-                    className="max-h-96 w-full object-cover object-center"
+                    className="w-full h-auto max-h-[650px] object-contain object-center rounded-2xl mx-auto"
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).style.display = "none";
                     }}

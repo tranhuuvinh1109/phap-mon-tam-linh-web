@@ -92,7 +92,7 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
           slug: post.slug || post.id,
           authorName: post.author?.name || "TT. Thích Minh Niệm",
           categoryName: post.category?.name || "Bạch thoại Phật pháp",
-          thumbnailUrl: post.thumbnailUrl || "/images/lotus-thumb.jpg",
+          thumbnailUrl: post.thumbnailUrl || "/images/bach-thoai-phat-phap.png",
           audioUrl: audioSource,
           duration: post.audio?.duration || 1965,
         });
@@ -114,7 +114,7 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
         slug: post.slug || post.id,
         authorName: post.author?.name || "TT. Thích Minh Niệm",
         categoryName: post.category?.name || "Bạch thoại Phật pháp",
-        thumbnailUrl: post.thumbnailUrl || "/images/lotus-thumb.jpg",
+        thumbnailUrl: post.thumbnailUrl || "/images/bach-thoai-phat-phap.png",
         audioUrl: audioSource,
         duration: post.audio?.duration || 1965,
       });
@@ -166,7 +166,7 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
         slug: post.slug || post.id,
         authorName: post.author?.name || "TT. Thích Minh Niệm",
         categoryName: post.category?.name || "Bạch thoại Phật pháp",
-        thumbnailUrl: post.thumbnailUrl || "/images/lotus-thumb.jpg",
+        thumbnailUrl: post.thumbnailUrl || "/images/bach-thoai-phat-phap.png",
         audioUrl: audioSource,
         duration: post.audio?.duration || 1965,
       });
@@ -208,7 +208,7 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
         slug: post.slug || post.id,
         authorName: post.author?.name || "TT. Thích Minh Niệm",
         categoryName: post.category?.name || "Bạch thoại Phật pháp",
-        thumbnailUrl: post.thumbnailUrl || "/images/lotus-thumb.jpg",
+        thumbnailUrl: post.thumbnailUrl || "/images/bach-thoai-phat-phap.png",
         audioUrl: audioSource,
         duration: post.audio?.duration || 1965,
       });
@@ -217,7 +217,7 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
   };
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const coverImage = post.thumbnailUrl || "/images/lotus-thumb.jpg";
+  const coverImage = post.thumbnailUrl || "/images/bach-thoai-phat-phap.png";
   const subtitle = `${post.category?.name || "Kinh tụng và niệm Phật"} | ${
     post.author?.name || "TT. Thích Minh Niệm"
   }`;
@@ -293,17 +293,17 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
 
         {/* Center Artwork Cover Card */}
         <div className="my-auto py-6 sm:py-8 flex flex-col items-center w-full">
-          <div className="relative h-60 w-60 sm:h-72 sm:w-72 md:h-80 md:w-80 overflow-hidden rounded-[32px] border border-amber-900/10 bg-amber-50 shadow-xl transition-all duration-300">
+          <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg aspect-[16/9] overflow-hidden rounded-2xl sm:rounded-3xl border border-amber-900/10 bg-amber-50 shadow-xl transition-all duration-300">
             <img
               src={coverImage}
               alt={post.title}
               className="h-full w-full object-cover object-center"
               onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = "/images/lotus-thumb.jpg";
+                (e.currentTarget as HTMLImageElement).src = "/images/bach-thoai-phat-phap.png";
               }}
             />
             {/* Subtle inner ring */}
-            <div className="absolute inset-0 rounded-[32px] ring-1 ring-inset ring-black/5 pointer-events-none" />
+            <div className="absolute inset-0 rounded-2xl sm:rounded-3xl ring-1 ring-inset ring-black/5 pointer-events-none" />
           </div>
 
           {/* Title & Subtitle */}

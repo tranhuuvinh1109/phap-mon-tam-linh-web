@@ -302,12 +302,19 @@ export const FavoritesClient: React.FC = () => {
                       <div className="relative h-16 w-16 sm:h-18 sm:w-18 shrink-0 overflow-hidden rounded-2xl border border-amber-900/10 bg-amber-50">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={item.thumbnailUrl || "/images/lotus-thumb.jpg"}
+                          src={
+                            item.thumbnailUrl ||
+                            (item.categoryName?.toLowerCase().includes("bạch thoại")
+                              ? "/images/bach-thoai-phat-phap.png"
+                              : "/images/lotus-thumb.jpg")
+                          }
                           alt={item.title}
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                           onError={(e) => {
                             (e.currentTarget as HTMLImageElement).src =
-                              "/images/lotus-thumb.jpg";
+                              item.categoryName?.toLowerCase().includes("bạch thoại")
+                                ? "/images/bach-thoai-phat-phap.png"
+                                : "/images/lotus-thumb.jpg";
                           }}
                         />
                       </div>

@@ -66,11 +66,11 @@ export const ListeningHistoryItemCard: React.FC<ListeningHistoryItemCardProps> =
         {/* Thumbnail */}
         <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-amber-100 shadow-2xs sm:h-20 sm:w-20">
           <img
-            src={item.thumbnailUrl || "/images/lotus-thumb.jpg"}
+            src={item.thumbnailUrl || "/images/bach-thoai-phat-phap.png"}
             alt={item.title}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = "/images/lotus-thumb.jpg";
+              (e.currentTarget as HTMLImageElement).src = "/images/bach-thoai-phat-phap.png";
             }}
           />
         </div>
