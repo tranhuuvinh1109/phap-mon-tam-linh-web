@@ -32,6 +32,7 @@ import { NiemKinhStepEditor } from "../create-post/components/niem-kinh-step-edi
 import { RichTextEditor } from "../create-post/components/rich-text-editor";
 import { PdfUpload } from "../create-post/components/pdf-upload";
 import { parseNiemKinhContent } from "../types/niem-kinh.type";
+import { BACH_THOAI_PHAT_PHAP_ID } from "@/constants";
 import { allowsGroupCategory, isBachThoaiPhatPhap, isKhaiThi, isNiemKinh } from "../utils/content-type";
 import { ConfirmModal } from "./confirm-modal";
 
@@ -181,7 +182,8 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       allowsGroupCategory(
         categoryId,
         selectedCategory?.slug || post?.category?.slug,
-        selectedCategory?.name || post?.category?.name
+        selectedCategory?.name || post?.category?.name,
+        selectedCategory?.parentId || post?.category?.parentId
       )
     );
   }, [categoryId, selectedCategory, post]);
@@ -192,7 +194,8 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       isBachThoaiPhatPhap(
         categoryId,
         selectedCategory?.slug || post?.category?.slug,
-        selectedCategory?.name || post?.category?.name
+        selectedCategory?.name || post?.category?.name,
+        selectedCategory?.parentId || post?.category?.parentId
       )
     );
   }, [categoryId, selectedCategory, post]);
@@ -749,7 +752,17 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                       </label>
                       <select
                         value={categoryId}
-                        onChange={(e) => setCategoryId(e.target.value)}
+                        onChange={(e) => {
+                          const newCatId = e.target.value;
+                          setCategoryId(newCatId);
+                          const targetCat = categories.find((c) => c.id === newCatId);
+                          if (
+                            newCatId === BACH_THOAI_PHAT_PHAP_ID ||
+                            targetCat?.parentId === BACH_THOAI_PHAT_PHAP_ID
+                          ) {
+                            setType(ContentType.AUDIO);
+                          }
+                        }}
                         disabled={isCategoriesLoading || isTreeLoading}
                         className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20"
                       >

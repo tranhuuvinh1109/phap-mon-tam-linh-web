@@ -108,7 +108,8 @@ export const CategorizedPosts: React.FC<CategorizedPostsProps> = ({
       const catSlug = cat?.slug || "uncategorized";
 
       const isBachThoai =
-        catId === BACH_THOAI_PHAT_PHAP_ID;
+        catId === BACH_THOAI_PHAT_PHAP_ID ||
+        cat?.parentId === BACH_THOAI_PHAT_PHAP_ID;
 
       if (excludeBachThoai && isBachThoai) {
         return;

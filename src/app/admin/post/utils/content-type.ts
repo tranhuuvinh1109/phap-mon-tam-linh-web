@@ -11,11 +11,16 @@ import { ContentType } from "@/enums";
 
 /**
  * Maps categoryId to its corresponding ContentType (AUDIO, VIDEO, NORMAL)
- * Customize mapping rules here as business requirements evolve.
+ * If categoryId or parentId is BACH_THOAI_PHAT_PHAP_ID, it will be AUDIO.
  */
-export function getContentTypeByCategory(categoryId: string): ContentType {
-  // Example condition: categoryId "aaaa" corresponds to AUDIO content
-  if (categoryId === BACH_THOAI_PHAT_PHAP_ID) {
+export function getContentTypeByCategory(
+  categoryId: string,
+  parentId?: string | null
+): ContentType {
+  if (
+    categoryId === BACH_THOAI_PHAT_PHAP_ID ||
+    parentId === BACH_THOAI_PHAT_PHAP_ID
+  ) {
     return ContentType.AUDIO;
   }
 
@@ -25,15 +30,20 @@ export function getContentTypeByCategory(categoryId: string): ContentType {
 
 export function isBachThoaiPhatPhapCategory(data?: PostItemType | null): boolean {
   if (!data?.category) return false;
-  return data.category.id === BACH_THOAI_PHAT_PHAP_ID;
+  return (
+    data.category.id === BACH_THOAI_PHAT_PHAP_ID ||
+    data.category.parentId === BACH_THOAI_PHAT_PHAP_ID
+  );
 }
 
 export function isBachThoaiPhatPhap(
   categoryId?: string,
   slug?: string,
-  name?: string
+  name?: string,
+  parentId?: string | null
 ): boolean {
   if (categoryId && categoryId === BACH_THOAI_PHAT_PHAP_ID) return true;
+  if (parentId && parentId === BACH_THOAI_PHAT_PHAP_ID) return true;
   if (slug && slug === BACH_THOAI_PHAT_PHAP_SLUG) return true;
   if (name) {
     const lower = name.toLowerCase();
@@ -86,8 +96,12 @@ export function isKhaiThi(
 export function allowsGroupCategory(
   categoryId?: string,
   slug?: string,
-  name?: string
+  name?: string,
+  parentId?: string | null
 ): boolean {
-  return isBachThoaiPhatPhap(categoryId, slug, name) || isKhaiThi(categoryId, slug, name);
+  return (
+    isBachThoaiPhatPhap(categoryId, slug, name, parentId) ||
+    isKhaiThi(categoryId, slug, name)
+  );
 }
 

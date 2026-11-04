@@ -54,6 +54,7 @@ import { PdfUpload } from "./pdf-upload";
 interface StepPostDetailsProps {
   formValues: CreatePostFormValues;
   category?: CategoryItemType;
+  parentCategory?: CategoryItemType | null;
   onChangeFormValues: (values: Partial<CreatePostFormValues>) => void;
   onBack: () => void;
 }
@@ -61,6 +62,7 @@ interface StepPostDetailsProps {
 export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
   formValues,
   category,
+  parentCategory,
   onChangeFormValues,
   onBack,
 }) => {
@@ -89,7 +91,8 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
   const isBachThoaiPost = isBachThoaiPhatPhap(
     formValues.categoryId,
     category?.slug,
-    category?.name
+    category?.name,
+    category?.parentId
   );
 
   const isKhaiThiPost = isKhaiThi(
@@ -101,7 +104,8 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
   const isGroupSupported = allowsGroupCategory(
     formValues.categoryId,
     category?.slug,
-    category?.name
+    category?.name,
+    category?.parentId
   );
 
   const groupQueryParams = useMemo(() => {
@@ -454,7 +458,8 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
     const isBachThoai = isBachThoaiPhatPhap(
       formValues.categoryId,
       category?.slug,
-      category?.name
+      category?.name,
+      category?.parentId
     );
 
     // Auto-generate title and slug from the file name when an audio file is selected
@@ -479,7 +484,14 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
           <Tag className="h-4 w-4 text-amber-700" />
           <span className="text-neutral-500">Danh mục:</span>
           <span className="font-semibold text-neutral-800">
-            {category?.name || formValues.categoryId}
+            {parentCategory ? (
+              <span>
+                <span className="text-neutral-500">{parentCategory.name} › </span>
+                <span className="text-amber-900">{category?.name}</span>
+              </span>
+            ) : (
+              category?.name || formValues.categoryId
+            )}
           </span>
         </div>
 
