@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React from "react";
 
-import { useGetPosts, useGetPostsByCategory } from "@/api/post";
+import { useGetPostsByCategory } from "@/api/post";
 import { useGetSettingById } from "@/api/setting";
 import {
   BachThoaiSection,
@@ -14,7 +14,7 @@ import { MainLayout } from "@/components/layout";
 import {
   BACH_THOAI_PHAT_PHAP_SLUG,
   FEATURE_FLAG_BACH_THOAI_PHAT_PHAP_WEB_ID,
-  KHAI_THI_ID,
+  KHAI_THI_SLUG,
 } from "@/constants";
 import {
   HERO_BANNER_DATA,
@@ -22,12 +22,12 @@ import {
 } from "@/constants/home.constants";
 
 export function HomeView() {
-  const { data: postsData, isLoading } = useGetPosts();
   const { data: bachThoaiSetting } = useGetSettingById(
     FEATURE_FLAG_BACH_THOAI_PHAT_PHAP_WEB_ID
   );
   const isBachThoaiEnabled = bachThoaiSetting ? bachThoaiSetting.isEnabled : true;
-  const { data: bachThoaiPosts } = useGetPostsByCategory(
+
+  const { data: bachThoaiPosts, isLoading: isBachThoaiLoading } = useGetPostsByCategory(
     {
       category_name: BACH_THOAI_PHAT_PHAP_SLUG,
       limit: 10,
@@ -36,11 +36,11 @@ export function HomeView() {
     { enabled: isBachThoaiEnabled }
   );
 
-  const posts = useMemo(() => postsData?.data || [], [postsData]);
-  // Memoized Khai Thi posts list
-  const khaiThiPosts = useMemo(() => {
-    return posts.filter((post) => post.category?.id === KHAI_THI_ID);
-  }, [posts]);
+  const { data: khaiThiPostsData, isLoading: isKhaiThiLoading } = useGetPostsByCategory({
+    category_name: KHAI_THI_SLUG,
+    limit: 6,
+    page: 1,
+  });
 
   return (
     <MainLayout activeId="home">
@@ -59,11 +59,11 @@ export function HomeView() {
 
           {/* 3. Bạch thoại phật pháp (ẩn/hiện theo setting) */}
           {isBachThoaiEnabled && (
-            <BachThoaiSection posts={bachThoaiPosts?.data} isLoading={isLoading} />
+            <BachThoaiSection posts={bachThoaiPosts?.data} isLoading={isBachThoaiLoading} />
           )}
 
           {/* 4. Khai thị */}
-          <KhaiThiList posts={khaiThiPosts} isLoading={isLoading} />
+          <KhaiThiList posts={khaiThiPostsData?.data} isLoading={isKhaiThiLoading} />
 
           {/* 5. Latest Content 4-Grid Cards */}
           {/* <LatestContent items={LATEST_CONTENT_ITEMS} /> */}

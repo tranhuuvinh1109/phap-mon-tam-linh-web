@@ -59,19 +59,25 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
   const { data: categories = [], isLoading } = useGetCategories();
 
   /**
-   * Merge DEFAULT_CATEGORY_NAMES constant with API categories.
+   * Only display parent categories (root categories with no parentId).
+   * Merge DEFAULT_CATEGORY_NAMES constant with API root categories.
    * "Nếu trùng với constant thì chỉ hiển thị 1 tab"
    */
   const categoryNavItems = useMemo<CategoryNavItem[]>(() => {
     const items: CategoryNavItem[] = [];
     const matchedApiCategoryIds = new Set<string>();
 
+    // Filter only active root (parent) categories (no parentId, not deleted)
+    const parentCategories = categories.filter(
+      (cat) => !cat.parentId && !cat.deletedAt
+    );
+
     // 1. Process each default category from constant
     DEFAULT_CATEGORY_NAMES.forEach((defName) => {
       const defSlug = slugify(defName).toLowerCase();
 
-      // Look for a matching category in the API response
-      const matched = categories.find((cat) => {
+      // Look for a matching parent category in the API response
+      const matched = parentCategories.find((cat) => {
         const catSlug = (cat.slug || slugify(cat.name)).toLowerCase();
         const catNameSlug = slugify(cat.name).toLowerCase();
         return catSlug === defSlug || catNameSlug === defSlug;
@@ -98,8 +104,8 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
       }
     });
 
-    // 2. Append extra categories from API that are NOT in the constant
-    categories.forEach((cat) => {
+    // 2. Append extra parent categories from API that are NOT in the constant
+    parentCategories.forEach((cat) => {
       if (matchedApiCategoryIds.has(cat.id)) return;
 
       const catSlug = (cat.slug || slugify(cat.name)).toLowerCase();
