@@ -15,6 +15,13 @@ export const PersistentAudioPlayer: React.FC = () => {
   const [thumbSrc, setThumbSrc] = useState<string>("/images/lotus-thumb.jpg");
   const lastSavedTimeRef = useRef<number>(0);
 
+  // Scrubber Dragging State
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragProgress, setDragProgress] = useState<number | null>(null);
+  const miniProgressBarRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const dragProgressRef = useRef<number | null>(null);
+
   // Listening History Store
   const recordListening = useListeningHistoryStore((s) => s.recordListening);
   const updateProgress = useListeningHistoryStore((s) => s.updateProgress);
@@ -181,16 +188,80 @@ export const PersistentAudioPlayer: React.FC = () => {
     updateProgress,
   ]);
 
-  // Seek bar click handler
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+  // Calculate seek percentage from pointer event clientX
+  const getPercentFromClientX = (clientX: number): number => {
+    if (!miniProgressBarRef.current) return 0;
+    const rect = miniProgressBarRef.current.getBoundingClientRect();
+    if (rect.width <= 0) return 0;
+    const offsetX = clientX - rect.left;
+    return Math.min(Math.max(offsetX / rect.width, 0), 1);
+  };
+
+  // Pointer drag events for real-time scrubber movement
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.stopPropagation();
+    e.preventDefault();
     if (!audioRef.current || !duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const percent = Math.min(Math.max(clickX / rect.width, 0), 1);
-    const newTime = percent * duration;
-    audioRef.current.currentTime = newTime;
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Ignore
+    }
+
+    const percent = getPercentFromClientX(e.clientX);
+    isDraggingRef.current = true;
+    dragProgressRef.current = percent;
+    setIsDragging(true);
+    setDragProgress(percent);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    e.stopPropagation();
+    const percent = getPercentFromClientX(e.clientX);
+    dragProgressRef.current = percent;
+    setDragProgress(percent);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    e.stopPropagation();
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Ignore
+    }
+
+    const finalPercent = dragProgressRef.current !== null ? dragProgressRef.current : getPercentFromClientX(e.clientX);
+    isDraggingRef.current = false;
+    dragProgressRef.current = null;
+    setIsDragging(false);
+    setDragProgress(null);
+
+    const newTime = finalPercent * duration;
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+    }
     setCurrentTime(newTime);
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    e.stopPropagation();
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Ignore
+    }
+    isDraggingRef.current = false;
+    dragProgressRef.current = null;
+    setIsDragging(false);
+    setDragProgress(null);
   };
 
   const handleNavigateToTrack = () => {
@@ -223,8 +294,14 @@ export const PersistentAudioPlayer: React.FC = () => {
     router.push(`/bach-thoai-phat-phap/${encoded}`);
   };
 
-  const progressPercent =
-    duration > 0 ? Math.min(Math.max((currentTime / duration) * 100, 0), 100) : 0;
+  const effectivePercent =
+    isDragging && dragProgress !== null
+      ? dragProgress * 100
+      : duration > 0
+      ? Math.min(Math.max((currentTime / duration) * 100, 0), 100)
+      : 0;
+  const displayCurrentTime =
+    isDragging && dragProgress !== null ? dragProgress * duration : currentTime;
 
   return (
     <>
@@ -301,21 +378,29 @@ export const PersistentAudioPlayer: React.FC = () => {
             </p>
 
             <span className="mt-0.5 font-mono text-xs font-medium text-neutral-500">
-              {formatTime(currentTime)} / {formatTime(duration || currentTrack.duration || 0)}
+              {formatTime(displayCurrentTime)} / {formatTime(duration || currentTrack.duration || 0)}
             </span>
 
-            {/* Mini Progress Bar with Amber Fill */}
+            {/* Mini Progress Bar with Pointer Drag Support */}
             <div
-              onClick={handleSeek}
+              ref={miniProgressBarRef}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerCancel}
               role="progressbar"
-              aria-valuenow={progressPercent}
+              aria-valuenow={effectivePercent}
               aria-valuemin={0}
               aria-valuemax={100}
-              className="relative mt-1.5 h-1 w-full cursor-pointer rounded-full bg-neutral-200/90 overflow-hidden"
+              className={`relative mt-1.5 h-1.5 w-full cursor-pointer rounded-full bg-neutral-200/90 touch-none select-none transition-all ${
+                isDragging ? "h-2" : "hover:h-2"
+              }`}
             >
               <div
-                className="h-full rounded-full bg-[#B86E0E] transition-all duration-100"
-                style={{ width: `${progressPercent}%` }}
+                className={`h-full rounded-full bg-[#B86E0E] ${
+                  isDragging ? "transition-none" : "transition-all duration-75"
+                }`}
+                style={{ width: `${effectivePercent}%` }}
               />
             </div>
           </div>

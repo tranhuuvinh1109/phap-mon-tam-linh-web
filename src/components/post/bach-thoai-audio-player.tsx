@@ -61,6 +61,13 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
   const [isCopied, setIsCopied] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Scrubber Dragging State
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragProgress, setDragProgress] = useState<number | null>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const dragProgressRef = useRef<number | null>(null);
+
   // Audio source: prefer post.audio.audioUrl or sample audio
   const audioSource =
     post.audio?.audioUrl ||
@@ -152,13 +159,8 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
     seek(newTime);
   };
 
-  // Seek bar click
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const percent = Math.min(Math.max(clickX / rect.width, 0), 1);
-    const newTime = percent * duration;
-
+  // Ensure track is active in store
+  const ensureTrackActive = () => {
     if (!isCurrentActive) {
       playTrack({
         id: post.id,
@@ -171,7 +173,76 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
         duration: post.audio?.duration || 1965,
       });
     }
-    seek(newTime);
+  };
+
+  // Calculate seek percentage from pointer event clientX
+  const getPercentFromClientX = (clientX: number): number => {
+    if (!progressBarRef.current) return 0;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    if (rect.width <= 0) return 0;
+    const offsetX = clientX - rect.left;
+    return Math.min(Math.max(offsetX / rect.width, 0), 1);
+  };
+
+  // Pointer drag events for real-time scrubber movement
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    ensureTrackActive();
+
+    // Capture pointer so mouse/touch can move outside the bar without losing tracking
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Ignore if setPointerCapture fails on certain browsers
+    }
+
+    const percent = getPercentFromClientX(e.clientX);
+    isDraggingRef.current = true;
+    dragProgressRef.current = percent;
+    setIsDragging(true);
+    setDragProgress(percent);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    const percent = getPercentFromClientX(e.clientX);
+    dragProgressRef.current = percent;
+    setDragProgress(percent);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Ignore
+    }
+
+    const finalPercent = dragProgressRef.current !== null ? dragProgressRef.current : getPercentFromClientX(e.clientX);
+    isDraggingRef.current = false;
+    dragProgressRef.current = null;
+    setIsDragging(false);
+    setDragProgress(null);
+
+    const targetTime = finalPercent * duration;
+    seek(targetTime);
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Ignore
+    }
+    isDraggingRef.current = false;
+    dragProgressRef.current = null;
+    setIsDragging(false);
+    setDragProgress(null);
   };
 
   // Change playback speed
@@ -216,7 +287,8 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
     showMiniPlayer();
   };
 
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const effectivePercent = isDragging && dragProgress !== null ? dragProgress * 100 : duration > 0 ? (currentTime / duration) * 100 : 0;
+  const displayCurrentTime = isDragging && dragProgress !== null ? dragProgress * duration : currentTime;
   const coverImage = post.thumbnailUrl || "/images/bach-thoai-phat-phap.png";
   const subtitle = `${post.category?.name || "Kinh tụng và niệm Phật"} | ${
     post.author?.name || "TT. Thích Minh Niệm"
@@ -324,29 +396,44 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
         <div className="w-full max-w-2xl mx-auto space-y-6 pb-2">
           {/* Progress Bar & Timestamps */}
           <div className="space-y-2">
-            {/* Track Bar */}
+            {/* Track Bar with Pointer Drag Support */}
             <div
-              onClick={handleSeek}
-              className="group relative h-2 w-full cursor-pointer rounded-full bg-neutral-200/80 transition-all hover:h-2.5"
+              ref={progressBarRef}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerCancel}
+              className="group relative w-full cursor-pointer touch-none select-none py-3 -my-3 flex items-center"
             >
-              {/* Active Fill */}
+              {/* Background Full Track Bar */}
               <div
-                className="h-full rounded-full bg-[#B86E0E] transition-all"
-                style={{ width: `${progressPercent}%` }}
-              />
+                className={`relative w-full rounded-full bg-neutral-200/80 transition-all ${
+                  isDragging ? "h-2.5" : "h-2 group-hover:h-2.5"
+                }`}
+              >
+                {/* Active Progress Fill */}
+                <div
+                  className={`h-full rounded-full bg-[#B86E0E] ${
+                    isDragging ? "transition-none" : "transition-all duration-75"
+                  }`}
+                  style={{ width: `${effectivePercent}%` }}
+                />
+              </div>
 
-              {/* Thumb Scrubber */}
+              {/* Thumb Scrubber - Placed directly in flex container to ensure exact vertical centering */}
               <div
-                className="absolute top-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-[#B86E0E] ring-2 ring-white shadow-sm transition-transform group-hover:scale-125"
+                className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-4 w-4 rounded-full bg-[#B86E0E] ring-2 ring-white shadow-md pointer-events-none transition-transform ${
+                  isDragging ? "scale-125" : "group-hover:scale-125"
+                }`}
                 style={{
-                  left: `calc(${progressPercent}% - 8px)`,
+                  left: `${effectivePercent}%`,
                 }}
               />
             </div>
 
             {/* Timestamps */}
             <div className="flex items-center justify-between text-xs sm:text-sm text-neutral-400 font-medium">
-              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(displayCurrentTime)}</span>
               <span>{formatTime(duration)}</span>
             </div>
           </div>
