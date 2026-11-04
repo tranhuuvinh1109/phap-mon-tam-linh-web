@@ -24,6 +24,7 @@ export const CreatePostForm: React.FC = () => {
     title: "",
     slug: "",
     description: "",
+    origin: "",
     thumbnail: null,
     thumbnailPreview: null,
     audioFile: null,

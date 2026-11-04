@@ -7,6 +7,7 @@ export interface CreatePostFormValues {
   title: string;
   slug: string;
   description: string;
+  origin?: string;
   thumbnail: File | null;
   thumbnailPreview?: string | null;
   thumbnailUrl?: string | null;

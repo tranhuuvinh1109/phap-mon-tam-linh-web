@@ -9,6 +9,8 @@ interface PostBasicFieldsProps {
   title: string;
   slug: string;
   description: string;
+  showOrigin?: boolean;
+  origin?: string;
   errors?: {
     title?: string;
     slug?: string;
@@ -16,20 +18,25 @@ interface PostBasicFieldsProps {
   onChangeTitle: (title: string, slug: string) => void;
   onChangeSlug?: (slug: string) => void;
   onChangeDescription: (description: string) => void;
+  onChangeOrigin?: (origin: string) => void;
 }
 
 export const PostBasicFields: React.FC<PostBasicFieldsProps> = ({
   title,
   slug,
   description,
+  showOrigin,
+  origin,
   errors,
   onChangeTitle,
   onChangeSlug,
   onChangeDescription,
+  onChangeOrigin,
 }) => {
   const titleId = useId();
   const slugId = useId();
   const descId = useId();
+  const originId = useId();
 
   // State to enable/disable custom slug editing (default is false = disabled)
   const [isCustomSlug, setIsCustomSlug] = useState(false);
@@ -189,6 +196,31 @@ export const PostBasicFields: React.FC<PostBasicFieldsProps> = ({
           />
         </div>
       </div>
+
+      {/* Origin Field (Only shown for Khai Thị category or child) */}
+      {showOrigin && (
+        <div>
+          <label
+            htmlFor={originId}
+            className="block text-sm font-semibold text-neutral-800"
+          >
+            Nguồn <span className="text-xs font-normal text-neutral-400">(tùy chọn)</span>
+          </label>
+          <div className="mt-1.5">
+            <input
+              id={originId}
+              type="text"
+              value={origin || ""}
+              onChange={(e) => onChangeOrigin?.(e.target.value)}
+              placeholder="Nhập nguồn bài viết (ví dụ: Trích Khai thị Sư Phụ Lư Đài Trưởng, Wenda2020..., Pháp Hội...)"
+              className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 transition-colors focus:border-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            />
+          </div>
+          <p className="mt-1 text-xs text-neutral-400">
+            Nguồn gốc, xuất xứ hoặc chương trình vấn đáp để phật tử dễ tra cứu.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

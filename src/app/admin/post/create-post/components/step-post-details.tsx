@@ -98,7 +98,8 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
   const isKhaiThiPost = isKhaiThi(
     formValues.categoryId,
     category?.slug,
-    category?.name
+    category?.name,
+    category?.parentId
   );
 
   const isGroupSupported = allowsGroupCategory(
@@ -150,7 +151,7 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
       pendingEditorImagesMap.forEach((_, blobUrl) => {
         try {
           URL.revokeObjectURL(blobUrl);
-        } catch {}
+        } catch { }
       });
       router.push("/admin/post");
     },
@@ -354,6 +355,18 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
         });
       }
 
+      // If origin is entered, prepend formatted origin tag to the beginning of content for payload
+      const originVal = formValues.origin?.trim();
+      if (originVal) {
+        const originHtml = `<p><strong style="background-color: rgb(255, 255, 255); color: rgb(41, 41, 41);">${originVal}</strong></p>`;
+        const originPattern = /^<p><strong style="background-color: rgb\(255, 255, 255\); color: rgb\(41, 41, 41\);">.*?<\/strong><\/p>/;
+        if (finalContent && originPattern.test(finalContent)) {
+          finalContent = finalContent.replace(originPattern, originHtml);
+        } else {
+          finalContent = finalContent ? `${originHtml}${finalContent}` : originHtml;
+        }
+      }
+
       // Construct list of all attachments to save (editor images + PDF if attached)
       const allAttachmentsPayload: Array<{
         fileUrl: string;
@@ -393,6 +406,7 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
         slug: formValues.slug.trim() || undefined,
         content: finalContent,
         type: formValues.contentType,
+        origin: isKhaiThiPost ? (formValues.origin?.trim() || undefined) : undefined,
         thumbnailUrl: uploadedThumbUrl || undefined,
         categoryId: formValues.categoryId || undefined,
         groupId: isGroupSupported ? (formValues.groupId || undefined) : undefined,
@@ -560,11 +574,13 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
         </div>
       )}
 
-      {/* Section 1: Basic Fields (Title, Slug, Description) */}
+      {/* Section 1: Basic Fields (Title, Slug, Description, Origin) */}
       <PostBasicFields
         title={formValues.title}
         slug={formValues.slug}
         description={formValues.description}
+        showOrigin={isKhaiThiPost}
+        origin={formValues.origin}
         errors={{ title: errors.title, slug: errors.slug }}
         onChangeTitle={(title, slug) => {
           onChangeFormValues({ title, slug });
@@ -581,10 +597,15 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
           setValidationSuccess(null);
           setSubmitError(null);
         }}
+        onChangeOrigin={(origin) => {
+          onChangeFormValues({ origin });
+          setValidationSuccess(null);
+          setSubmitError(null);
+        }}
       />
 
       {/* Section 1.5: Group Selection (For Khai thị & Bạch thoại Phật Pháp) */}
-      {isGroupSupported && (
+      {/* {isGroupSupported && (
         <div className="rounded-2xl border border-[#EDE5D8] bg-[#FDFBF7]/80 p-5 shadow-xs transition-all">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2.5">
             <label
@@ -634,7 +655,7 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Section 2: Thumbnail Image Upload */}
       <ThumbnailUpload

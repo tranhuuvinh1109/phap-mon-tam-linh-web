@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Calendar,
   Check,
@@ -21,7 +22,7 @@ import { ContentType } from "@/enums";
 export interface PostFilterState {
   categoryId?: string;
   groupId?: string;
-  status: "ALL" | PostApprovalStatus;
+  status: "APPROVED" | "REJECTED" | "ALL";
   type: "ALL" | ContentType;
   startDate?: string;
   endDate?: string;
@@ -162,7 +163,7 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
     const emptyFilters: PostFilterState = {
       categoryId: undefined,
       groupId: undefined,
-      status: "ALL",
+      status: "APPROVED",
       type: "ALL",
       startDate: undefined,
       endDate: undefined,
@@ -386,9 +387,7 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { id: "ALL", label: "Tất cả trạng thái", color: "amber" },
                   { id: "APPROVED", label: "Đã duyệt", color: "emerald" },
-                  { id: "PENDING", label: "Chờ duyệt", color: "amber" },
                   { id: "REJECTED", label: "Từ chối", color: "rose" },
                 ].map((st) => {
                   const isSelected = draft.status === st.id;
@@ -414,6 +413,17 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
                   );
                 })}
               </div>
+              <p className="text-[11px] text-neutral-400">
+                Bài viết đang chờ duyệt được quản lý riêng tại trang{" "}
+                <Link
+                  href="/admin/post/pending"
+                  onClick={onClose}
+                  className="font-semibold text-amber-800 hover:underline"
+                >
+                  Duyệt bài viết
+                </Link>
+                .
+              </p>
             </div>
 
             {/* 5. Content Type Filter */}
