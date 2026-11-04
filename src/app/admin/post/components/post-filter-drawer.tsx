@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   Calendar,
   Check,
   Filter,
+  FolderTree,
   RotateCcw,
   Sparkles,
   Tag,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { useGetCategories, useGetCategoryTree } from "@/api/category";
+import { CategoryItemType } from "@/api/category/category.type";
 import { useGetGroups } from "@/api/group";
 import { PostApprovalStatus } from "@/api/post";
 import { Button } from "@/components/ui";
@@ -46,13 +48,127 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
   totalResults,
 }) => {
   const [draft, setDraft] = useState<PostFilterState>(filters);
+  const [selectedParentId, setSelectedParentId] = useState<string>("");
+  const [selectedChildId, setSelectedChildId] = useState<string>("");
+  const prevOpenRef = useRef<boolean>(false);
 
-  // Sync draft with incoming filters when drawer opens
-  useEffect(() => {
-    if (isOpen) {
-      setDraft(filters);
+  // Fetch categories (full list and hierarchy tree)
+  const { data: categories = [], isLoading: isLoadingCategories } =
+    useGetCategories();
+  const { data: categoryTree = [], isLoading: isLoadingTree } =
+    useGetCategoryTree();
+
+  // Flatten and unify all categories from tree and flat list
+  const allCategories = useMemo<CategoryItemType[]>(() => {
+    const map = new Map<string, CategoryItemType>();
+
+    // 1. Traverse categoryTree (which contains full hierarchy with children)
+    if (categoryTree && Array.isArray(categoryTree)) {
+      categoryTree.forEach((root) => {
+        map.set(root.id, root);
+        if (root.children && Array.isArray(root.children)) {
+          root.children.forEach((child) => {
+            map.set(child.id, { ...child, parentId: root.id });
+          });
+        }
+      });
     }
-  }, [isOpen, filters]);
+
+    // 2. Add any from flat categories that weren't seen yet
+    if (categories && Array.isArray(categories)) {
+      categories.forEach((cat) => {
+        if (!map.has(cat.id)) {
+          map.set(cat.id, cat);
+        } else {
+          const existing = map.get(cat.id)!;
+          if (!existing.parentId && cat.parentId) {
+            map.set(cat.id, { ...existing, parentId: cat.parentId });
+          }
+        }
+      });
+    }
+
+    return Array.from(map.values()).filter((c) => !c.deletedAt);
+  }, [categoryTree, categories]);
+
+  // Root/parent categories for the Parent dropdown
+  const organizedCategories = useMemo(() => {
+    if (categoryTree && categoryTree.length > 0) {
+      return categoryTree.filter((cat) => !cat.deletedAt);
+    }
+    const rootCats = allCategories.filter((c) => !c.deletedAt && !c.parentId);
+    return rootCats.map((root) => ({
+      ...root,
+      children: allCategories.filter(
+        (c) => !c.deletedAt && c.parentId === root.id
+      ),
+    }));
+  }, [categoryTree, allCategories]);
+
+  // Helper to resolve parent and child IDs from any categoryId (UUID or slug)
+  const resolveCategoryHierarchy = useCallback(
+    (targetIdOrSlug?: string) => {
+      if (!targetIdOrSlug || allCategories.length === 0) {
+        return { parentId: "", childId: "" };
+      }
+
+      // 1. Try finding in allCategories by id or slug
+      const found = allCategories.find(
+        (c) => c.id === targetIdOrSlug || c.slug === targetIdOrSlug
+      );
+
+      if (found) {
+        if (found.parentId) {
+          return { parentId: found.parentId, childId: found.id };
+        }
+        return { parentId: found.id, childId: "" };
+      }
+
+      // 2. Try finding in organized root categories
+      const rootMatch = organizedCategories.find(
+        (p) => p.id === targetIdOrSlug || p.slug === targetIdOrSlug
+      );
+      if (rootMatch) {
+        return { parentId: rootMatch.id, childId: "" };
+      }
+
+      return { parentId: "", childId: "" };
+    },
+    [allCategories, organizedCategories]
+  );
+
+  // Sync draft and internal selection ONLY when drawer opens (transition false -> true)
+  useEffect(() => {
+    if (isOpen && !prevOpenRef.current) {
+      setDraft(filters);
+      const { parentId, childId } = resolveCategoryHierarchy(filters.categoryId);
+      setSelectedParentId(parentId);
+      setSelectedChildId(childId);
+    }
+    prevOpenRef.current = isOpen;
+  }, [isOpen, filters, resolveCategoryHierarchy]);
+
+  // If categories finish loading while drawer is already open, sync if parent not selected yet
+  useEffect(() => {
+    if (
+      isOpen &&
+      allCategories.length > 0 &&
+      !selectedParentId &&
+      filters.categoryId
+    ) {
+      const { parentId, childId } = resolveCategoryHierarchy(filters.categoryId);
+      if (parentId) {
+        setSelectedParentId(parentId);
+        setSelectedChildId(childId);
+      }
+    }
+  }, [
+    isOpen,
+    allCategories.length,
+    selectedParentId,
+    filters.categoryId,
+    resolveCategoryHierarchy,
+  ]);
 
   // Close on Escape key
   useEffect(() => {
@@ -70,33 +186,48 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
     };
   }, [isOpen, onClose]);
 
-  // Fetch categories
-  const { data: categories = [], isLoading: isLoadingCategories } =
-    useGetCategories();
-  const { data: categoryTree = [] } = useGetCategoryTree();
+  // Find currently selected parent category
+  const activeParent = useMemo(() => {
+    if (!selectedParentId) return null;
+    return (
+      organizedCategories.find((p) => p.id === selectedParentId) ||
+      allCategories.find((c) => c.id === selectedParentId) ||
+      null
+    );
+  }, [selectedParentId, organizedCategories, allCategories]);
 
-  const organizedCategories = React.useMemo(() => {
-    if (categoryTree && categoryTree.length > 0) {
-      return categoryTree.filter((cat) => !cat.deletedAt);
+  // Available child categories for the selected parent
+  const availableChildren = useMemo(() => {
+    if (!selectedParentId) return [];
+    if (
+      activeParent &&
+      activeParent.children &&
+      activeParent.children.length > 0
+    ) {
+      return activeParent.children.filter((c) => !c.deletedAt);
     }
-    const rootCats = categories.filter((c) => !c.deletedAt && !c.parentId);
-    return rootCats.map((root) => ({
-      ...root,
-      children: categories.filter((c) => !c.deletedAt && c.parentId === root.id),
-    }));
-  }, [categoryTree, categories]);
+    return allCategories.filter(
+      (c) => !c.deletedAt && c.parentId === selectedParentId
+    );
+  }, [activeParent, selectedParentId, allCategories]);
 
-  // Find selected category object (by id or by slug)
-  const selectedCategory = categories.find(
-    (c) => c.id === draft.categoryId || c.slug === draft.categoryId
-  );
+  // Find effective selected category object
+  const selectedCategory = useMemo(() => {
+    return allCategories.find(
+      (c) => c.id === draft.categoryId || c.slug === draft.categoryId
+    );
+  }, [allCategories, draft.categoryId]);
 
-  // Check if selected category is "khai-thi"
+  // Check if selected category is "khai-thi" (either parent or child)
   const isKhaiThi = Boolean(
-    selectedCategory &&
+    (selectedCategory &&
       (selectedCategory.slug === "khai-thi" ||
         selectedCategory.name.toLowerCase().includes("khai thị") ||
-        selectedCategory.name.toLowerCase().includes("khai thi"))
+        selectedCategory.name.toLowerCase().includes("khai thi"))) ||
+    (activeParent &&
+      (activeParent.slug === "khai-thi" ||
+        activeParent.name.toLowerCase().includes("khai thị") ||
+        activeParent.name.toLowerCase().includes("khai thi")))
   );
 
   // Fetch groups only when category is khai-thi
@@ -105,20 +236,44 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
     { enabled: isKhaiThi }
   );
 
-  const handleCategoryChange = (catId: string) => {
+  // Handle parent category selection change
+  const handleParentCategoryChange = (parentId: string) => {
+    setSelectedParentId(parentId);
+    setSelectedChildId("");
+
     setDraft((prev) => {
-      const nextCat = categories.find((c) => c.id === catId);
+      const nextParent = allCategories.find((c) => c.id === parentId);
       const isNextKhaiThi =
-        nextCat &&
-        (nextCat.slug === "khai-thi" ||
-          nextCat.name.toLowerCase().includes("khai thị") ||
-          nextCat.name.toLowerCase().includes("khai thi"));
+        nextParent &&
+        (nextParent.slug === "khai-thi" ||
+          nextParent.name.toLowerCase().includes("khai thị") ||
+          nextParent.name.toLowerCase().includes("khai thi"));
 
       return {
         ...prev,
-        categoryId: catId || undefined,
-        // Clear groupId if switched to non-Khai-Thị category
+        categoryId: parentId || undefined,
         groupId: isNextKhaiThi ? prev.groupId : undefined,
+      };
+    });
+  };
+
+  // Handle child category selection change
+  const handleChildCategoryChange = (childId: string) => {
+    setSelectedChildId(childId);
+
+    setDraft((prev) => {
+      const targetCatId = childId || selectedParentId || undefined;
+      const targetCat = allCategories.find((c) => c.id === targetCatId);
+      const isTargetKhaiThi =
+        targetCat &&
+        (targetCat.slug === "khai-thi" ||
+          targetCat.name.toLowerCase().includes("khai thị") ||
+          targetCat.name.toLowerCase().includes("khai thi"));
+
+      return {
+        ...prev,
+        categoryId: targetCatId,
+        groupId: isTargetKhaiThi ? prev.groupId : undefined,
       };
     });
   };
@@ -168,6 +323,8 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
       startDate: undefined,
       endDate: undefined,
     };
+    setSelectedParentId("");
+    setSelectedChildId("");
     setDraft(emptyFilters);
     onResetFilters();
     onClose();
@@ -217,45 +374,82 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
 
           {/* Form Body - Scrollable */}
           <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
-            {/* 1. Category Filter */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-900">
-                <Tag className="h-3.5 w-3.5" />
-                <span>Chuyên mục</span>
-              </label>
+            {/* 1. Category Filter: Parent & Child Cascading */}
+            <div className="space-y-4">
+              {/* Danh mục cha */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-900">
+                  <Tag className="h-3.5 w-3.5" />
+                  <span>Danh mục cha</span>
+                </label>
 
-              <select
-                value={selectedCategory?.id || draft.categoryId || ""}
-                onChange={(e) => handleCategoryChange(e.target.value)}
-                disabled={isLoadingCategories}
-                className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-base sm:text-sm text-neutral-800 shadow-2xs outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20"
-              >
-                <option value="">-- Tất cả chuyên mục --</option>
-                {organizedCategories.map((group) => {
-                  const hasChildren = group.children && group.children.length > 0;
-                  if (hasChildren) {
-                    return (
-                      <optgroup key={group.id} label={`📁 ${group.name}`}>
-                        <option value={group.id}>[Cả nhóm] {group.name}</option>
-                        {group.children?.map((child) => (
-                          <option key={child.id} value={child.id}>
-                            &nbsp;&nbsp;&nbsp;&nbsp;↳ {child.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    );
-                  }
-                  return (
-                    <option key={group.id} value={group.id}>
-                      📁 {group.name}
+                <select
+                  value={selectedParentId}
+                  onChange={(e) => handleParentCategoryChange(e.target.value)}
+                  disabled={isLoadingCategories && organizedCategories.length === 0}
+                  className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-base sm:text-sm text-neutral-800 shadow-2xs outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20"
+                >
+                  <option value="">-- Tất cả danh mục cha --</option>
+                  {organizedCategories.map((parent) => (
+                    <option key={parent.id} value={parent.id}>
+                      📁 {parent.name}
                     </option>
-                  );
-                })}
-              </select>
+                  ))}
+                </select>
+              </div>
+
+              {/* Danh mục con */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label
+                    className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider ${!selectedParentId ? "text-neutral-400" : "text-amber-900"
+                      }`}
+                  >
+                    <FolderTree className="h-3.5 w-3.5" />
+                    <span>Danh mục con</span>
+                  </label>
+                  {!selectedParentId && (
+                    <span className="text-[11px] font-medium text-neutral-400 italic">
+                      Chọn danh mục cha trước
+                    </span>
+                  )}
+                </div>
+
+                <select
+                  value={selectedChildId}
+                  onChange={(e) => handleChildCategoryChange(e.target.value)}
+                  disabled={!selectedParentId || isLoadingCategories || availableChildren.length === 0}
+                  className={`w-full rounded-xl border px-3.5 py-2.5 text-base sm:text-sm shadow-2xs outline-none transition ${!selectedParentId
+                      ? "border-neutral-200 bg-neutral-100/70 text-neutral-400 cursor-not-allowed"
+                      : availableChildren.length === 0
+                        ? "border-neutral-200 bg-neutral-50 text-neutral-500 cursor-not-allowed"
+                        : "border-neutral-200 bg-white text-neutral-800 focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20"
+                    }`}
+                >
+                  <option value="">
+                    {!selectedParentId
+                      ? "-- Vui lòng chọn danh mục cha trước --"
+                      : availableChildren.length === 0
+                        ? "-- Không có danh mục con (Lọc tất cả bài của mục này) --"
+                        : "-- Tất cả danh mục con --"}
+                  </option>
+                  {availableChildren.map((child) => (
+                    <option key={child.id} value={child.id}>
+                      ↳ {child.name}
+                    </option>
+                  ))}
+                </select>
+
+                {selectedParentId && availableChildren.length === 0 && (
+                  <p className="text-[11px] text-neutral-500 italic">
+                    Danh mục này không có danh mục con. Bộ lọc sẽ áp dụng cho toàn bộ bài viết trong &ldquo;{activeParent?.name}&rdquo;.
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* 2. Group Filter (Conditional on Khai Thị) */}
-            {isKhaiThi && (
+            {/* {isKhaiThi && (
               <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50/50 p-3.5 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-900">
@@ -289,7 +483,7 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
                   Lọc danh sách bài viết thuộc nhóm cụ thể trong chuyên mục Khai Thị.
                 </p>
               </div>
-            )}
+            )} */}
 
             {/* 3. Date Range Picker (createdAt) */}
             <div className="space-y-3">
@@ -303,11 +497,10 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
                 <button
                   type="button"
                   onClick={() => handleDatePreset("all")}
-                  className={`rounded-lg px-2.5 py-1 font-medium transition cursor-pointer ${
-                    !draft.startDate && !draft.endDate
+                  className={`rounded-lg px-2.5 py-1 font-medium transition cursor-pointer ${!draft.startDate && !draft.endDate
                       ? "bg-amber-800 text-white shadow-2xs"
                       : "bg-white border border-[#EDE5D8] text-neutral-600 hover:bg-[#F2EADB]"
-                  }`}
+                    }`}
                 >
                   Tất cả
                 </button>
@@ -401,11 +594,10 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
                           status: st.id as any,
                         }))
                       }
-                      className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-xs font-semibold transition cursor-pointer ${
-                        isSelected
+                      className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-xs font-semibold transition cursor-pointer ${isSelected
                           ? "border-amber-800 bg-amber-800 text-white shadow-2xs"
                           : "border-neutral-200 bg-white text-neutral-700 hover:bg-[#F2EADB]/60"
-                      }`}
+                        }`}
                     >
                       <span>{st.label}</span>
                       {isSelected && <Check className="h-3.5 w-3.5 shrink-0" />}
@@ -449,11 +641,10 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
                           type: tp.id as any,
                         }))
                       }
-                      className={`flex items-center justify-center rounded-xl border py-2 text-xs font-semibold transition cursor-pointer ${
-                        isSelected
+                      className={`flex items-center justify-center rounded-xl border py-2 text-xs font-semibold transition cursor-pointer ${isSelected
                           ? "border-neutral-800 bg-neutral-800 text-white shadow-2xs"
                           : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-100"
-                      }`}
+                        }`}
                     >
                       {tp.label}
                     </button>

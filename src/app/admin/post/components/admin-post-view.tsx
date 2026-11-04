@@ -18,7 +18,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
-import { useGetCategories } from "@/api/category";
+import { useGetCategories, useGetCategoryTree } from "@/api/category";
+import type { CategoryItemType } from "@/api/category/category.type";
 import { useGetGroups } from "@/api/group";
 import { useDeletePost, useGetPosts } from "@/api/post";
 import type { PostItemType, PostApprovalStatus } from "@/api/post/post.type";
@@ -81,7 +82,36 @@ export const AdminPostView: React.FC = () => {
 
   // Fetch categories and groups for badge labels
   const { data: categories = [] } = useGetCategories();
+  const { data: categoryTree = [] } = useGetCategoryTree();
   const { data: groups = [] } = useGetGroups();
+
+  // Flatten and unify all categories for robust lookup (id/slug)
+  const allFlatCategories = useMemo<CategoryItemType[]>(() => {
+    const map = new Map<string, CategoryItemType>();
+    if (categoryTree && Array.isArray(categoryTree)) {
+      categoryTree.forEach((root) => {
+        map.set(root.id, root);
+        if (root.children && Array.isArray(root.children)) {
+          root.children.forEach((child) => {
+            map.set(child.id, { ...child, parentId: root.id });
+          });
+        }
+      });
+    }
+    if (categories && Array.isArray(categories)) {
+      categories.forEach((cat) => {
+        if (!map.has(cat.id)) {
+          map.set(cat.id, cat);
+        } else {
+          const existing = map.get(cat.id)!;
+          if (!existing.parentId && cat.parentId) {
+            map.set(cat.id, { ...existing, parentId: cat.parentId });
+          }
+        }
+      });
+    }
+    return Array.from(map.values()).filter((c) => !c.deletedAt);
+  }, [categoryTree, categories]);
 
   // State for Update Modal
   const [editingPost, setEditingPost] = useState<PostItemType | null>(null);
@@ -164,7 +194,7 @@ export const AdminPostView: React.FC = () => {
 
   // Request parameters for backend pagination
   const queryParams = useMemo(() => {
-    const targetCategory = filters.categoryId || categoryParam || undefined;
+    const targetCategory = filters.categoryId;
     const isTargetUuid = isUuid(targetCategory);
 
     return {
@@ -181,7 +211,7 @@ export const AdminPostView: React.FC = () => {
       startDate: filters.startDate || undefined,
       endDate: filters.endDate || undefined,
     };
-  }, [currentPage, debouncedSearch, categoryParam, filters]);
+  }, [currentPage, debouncedSearch, filters]);
 
   // Main query via GET /posts
   const {
@@ -201,11 +231,11 @@ export const AdminPostView: React.FC = () => {
   const totalPages =
     postsData?.meta?.totalPages || Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  // Count active filters (excluding URL categoryParam)
+  // Count active filters (excluding URL categoryParam when matching)
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.categoryId) {
-      const matchCat = categories.find(
+      const matchCat = allFlatCategories.find(
         (c) => c.id === filters.categoryId || c.slug === filters.categoryId
       );
       const isSameAsUrl =
@@ -219,23 +249,45 @@ export const AdminPostView: React.FC = () => {
     if (filters.type && filters.type !== "ALL") count++;
     if (filters.startDate || filters.endDate) count++;
     return count;
-  }, [filters, categoryParam, categories]);
+  }, [filters, categoryParam, allFlatCategories]);
 
   const handleApplyFilters = (newFilters: PostFilterState) => {
     setFilters(newFilters);
     setCurrentPage(1);
+
+    // Keep URL parameter ?category= in sync with applied filter
+    const params = new URLSearchParams(searchParams.toString());
+    if (newFilters.categoryId) {
+      const cat = allFlatCategories.find(
+        (c) =>
+          c.id === newFilters.categoryId || c.slug === newFilters.categoryId
+      );
+      params.set("category", cat?.slug || newFilters.categoryId);
+    } else {
+      params.delete("category");
+    }
+    const qs = params.toString();
+    const newUrl = qs ? `${pathname}?${qs}` : pathname;
+    router.replace(newUrl, { scroll: false });
   };
 
   const handleResetFilters = () => {
-    setFilters({
-      categoryId: categoryParam || undefined,
+    const emptyFilters: PostFilterState = {
+      categoryId: undefined,
       groupId: undefined,
       status: "APPROVED",
       type: "ALL",
       startDate: undefined,
       endDate: undefined,
-    });
+    };
+    setFilters(emptyFilters);
     setCurrentPage(1);
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("category");
+    const qs = params.toString();
+    const newUrl = qs ? `${pathname}?${qs}` : pathname;
+    router.replace(newUrl, { scroll: false });
   };
 
   const renderPaginationButtons = () => {
@@ -402,7 +454,7 @@ export const AdminPostView: React.FC = () => {
               <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50/80 px-2.5 py-1 text-xs font-medium text-amber-900">
                 <Tag className="h-3 w-3 text-amber-700" />
                 <span>
-                  {categories.find(
+                  {allFlatCategories.find(
                     (c) =>
                       c.id === filters.categoryId ||
                       c.slug === filters.categoryId
@@ -417,8 +469,15 @@ export const AdminPostView: React.FC = () => {
                       groupId: undefined,
                     }));
                     setCurrentPage(1);
+                    const params = new URLSearchParams(searchParams.toString());
+                    params.delete("category");
+                    const qs = params.toString();
+                    router.replace(qs ? `${pathname}?${qs}` : pathname, {
+                      scroll: false,
+                    });
                   }}
-                  className="rounded-full p-0.5 hover:bg-amber-200/80 text-amber-800"
+                  className="rounded-full p-0.5 hover:bg-amber-200/80 text-amber-800 cursor-pointer"
+                  aria-label="Xóa bộ lọc danh mục"
                 >
                   <X className="h-3 w-3" />
                 </button>

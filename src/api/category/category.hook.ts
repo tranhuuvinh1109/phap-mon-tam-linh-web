@@ -37,7 +37,7 @@ export const useGetCategories = (
 ): UseQueryResult<CategoryItemType[], AxiosError> => {
   return useQuery({
     queryKey: [QueryKeyEnum.GET_CATEGORIES],
-    queryFn: getCategories,
+    queryFn: () => getCategories(),
     staleTime: 60 * 1000, // Cache for 1 min
     ...options,
   });

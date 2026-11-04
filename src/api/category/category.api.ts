@@ -9,10 +9,18 @@ import {
 /**
  * Fetch all categories from GET /categories
  */
-export const getCategories = async (): Promise<CategoryItemType[]> => {
+export const getCategories = async (params?: {
+  limit?: number;
+  includeDeleted?: boolean;
+}): Promise<CategoryItemType[]> => {
   const response = await apiClient.get<
     CategoryItemType[] | { data: CategoryItemType[] }
-  >(API_URL.categories);
+  >(API_URL.categories, {
+    params: {
+      limit: 100,
+      ...params,
+    },
+  });
 
   // Normalize array if wrapped in { data: [...] }
   if (Array.isArray(response.data)) {
