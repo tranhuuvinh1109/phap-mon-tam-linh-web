@@ -50,7 +50,7 @@ export const AdminPostView: React.FC = () => {
   const [filters, setFilters] = useState<PostFilterState>({
     categoryId: categoryParam || undefined,
     groupId: undefined,
-    status: "ALL",
+    status: "APPROVED",
     type: "ALL",
     startDate: undefined,
     endDate: undefined,
@@ -177,7 +177,7 @@ export const AdminPostView: React.FC = () => {
       categoryId: isTargetUuid ? targetCategory : undefined,
       groupId: filters.groupId || undefined,
       type: filters.type === "ALL" ? undefined : filters.type,
-      status: filters.status,
+      status: filters.status || "APPROVED",
       startDate: filters.startDate || undefined,
       endDate: filters.endDate || undefined,
     };
@@ -192,7 +192,9 @@ export const AdminPostView: React.FC = () => {
   } = useGetPosts(queryParams);
 
   const posts: PostItemType[] = useMemo(() => {
-    return postsData?.data || [];
+    const rawPosts = postsData?.data || [];
+    // Ensure pending posts are never displayed in the main admin/post table
+    return rawPosts.filter((post) => post.status !== "PENDING");
   }, [postsData]);
 
   const total = postsData?.meta?.total ?? posts.length;
@@ -213,7 +215,7 @@ export const AdminPostView: React.FC = () => {
       if (!isSameAsUrl) count++;
     }
     if (filters.groupId) count++;
-    if (filters.status && filters.status !== "ALL") count++;
+    if (filters.status && filters.status !== "APPROVED") count++;
     if (filters.type && filters.type !== "ALL") count++;
     if (filters.startDate || filters.endDate) count++;
     return count;
@@ -228,7 +230,7 @@ export const AdminPostView: React.FC = () => {
     setFilters({
       categoryId: categoryParam || undefined,
       groupId: undefined,
-      status: "ALL",
+      status: "APPROVED",
       type: "ALL",
       startDate: undefined,
       endDate: undefined,
@@ -444,22 +446,18 @@ export const AdminPostView: React.FC = () => {
             )}
 
             {/* Status Chip */}
-            {filters.status && filters.status !== "ALL" && (
+            {filters.status && filters.status !== "APPROVED" && (
               <span className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-2.5 py-1 text-xs font-medium text-neutral-800">
                 <span>
                   Trạng thái:{" "}
                   <strong className="text-amber-900">
-                    {filters.status === "APPROVED"
-                      ? "Đã duyệt"
-                      : filters.status === "PENDING"
-                      ? "Chờ duyệt"
-                      : "Từ chối"}
+                    {filters.status === "REJECTED" ? "Từ chối" : filters.status}
                   </strong>
                 </span>
                 <button
                   type="button"
                   onClick={() => {
-                    setFilters((prev) => ({ ...prev, status: "ALL" }));
+                    setFilters((prev) => ({ ...prev, status: "APPROVED" }));
                     setCurrentPage(1);
                   }}
                   className="rounded-full p-0.5 hover:bg-neutral-200 text-neutral-600"

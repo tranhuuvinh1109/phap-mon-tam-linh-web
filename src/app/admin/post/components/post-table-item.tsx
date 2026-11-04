@@ -44,7 +44,8 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
     isBachThoaiPhatPhap(
       post.categoryId || post.category?.id,
       post.category?.slug,
-      post.category?.name
+      post.category?.name,
+      post.category?.parentId
     );
 
   const postUrl = post.category?.slug

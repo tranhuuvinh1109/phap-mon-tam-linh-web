@@ -32,6 +32,7 @@ import { NiemKinhStepEditor } from "../create-post/components/niem-kinh-step-edi
 import { RichTextEditor } from "../create-post/components/rich-text-editor";
 import { PdfUpload } from "../create-post/components/pdf-upload";
 import { parseNiemKinhContent } from "../types/niem-kinh.type";
+import { BACH_THOAI_PHAT_PHAP_ID } from "@/constants";
 import { allowsGroupCategory, isBachThoaiPhatPhap, isKhaiThi, isNiemKinh } from "../utils/content-type";
 import { ConfirmModal } from "./confirm-modal";
 
@@ -73,6 +74,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
   // Form fields
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
+  const [origin, setOrigin] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [groupId, setGroupId] = useState("");
   const [type, setType] = useState<ContentType>(ContentType.NORMAL);
@@ -145,6 +147,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
     if (post && isOpen) {
       setTitle(post.title || "");
       setSlug(post.slug || "");
+      setOrigin(post.origin || "");
       setCategoryId(post.categoryId || post.category?.id || "");
       setGroupId(post.groupId || post.group?.id || "");
       setType(post.type || ContentType.NORMAL);
@@ -181,7 +184,8 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       allowsGroupCategory(
         categoryId,
         selectedCategory?.slug || post?.category?.slug,
-        selectedCategory?.name || post?.category?.name
+        selectedCategory?.name || post?.category?.name,
+        selectedCategory?.parentId || post?.category?.parentId
       )
     );
   }, [categoryId, selectedCategory, post]);
@@ -192,7 +196,8 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       isBachThoaiPhatPhap(
         categoryId,
         selectedCategory?.slug || post?.category?.slug,
-        selectedCategory?.name || post?.category?.name
+        selectedCategory?.name || post?.category?.name,
+        selectedCategory?.parentId || post?.category?.parentId
       )
     );
   }, [categoryId, selectedCategory, post]);
@@ -258,6 +263,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
     return (
       title !== (post.title || "") ||
       slug !== (post.slug || "") ||
+      origin !== (post.origin || "") ||
       categoryId !== (post.categoryId || post.category?.id || "") ||
       groupId !== (post.groupId || post.group?.id || "") ||
       type !== (post.type || ContentType.NORMAL) ||
@@ -271,6 +277,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
     post,
     title,
     slug,
+    origin,
     categoryId,
     type,
     thumbnailUrl,
@@ -322,7 +329,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       pendingEditorImagesMap.forEach((_, blobUrl) => {
         try {
           URL.revokeObjectURL(blobUrl);
-        } catch {}
+        } catch { }
       });
       onSuccess?.();
       onClose();
@@ -486,22 +493,35 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       });
     }
 
+    // If origin is entered, prepend formatted origin tag to the beginning of content for payload
+    const originVal = isKhaiThiPost ? origin.trim() : "";
+    if (originVal) {
+      const originHtml = `<p><strong style="background-color: rgb(255, 255, 255); color: rgb(41, 41, 41);">${originVal}</strong></p>`;
+      const originPattern = /^<p><strong style="background-color: rgb\(255, 255, 255\); color: rgb\(41, 41, 41\);">.*?<\/strong><\/p>/;
+      if (finalContent && originPattern.test(finalContent)) {
+        finalContent = finalContent.replace(originPattern, originHtml);
+      } else {
+        finalContent = finalContent ? `${originHtml}${finalContent}` : originHtml;
+      }
+    }
+
     const payload: UpdatePostPayloadType = {
       title: title.trim(),
       slug: slug.trim(),
       categoryId: categoryId || undefined,
       groupId: isGroupSupported ? (groupId || null) : undefined,
       type,
+      ...(isKhaiThiPost ? { origin: origin.trim() || null } : {}),
       thumbnailUrl: thumbnailUrl.trim() || undefined,
       content: finalContent,
       attachments:
         uploadedImageAttachments.length > 0
           ? uploadedImageAttachments.map((img) => ({
-              fileUrl: img.fileUrl,
-              fileName: img.fileName,
-              fileSize: img.fileSize,
-              mimeType: img.mimeType,
-            }))
+            fileUrl: img.fileUrl,
+            fileName: img.fileName,
+            fileSize: img.fileSize,
+            mimeType: img.mimeType,
+          }))
           : undefined,
       ...(type === ContentType.AUDIO && audioUrl.trim()
         ? {
@@ -598,8 +618,8 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                 >
                   <div
                     className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${currentStep === 1
-                        ? "bg-amber-600 text-white ring-4 ring-amber-500/20 shadow-xs"
-                        : "bg-emerald-600 text-white"
+                      ? "bg-amber-600 text-white ring-4 ring-amber-500/20 shadow-xs"
+                      : "bg-emerald-600 text-white"
                       }`}
                   >
                     {currentStep > 1 ? <Check className="h-3.5 w-3.5" /> : "1"}
@@ -632,8 +652,8 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                 >
                   <div
                     className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all ${currentStep === 2
-                        ? "bg-amber-600 text-white ring-4 ring-amber-500/20 shadow-xs"
-                        : "bg-neutral-200 text-neutral-600"
+                      ? "bg-amber-600 text-white ring-4 ring-amber-500/20 shadow-xs"
+                      : "bg-neutral-200 text-neutral-600"
                       }`}
                   >
                     2
@@ -685,8 +705,8 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                       }}
                       placeholder="Nhập tiêu đề bài viết..."
                       className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 outline-none transition focus:ring-2 ${errors.title
-                          ? "border-red-400 focus:border-red-500 focus:ring-red-200"
-                          : "border-neutral-200 focus:border-amber-600 focus:ring-amber-500/20"
+                        ? "border-red-400 focus:border-red-500 focus:ring-red-200"
+                        : "border-neutral-200 focus:border-amber-600 focus:ring-amber-500/20"
                         }`}
                     />
                     {errors.title && (
@@ -725,8 +745,8 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                         }}
                         placeholder="duong-dan-bai-viet"
                         className={`w-full rounded-xl border bg-white px-3.5 py-2.5 text-xs sm:text-sm font-mono text-neutral-900 outline-none transition focus:ring-2 ${errors.slug
-                            ? "border-red-400 focus:border-red-500 focus:ring-red-200"
-                            : "border-neutral-200 focus:border-amber-600 focus:ring-amber-500/20"
+                          ? "border-red-400 focus:border-red-500 focus:ring-red-200"
+                          : "border-neutral-200 focus:border-amber-600 focus:ring-amber-500/20"
                           }`}
                       />
                     </div>
@@ -736,6 +756,25 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                       </p>
                     )}
                   </div>
+
+                  {/* 2.5 Origin Field (Only for Khai Thị category or child) */}
+                  {isKhaiThiPost && (
+                    <div>
+                      <label className="block text-xs sm:text-sm font-semibold text-neutral-800 mb-1.5">
+                        Nguồn bài viết <span className="text-xs font-normal text-neutral-400">(tùy chọn)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={origin}
+                        onChange={(e) => setOrigin(e.target.value)}
+                        placeholder="Nhập nguồn bài viết (ví dụ: Khai thị Sư Phụ Lư Đài Trưởng, Wenda2020..., Pháp Hội...)"
+                        className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20"
+                      />
+                      <p className="mt-1 text-[11px] text-neutral-400">
+                        Nguồn gốc, xuất xứ hoặc chương trình vấn đáp để phật tử dễ tra cứu.
+                      </p>
+                    </div>
+                  )}
 
                   {/* 3. Category & Type Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -749,7 +788,17 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                       </label>
                       <select
                         value={categoryId}
-                        onChange={(e) => setCategoryId(e.target.value)}
+                        onChange={(e) => {
+                          const newCatId = e.target.value;
+                          setCategoryId(newCatId);
+                          const targetCat = categories.find((c) => c.id === newCatId);
+                          if (
+                            newCatId === BACH_THOAI_PHAT_PHAP_ID ||
+                            targetCat?.parentId === BACH_THOAI_PHAT_PHAP_ID
+                          ) {
+                            setType(ContentType.AUDIO);
+                          }
+                        }}
                         disabled={isCategoriesLoading || isTreeLoading}
                         className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20"
                       >
@@ -801,8 +850,8 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                           type="button"
                           onClick={() => setType(ContentType.NORMAL)}
                           className={`flex-1 flex items-center justify-center gap-2 rounded-xl border py-2 px-3 text-xs sm:text-sm font-semibold transition ${type === ContentType.NORMAL
-                              ? "border-emerald-500 bg-emerald-50 text-emerald-800 shadow-2xs font-bold"
-                              : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
+                            ? "border-emerald-500 bg-emerald-50 text-emerald-800 shadow-2xs font-bold"
+                            : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
                             }`}
                         >
                           <BookOpen className="h-4 w-4" />
@@ -812,8 +861,8 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                           type="button"
                           onClick={() => setType(ContentType.AUDIO)}
                           className={`flex-1 flex items-center justify-center gap-2 rounded-xl border py-2 px-3 text-xs sm:text-sm font-semibold transition ${type === ContentType.AUDIO
-                              ? "border-sky-500 bg-sky-50 text-sky-800 shadow-2xs font-bold"
-                              : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
+                            ? "border-sky-500 bg-sky-50 text-sky-800 shadow-2xs font-bold"
+                            : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
                             }`}
                         >
                           <Volume2 className="h-4 w-4" />
@@ -824,7 +873,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                   </div>
 
                   {/* 3.5 Group Selection (For Khai thị & Bạch thoại Phật Pháp) */}
-                  {isGroupSupported && (
+                  {/* {isGroupSupported && (
                     <div className="rounded-xl border border-amber-200/80 bg-amber-50/40 p-4 transition-all">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
                         <label className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-neutral-800">
@@ -862,7 +911,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                         </div>
                       </div>
                     </div>
-                  )}
+                  )} */}
 
                   {/* 4. Thumbnail URL & Upload */}
                   <div>

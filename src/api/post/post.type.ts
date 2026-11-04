@@ -52,6 +52,7 @@ export interface CreatePostPayloadType {
   slug?: string;
   content?: any;
   type?: ContentType;
+  origin?: string | null;
   thumbnailUrl?: string;
   publishedAt?: string;
   authorId?: string;
@@ -153,6 +154,7 @@ export interface PostItemType {
   slug: string;
   content?: any;
   type: ContentType;
+  origin?: string | null;
   thumbnailUrl?: string | null;
   publishedAt?: string | null;
   authorId?: string | null;

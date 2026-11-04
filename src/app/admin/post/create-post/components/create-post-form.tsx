@@ -24,6 +24,7 @@ export const CreatePostForm: React.FC = () => {
     title: "",
     slug: "",
     description: "",
+    origin: "",
     thumbnail: null,
     thumbnailPreview: null,
     audioFile: null,
@@ -35,6 +36,11 @@ export const CreatePostForm: React.FC = () => {
   const selectedCategory = useMemo(() => {
     return categories.find((cat) => cat.id === formValues.categoryId);
   }, [categories, formValues.categoryId]);
+
+  const parentCategory = useMemo(() => {
+    if (!selectedCategory?.parentId) return null;
+    return categories.find((cat) => cat.id === selectedCategory.parentId) || null;
+  }, [categories, selectedCategory]);
 
   const handleStep1Next = (categoryId: string, contentType: ContentType) => {
     setFormValues((prev: CreatePostFormValues) => ({
@@ -61,7 +67,8 @@ export const CreatePostForm: React.FC = () => {
       const isBachThoai = isBachThoaiPhatPhap(
         nextValues.categoryId,
         selectedCategory?.slug,
-        selectedCategory?.name
+        selectedCategory?.name,
+        selectedCategory?.parentId
       );
 
       if (updates.audioFile && isBachThoai && updates.title === undefined) {
@@ -159,6 +166,7 @@ export const CreatePostForm: React.FC = () => {
         <StepPostDetails
           formValues={formValues}
           category={selectedCategory}
+          parentCategory={parentCategory}
           onChangeFormValues={handleUpdateFormValues}
           onBack={handleStep2Back}
         />
