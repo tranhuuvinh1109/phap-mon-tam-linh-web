@@ -109,6 +109,18 @@ export interface PostCategoryType {
   name: string;
   slug: string;
   description?: string | null;
+  parentId?: string | null;
+  parent?: {
+    id: string;
+    name: string;
+    slug: string;
+    description?: string | null;
+  } | null;
+  children?: {
+    id: string;
+    name: string;
+    slug: string;
+  }[];
   deletedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;

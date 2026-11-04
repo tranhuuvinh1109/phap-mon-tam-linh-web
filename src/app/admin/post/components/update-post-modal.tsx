@@ -20,7 +20,7 @@ import {
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
-import { useGetCategories } from "@/api/category";
+import { useGetCategories, useGetCategoryTree } from "@/api/category";
 import { uploadFile } from "@/api/file";
 import { useGetGroups } from "@/api/group";
 import { useUpdatePost } from "@/api/post";
@@ -108,6 +108,21 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
   // Fetch categories for dropdown
   const { data: categories = [], isLoading: isCategoriesLoading } =
     useGetCategories();
+  const { data: categoryTree = [], isLoading: isTreeLoading } =
+    useGetCategoryTree();
+
+  // Organize categories into tree hierarchy
+  const organizedCategories = useMemo(() => {
+    if (categoryTree && categoryTree.length > 0) {
+      return categoryTree;
+    }
+    // Fallback if tree endpoint is loading or returns empty
+    const rootCats = categories.filter((c) => !c.parentId);
+    return rootCats.map((root) => ({
+      ...root,
+      children: categories.filter((c) => c.parentId === root.id),
+    }));
+  }, [categoryTree, categories]);
 
   // Find selected category object
   const selectedCategory = useMemo(() => {
@@ -726,22 +741,54 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Category Selection */}
                     <div>
-                      <label className="block text-xs sm:text-sm font-semibold text-neutral-800 mb-1.5">
-                        Danh mục chuyên mục
+                      <label className="block text-xs sm:text-sm font-semibold text-neutral-800 mb-1.5 flex items-center justify-between">
+                        <span>Danh mục chuyên mục</span>
+                        {isTreeLoading && (
+                          <span className="text-[10px] text-amber-600 font-normal">Đang tải phân cấp...</span>
+                        )}
                       </label>
                       <select
                         value={categoryId}
                         onChange={(e) => setCategoryId(e.target.value)}
-                        disabled={isCategoriesLoading}
+                        disabled={isCategoriesLoading || isTreeLoading}
                         className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20"
                       >
                         <option value="">-- Chọn danh mục --</option>
-                        {categories.map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.name} ({cat.slug})
-                          </option>
-                        ))}
+                        {organizedCategories.map((group) => {
+                          const hasChildren = group.children && group.children.length > 0;
+                          if (hasChildren) {
+                            return (
+                              <optgroup key={group.id} label={`📁 ${group.name}`}>
+                                <option value={group.id}>[Chính danh mục] {group.name}</option>
+                                {group.children?.map((child) => (
+                                  <option key={child.id} value={child.id}>
+                                    &nbsp;&nbsp;&nbsp;&nbsp;↳ {child.name}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            );
+                          }
+                          return (
+                            <option key={group.id} value={group.id}>
+                              📁 {group.name}
+                            </option>
+                          );
+                        })}
                       </select>
+                      {selectedCategory && (
+                        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-neutral-500">
+                          <FolderTree className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                          {selectedCategory.parent || selectedCategory.parentId ? (
+                            <span>
+                              Cây danh mục: <strong className="text-neutral-700">{selectedCategory.parent?.name || organizedCategories.find((g) => g.id === selectedCategory.parentId)?.name}</strong> › <strong className="text-amber-800">{selectedCategory.name}</strong>
+                            </span>
+                          ) : (
+                            <span>
+                              Cây danh mục: <strong className="text-neutral-700">{selectedCategory.name}</strong> (Danh mục gốc)
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Content Type */}

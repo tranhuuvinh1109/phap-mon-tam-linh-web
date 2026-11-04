@@ -9,8 +9,8 @@ import {
 import { useRouter } from "next/navigation";
 import React, { useId, useMemo, useState } from "react";
 
-import { useCreateCategory, useGetCategories } from "@/api/category";
-import { CategoryFormValues } from "@/api/category/category.type";
+import { useCreateCategory, useGetCategoryTree } from "@/api/category";
+import { CategoryFormValues, CategoryItemType } from "@/api/category/category.type";
 import { Button } from "@/components/ui";
 import { slugify } from "@/lib/utils";
 
@@ -31,21 +31,40 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   const nameId = useId();
   const slugId = useId();
   const descId = useId();
+  const parentIdId = useId();
 
   // Form local state
   const [name, setName] = useState(initialValues?.name || "");
   const [description, setDescription] = useState(initialValues?.description || "");
+  const [parentId, setParentId] = useState<string>(initialValues?.parentId || "");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Retrieve existing categories using the TanStack Query hook
+  // Retrieve category tree to populate root categories and check duplicate slug
   const {
-    data: categories = [],
+    data: categoryTree = [],
     isLoading: isCategoriesLoading,
     isError: isCategoriesError,
     error: categoriesError,
-  } = useGetCategories();
+  } = useGetCategoryTree();
+
+  // Root categories from tree that can serve as parent
+  const rootCategories = useMemo(() => {
+    return categoryTree.filter((c) => !c.deletedAt);
+  }, [categoryTree]);
+
+  // Flatten tree for duplicate slug checking across all categories
+  const allCategories = useMemo(() => {
+    const list: CategoryItemType[] = [];
+    categoryTree.forEach((root) => {
+      list.push(root);
+      if (root.children && Array.isArray(root.children)) {
+        list.push(...root.children);
+      }
+    });
+    return list;
+  }, [categoryTree]);
 
   // Create Category mutation hook
   const createCategoryMutation = useCreateCategory({
@@ -56,6 +75,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       // Reset form after successful creation
       setName("");
       setDescription("");
+      setParentId("");
       setIsSubmitted(false);
       setSubmitError(null);
     },
@@ -73,16 +93,16 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     return slugify(name);
   }, [name]);
 
-  // Check if the generated slug already exists in categories
+  // Check if the generated slug already exists in all categories
   const isDuplicateSlug = useMemo(() => {
     if (!generatedSlug) return false;
 
-    return categories.some((category) => {
+    return allCategories.some((category) => {
       // Exclude soft-deleted categories
       if (category.deletedAt) return false;
       return category.slug.toLowerCase() === generatedSlug.toLowerCase();
     });
-  }, [categories, generatedSlug]);
+  }, [allCategories, generatedSlug]);
 
   // Validation states
   const nameError = isSubmitted && !name.trim() ? "Tên danh mục là bắt buộc." : null;
@@ -107,6 +127,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       name: name.trim(),
       slug: generatedSlug,
       description: description.trim(),
+      parentId: parentId.trim() ? parentId.trim() : null,
     };
 
     if (onSubmit) {
@@ -116,6 +137,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
         name: formValues.name,
         slug: formValues.slug || undefined,
         description: formValues.description || undefined,
+        parentId: formValues.parentId,
       });
     }
   };
@@ -272,10 +294,42 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             ) : (
               <p className="flex items-center gap-1 text-neutral-400">
                 <Info className="h-3 w-3 shrink-0" />
-                <span>Slug được tự động chuẩn hóa từ Tên danh mục.</span>
+                <span>Slug sẽ được tạo tự động.</span>
               </p>
             )}
           </div>
+        </div>
+
+        {/* Field: Parent Category (Optional) */}
+        <div>
+          <label
+            htmlFor={parentIdId}
+            className="block text-sm font-semibold text-neutral-800"
+          >
+            Danh mục cha{" "}
+            <span className="text-xs font-normal text-neutral-500">
+              (Tùy chọn - để trống nếu đây là danh mục gốc / cha)
+            </span>
+          </label>
+          <div className="mt-1.5">
+            <select
+              id={parentIdId}
+              value={parentId}
+              onChange={(e) => setParentId(e.target.value)}
+              disabled={isCategoriesLoading}
+              className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 transition-colors focus:border-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            >
+              <option value="">-- Là danh mục gốc (Cha) --</option>
+              {rootCategories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  📁 {cat.name} ({cat.slug})
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="mt-1.5 text-xs text-neutral-500">
+            Nếu chọn một danh mục cha, danh mục này sẽ là danh mục con trực thuộc (Ví dụ: &quot;Hướng dẫn tu tập&quot; &gt; &quot;{name || 'Tên danh mục con'}&quot;).
+          </p>
         </div>
 
         {/* Field 3: Description (Multiline optional input) */}
