@@ -5,7 +5,7 @@ import Link from "next/link";
 import React, { useMemo } from "react";
 
 import type { PostItemType } from "@/api/post/post.type";
-import { getGroupBadgeStyle } from "@/lib/color-badge";
+import { getCategoryBadgeStyle } from "@/lib/color-badge";
 import { HighlightedText } from "@/lib/highlight";
 import { stripHtml } from "@/lib/utils";
 
@@ -36,13 +36,15 @@ export const KhaiThiItem: React.FC<KhaiThiItemProps> = ({ post, searchQuery }) =
       })
     : null;
 
-  const rawGroupName = post.group?.name;
-  const isUndefinedGroup =
-    !rawGroupName ||
-    rawGroupName.toLowerCase() === "undefined" ||
-    rawGroupName.toLowerCase() === "không xác định";
-  const groupDisplayName = isUndefinedGroup ? "không xác định" : rawGroupName;
-  const groupBadgeStyle = getGroupBadgeStyle(groupDisplayName);
+  const rawCategoryName = post.category?.name;
+  const isUndefinedCategory =
+    !rawCategoryName ||
+    rawCategoryName.toLowerCase() === "undefined" ||
+    rawCategoryName.toLowerCase() === "không xác định";
+  const categoryDisplayName = isUndefinedCategory ? "Khai thị" : rawCategoryName;
+  const categoryBadgeStyle = getCategoryBadgeStyle(
+    post.category?.slug || post.category?.name || "khai-thi"
+  );
 
   return (
     <Link
@@ -50,14 +52,14 @@ export const KhaiThiItem: React.FC<KhaiThiItemProps> = ({ post, searchQuery }) =
       className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-[#EDE5D8]/90 bg-white/95 p-5 shadow-2xs backdrop-blur-xs transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-md hover:bg-white cursor-pointer"
     >
       <div className="space-y-3">
-        {/* Header: Group Badge & Date */}
+        {/* Header: Category Badge & Date */}
         <div className="flex items-center justify-between gap-2">
-          {/* Badge Group Name */}
+          {/* Badge Category Name */}
           <span
-            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 text-xs font-semibold border ${groupBadgeStyle}`}
+            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 text-xs font-semibold border ${categoryBadgeStyle}`}
           >
             <Sparkles className="h-3 w-3 opacity-70 shrink-0" />
-            <span className="truncate max-w-[120px]">{groupDisplayName}</span>
+            <span className="truncate max-w-[150px]">{categoryDisplayName}</span>
           </span>
 
           {formattedDate && (

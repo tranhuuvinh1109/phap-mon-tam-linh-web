@@ -11,57 +11,26 @@ import {
   RefreshCw,
   Search,
   Sparkles,
+  Tag,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 
-import { useGetGroups } from "@/api/group";
+import { useGetCategories, useGetCategoryTree } from "@/api/category";
+import type { CategoryItemType } from "@/api/category/category.type";
 import { useGetPostsByCategory, useSearchPosts } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
 import { KhaiThiItem } from "@/components/home";
 import { MainLayout } from "@/components/layout";
 import { KhaiThiSkeleton } from "@/components/skeletons";
 import { KHAI_THI_SLUG } from "@/constants";
-import { getGroupBadgeStyle } from "@/lib/color-badge";
+import { getCategoryBadgeStyle } from "@/lib/color-badge";
 import { trackSearch } from "@/lib/gtm";
 import { slugify } from "@/lib/utils";
 
 const PAGE_SIZE = 12;
-
-/**
- * Generate a URL-friendly slug for a group name
- */
-function getGroupSlug(name?: string | null): string {
-  if (
-    !name ||
-    name.toLowerCase() === "undefined" ||
-    name.toLowerCase() === "không xác định"
-  ) {
-    return "khong-xac-dinh";
-  }
-  return slugify(name);
-}
-
-/**
- * Check if metadata is absent or empty
- */
-function hasNoMetadata(metadata: any): boolean {
-  if (!metadata) return true;
-  if (typeof metadata === "object") {
-    return Object.keys(metadata).length === 0;
-  }
-  if (typeof metadata === "string") {
-    try {
-      const parsed = JSON.parse(metadata);
-      return !parsed || Object.keys(parsed).length === 0;
-    } catch {
-      return false;
-    }
-  }
-  return false;
-}
 
 export const KhaiThiClient: React.FC = () => {
   const router = useRouter();
@@ -70,8 +39,12 @@ export const KhaiThiClient: React.FC = () => {
 
   // URL query params as single source of truth
   const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
-  const urlGroupParam =
-    searchParams.get("group") || searchParams.get("groupId") || "ALL";
+  const urlCategoryParam =
+    searchParams.get("category") ||
+    searchParams.get("subCategory") ||
+    searchParams.get("categoryId") ||
+    searchParams.get("group") ||
+    "ALL";
 
   const currentPage = useMemo(() => {
     const p = parseInt(searchParams.get("page") || "1", 10);
@@ -82,53 +55,75 @@ export const KhaiThiClient: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>(urlSearch);
   const [debouncedSearch, setDebouncedSearch] = useState<string>(urlSearch);
 
-  // Fetch groups and filter only items without metadata or undefined group
-  const { data: rawGroups = [] } = useGetGroups();
+  // Fetch category tree and categories list
+  const { data: categoryTree = [] } = useGetCategoryTree();
+  const { data: categories = [] } = useGetCategories();
 
-  const groups = useMemo(() => {
-    return rawGroups.filter((grp) => {
-      if (grp.deletedAt) return false;
+  // Find the root/parent "Khai thị" category
+  const khaiThiParent = useMemo(() => {
+    const fromTree = categoryTree.find(
+      (c) =>
+        c.slug === KHAI_THI_SLUG ||
+        c.slug === "khai-thi" ||
+        c.name.toLowerCase().includes("khai thị") ||
+        c.name.toLowerCase().includes("khai thi")
+    );
+    if (fromTree) return fromTree;
 
-      // Luôn lấy item group undefined
-      const isUndefined =
-        grp.name.toLowerCase() === "undefined" ||
-        grp.name.toLowerCase() === "không xác định";
-      if (isUndefined) return true;
-
-      // Chỉ lấy group item không có metadata
-      return hasNoMetadata(grp.metadata);
-    });
-  }, [rawGroups]);
-
-  // Resolve matching group from URL parameter (group slug, name, or UUID)
-  const selectedGroupObj = useMemo(() => {
-    if (!urlGroupParam || urlGroupParam === "ALL") return null;
-    const target = urlGroupParam.toLowerCase().trim();
     return (
-      groups.find((g) => {
-        if (g.id === urlGroupParam) return true;
-        if (g.name.toLowerCase().trim() === target) return true;
-        if (getGroupSlug(g.name) === target) return true;
-        if (
-          (target === "khong-xac-dinh" ||
-            target === "undefined" ||
-            target === "chua-phan-nhom") &&
-          g.name.toLowerCase() === "undefined"
-        ) {
-          return true;
+      categories.find(
+        (c) =>
+          !c.parentId &&
+          (c.slug === KHAI_THI_SLUG ||
+            c.slug === "khai-thi" ||
+            c.name.toLowerCase().includes("khai thị") ||
+            c.name.toLowerCase().includes("khai thi"))
+      ) || null
+    );
+  }, [categoryTree, categories]);
+
+  // Extract child categories whose parent is "Khai thị"
+  const childCategories = useMemo<CategoryItemType[]>(() => {
+    const list: CategoryItemType[] = [];
+    const seen = new Set<string>();
+
+    if (khaiThiParent?.children && Array.isArray(khaiThiParent.children)) {
+      khaiThiParent.children.forEach((c) => {
+        if (!c.deletedAt && !seen.has(c.id)) {
+          seen.add(c.id);
+          list.push(c);
         }
+      });
+    }
+
+    if (khaiThiParent?.id) {
+      categories.forEach((c) => {
+        if (!c.deletedAt && c.parentId === khaiThiParent.id && !seen.has(c.id)) {
+          seen.add(c.id);
+          list.push(c);
+        }
+      });
+    }
+
+    return list;
+  }, [khaiThiParent, categories]);
+
+  // Resolve matching child category from URL parameter (slug or UUID)
+  const selectedCategoryObj = useMemo(() => {
+    if (!urlCategoryParam || urlCategoryParam === "ALL") return null;
+    const target = urlCategoryParam.toLowerCase().trim();
+
+    return (
+      childCategories.find((cat) => {
+        if (cat.id === urlCategoryParam) return true;
+        if (cat.slug && cat.slug.toLowerCase().trim() === target) return true;
+        if (slugify(cat.name).toLowerCase() === target) return true;
         return false;
       }) || null
     );
-  }, [urlGroupParam, groups]);
+  }, [urlCategoryParam, childCategories]);
 
-  const effectiveGroupId = selectedGroupObj ? selectedGroupObj.id : undefined;
-
-  const selectedGroupName = selectedGroupObj
-    ? selectedGroupObj.name.toLowerCase() === "undefined"
-      ? "Chưa phân nhóm"
-      : selectedGroupObj.name
-    : null;
+  const selectedCategoryName = selectedCategoryObj?.name || null;
 
   // Sync search input if URL changes externally
   useEffect(() => {
@@ -141,7 +136,7 @@ export const KhaiThiClient: React.FC = () => {
    */
   const updateUrlParams = (updates: {
     page?: number;
-    groupSlug?: string | null;
+    categorySlug?: string | null;
     search?: string | null;
   }) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -157,13 +152,16 @@ export const KhaiThiClient: React.FC = () => {
       }
     }
 
-    // Update group slug
-    if (updates.groupSlug !== undefined) {
-      if (updates.groupSlug && updates.groupSlug !== "ALL") {
-        params.set("group", updates.groupSlug);
+    // Update category slug
+    if (updates.categorySlug !== undefined) {
+      if (updates.categorySlug && updates.categorySlug !== "ALL") {
+        params.set("category", updates.categorySlug);
       } else {
-        params.delete("group");
+        params.delete("category");
       }
+      params.delete("subCategory");
+      params.delete("categoryId");
+      params.delete("group");
       params.delete("groupId");
     }
 
@@ -196,25 +194,30 @@ export const KhaiThiClient: React.FC = () => {
 
   const isSearching = Boolean(debouncedSearch);
 
+  // Target category for API:
+  // If user selected a child category, use its slug/id.
+  // Otherwise, use KHAI_THI_SLUG to fetch all posts in Khai Thị.
+  const targetCategory = selectedCategoryObj
+    ? selectedCategoryObj.slug || selectedCategoryObj.id
+    : KHAI_THI_SLUG;
+
   // 1. Regular category query (when not searching) with offset pagination
   const categoryQuery = useGetPostsByCategory(
     {
-      category_name: KHAI_THI_SLUG,
+      category_name: targetCategory,
       limit: PAGE_SIZE,
       page: currentPage,
-      ...(effectiveGroupId ? { groupId: effectiveGroupId } : {}),
     },
     { enabled: !isSearching }
   );
 
-  // 2. Search query within Khai Thi category (when searching) with offset pagination
+  // 2. Search query within target category (when searching) with offset pagination
   const searchQueryHook = useSearchPosts(
     {
-      category: KHAI_THI_SLUG,
+      category: targetCategory,
       search: debouncedSearch,
       limit: PAGE_SIZE,
       page: currentPage,
-      ...(effectiveGroupId ? { groupId: effectiveGroupId } : {}),
     },
     { enabled: isSearching }
   );
@@ -224,23 +227,17 @@ export const KhaiThiClient: React.FC = () => {
   const posts: PostItemType[] = activeQuery.data?.data || [];
   const meta = activeQuery.data?.meta;
 
-  // Group items by groupName for sectioned view when viewing ALL groups
+  // Group items by category name for sectioned view when viewing ALL child categories
   const groupedPosts = useMemo(() => {
-    const groupsMap = new Map<string, PostItemType[]>();
+    const map = new Map<string, PostItemType[]>();
     for (const post of posts) {
-      const rawName = post.group?.name;
-      const key =
-        rawName &&
-        rawName.toLowerCase() !== "undefined" &&
-        rawName.toLowerCase() !== "không xác định"
-          ? rawName
-          : "Chưa phân nhóm";
-      if (!groupsMap.has(key)) {
-        groupsMap.set(key, []);
+      const key = post.category?.name || "Khai thị";
+      if (!map.has(key)) {
+        map.set(key, []);
       }
-      groupsMap.get(key)!.push(post);
+      map.get(key)!.push(post);
     }
-    return Array.from(groupsMap.entries());
+    return Array.from(map.entries());
   }, [posts]);
 
   // Debounced search tracking for GTM & GA4
@@ -262,8 +259,8 @@ export const KhaiThiClient: React.FC = () => {
   );
   const hasPrevPage = currentPage > 1;
 
-  const handleSelectGroup = (targetGroupSlug: string) => {
-    updateUrlParams({ groupSlug: targetGroupSlug, page: 1 });
+  const handleSelectCategory = (targetCategorySlug: string) => {
+    updateUrlParams({ categorySlug: targetCategorySlug, page: 1 });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -361,20 +358,20 @@ export const KhaiThiClient: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. Group Filter Pills */}
+        {/* 3. Category Filter Pills */}
         <div className="rounded-2xl border border-amber-900/10 bg-white/80 p-3.5 sm:p-4 backdrop-blur-xs shadow-2xs space-y-2.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-neutral-800">
               <Layers className="h-4 w-4 text-amber-700" />
-              <span>Xem theo Nhóm:</span>
+              <span>Chuyên mục Khai Thị:</span>
             </div>
-            {selectedGroupObj && (
+            {selectedCategoryObj && (
               <button
                 type="button"
-                onClick={() => handleSelectGroup("ALL")}
+                onClick={() => handleSelectCategory("ALL")}
                 className="text-xs font-semibold text-amber-800 hover:text-amber-950 underline cursor-pointer"
               >
-                Xem tất cả nhóm
+                Xem tất cả danh mục
               </button>
             )}
           </div>
@@ -382,42 +379,38 @@ export const KhaiThiClient: React.FC = () => {
           <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
             <button
               type="button"
-              onClick={() => handleSelectGroup("ALL")}
+              onClick={() => handleSelectCategory("ALL")}
               className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 font-semibold transition shrink-0 cursor-pointer ${
-                !selectedGroupObj
+                !selectedCategoryObj
                   ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
                   : "bg-white hover:bg-amber-50/60 text-neutral-700 border border-neutral-200/80 hover:border-amber-300"
               }`}
             >
               <Sparkles className="h-3.5 w-3.5" />
-              <span>Tất cả nhóm</span>
+              <span>Tất cả</span>
             </button>
 
-            {groups
-              .filter((grp) => !grp.deletedAt)
-              .map((grp) => {
-                const groupSlug = getGroupSlug(grp.name);
-                const isSelected = selectedGroupObj?.id === grp.id;
-                const displayName =
-                  grp.name.toLowerCase() === "undefined"
-                    ? "Chưa phân nhóm"
-                    : grp.name;
-                return (
-                  <button
-                    key={grp.id}
-                    type="button"
-                    onClick={() => handleSelectGroup(groupSlug)}
-                    className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 font-semibold transition shrink-0 cursor-pointer ${
-                      isSelected
-                        ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
-                        : "bg-white hover:bg-amber-50/60 text-neutral-700 border border-neutral-200/80 hover:border-amber-300"
-                    }`}
-                  >
-                    <FolderTree className="h-3.5 w-3.5 opacity-70" />
-                    <span>{displayName}</span>
-                  </button>
-                );
-              })}
+            {childCategories.map((cat) => {
+              const catSlug = cat.slug || cat.id;
+              const isSelected =
+                selectedCategoryObj?.id === cat.id ||
+                selectedCategoryObj?.slug === cat.slug;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => handleSelectCategory(catSlug)}
+                  className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 font-semibold transition shrink-0 cursor-pointer ${
+                    isSelected
+                      ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
+                      : "bg-white hover:bg-amber-50/60 text-neutral-700 border border-neutral-200/80 hover:border-amber-300"
+                  }`}
+                >
+                  <FolderTree className="h-3.5 w-3.5 opacity-70" />
+                  <span>{cat.name}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -481,18 +474,18 @@ export const KhaiThiClient: React.FC = () => {
               <Sparkles className="h-7 w-7 text-amber-700" />
             </div>
             <h3 className="text-base sm:text-lg font-bold text-neutral-900">
-              {debouncedSearch || selectedGroupObj
+              {debouncedSearch || selectedCategoryObj
                 ? "Không tìm thấy bài viết phù hợp"
                 : "Chưa có bài viết khai thị nào"}
             </h3>
             <p className="mt-1.5 text-xs sm:text-sm text-neutral-500 max-w-sm">
               {debouncedSearch
                 ? `Không có kết quả nào cho "${debouncedSearch}". Hãy thử tìm kiếm với từ khóa khác.`
-                : selectedGroupObj
-                ? `Chưa có bài viết nào thuộc nhóm "${selectedGroupName}".`
+                : selectedCategoryObj
+                ? `Chưa có bài viết nào thuộc danh mục "${selectedCategoryName}".`
                 : "Các bài khai thị sẽ sớm được cập nhật. Kính mong quý Phật tử hoan hỷ đón đọc."}
             </p>
-            {debouncedSearch || selectedGroupObj ? (
+            {debouncedSearch || selectedCategoryObj ? (
               <div className="mt-4 flex items-center justify-center gap-2 flex-wrap">
                 {debouncedSearch && (
                   <button
@@ -502,12 +495,12 @@ export const KhaiThiClient: React.FC = () => {
                     <span>Xóa từ khóa tìm kiếm</span>
                   </button>
                 )}
-                {selectedGroupObj && (
+                {selectedCategoryObj && (
                   <button
-                    onClick={() => handleSelectGroup("ALL")}
+                    onClick={() => handleSelectCategory("ALL")}
                     className="inline-flex items-center gap-1.5 rounded-xl bg-amber-800 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-amber-900 cursor-pointer"
                   >
-                    <span>Xem tất cả nhóm</span>
+                    <span>Xem tất cả danh mục</span>
                   </button>
                 )}
               </div>
@@ -521,22 +514,22 @@ export const KhaiThiClient: React.FC = () => {
               </Link>
             )}
           </div>
-        ) : !selectedGroupObj && groupedPosts.length > 1 ? (
-          /* Sectioned by Group View when viewing ALL groups */
+        ) : !selectedCategoryObj && groupedPosts.length > 1 ? (
+          /* Sectioned by Category View when viewing ALL categories */
           <div className="space-y-8">
-            {groupedPosts.map(([groupTitle, items]) => (
-              <div key={groupTitle} className="space-y-3.5">
+            {groupedPosts.map(([categoryTitle, items]) => (
+              <div key={categoryTitle} className="space-y-3.5">
                 <div className="flex items-center justify-between border-b border-amber-900/10 pb-2.5">
                   <div className="flex items-center gap-2">
                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-800 shadow-2xs">
                       <FolderTree className="h-4 w-4" />
                     </div>
                     <h3 className="text-sm sm:text-base font-bold text-neutral-900">
-                      {groupTitle}
+                      {categoryTitle}
                     </h3>
                     <span
-                      className={`inline-block rounded-md border px-2 py-0.5 text-xs font-semibold ${getGroupBadgeStyle(
-                        groupTitle
+                      className={`inline-block rounded-md border px-2 py-0.5 text-xs font-semibold ${getCategoryBadgeStyle(
+                        categoryTitle
                       )}`}
                     >
                       {items.length} bài
@@ -546,19 +539,18 @@ export const KhaiThiClient: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      const matchGroup = groups.find(
-                        (g) =>
-                          g.name === groupTitle ||
-                          (groupTitle === "Chưa phân nhóm" &&
-                            g.name.toLowerCase() === "undefined")
+                      const matchCat = childCategories.find(
+                        (c) =>
+                          c.name === categoryTitle ||
+                          c.name.toLowerCase() === categoryTitle.toLowerCase()
                       );
-                      if (matchGroup) {
-                        handleSelectGroup(getGroupSlug(matchGroup.name));
+                      if (matchCat) {
+                        handleSelectCategory(matchCat.slug || matchCat.id);
                       }
                     }}
                     className="text-xs font-semibold text-amber-800 hover:text-amber-950 hover:underline cursor-pointer flex items-center gap-0.5"
                   >
-                    <span>Chỉ xem nhóm này</span>
+                    <span>Chỉ xem mục này</span>
                     <ChevronRight className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -576,30 +568,30 @@ export const KhaiThiClient: React.FC = () => {
             ))}
           </div>
         ) : (
-          /* Filtered by single group or search result */
+          /* Filtered by single category or search result */
           <div className="space-y-4">
-            {selectedGroupName && (
+            {selectedCategoryName && (
               <div className="flex items-center justify-between bg-amber-50/80 border border-amber-200/80 rounded-xl px-4 py-2.5">
                 <div className="flex items-center gap-2">
                   <FolderTree className="h-4 w-4 text-amber-800" />
                   <span className="text-xs text-neutral-600">
-                    Đang lọc theo nhóm:
+                    Đang lọc theo danh mục:
                   </span>
                   <span
-                    className={`inline-block rounded-md border px-2.5 py-0.5 text-xs font-bold ${getGroupBadgeStyle(
-                      selectedGroupName
+                    className={`inline-block rounded-md border px-2.5 py-0.5 text-xs font-bold ${getCategoryBadgeStyle(
+                      selectedCategoryObj?.slug || selectedCategoryName
                     )}`}
                   >
-                    {selectedGroupName}
+                    {selectedCategoryName}
                   </span>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => handleSelectGroup("ALL")}
+                  onClick={() => handleSelectCategory("ALL")}
                   className="text-xs font-semibold text-amber-800 hover:text-amber-950 underline cursor-pointer"
                 >
-                  Bỏ lọc nhóm
+                  Bỏ lọc danh mục
                 </button>
               </div>
             )}
