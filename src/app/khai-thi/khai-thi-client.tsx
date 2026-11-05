@@ -105,7 +105,9 @@ export const KhaiThiClient: React.FC = () => {
       });
     }
 
-    return list;
+    return list.sort((a, b) =>
+      a.name.localeCompare(b.name, "vi", { sensitivity: "base" })
+    );
   }, [khaiThiParent, categories]);
 
   // Resolve matching child category from URL parameter (slug or UUID)

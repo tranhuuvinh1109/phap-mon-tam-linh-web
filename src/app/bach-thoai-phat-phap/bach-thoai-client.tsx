@@ -110,7 +110,9 @@ export const BachThoaiClient: React.FC = () => {
       });
     }
 
-    return list;
+    return list.sort((a, b) =>
+      a.name.localeCompare(b.name, "vi", { sensitivity: "base" })
+    );
   }, [bachThoaiParent, categories]);
 
   // Resolve matching child category from URL parameter (slug, UUID or name)
