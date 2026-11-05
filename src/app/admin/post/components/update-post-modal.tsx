@@ -6,13 +6,17 @@ import {
   ArrowRight,
   BookOpen,
   Check,
+  CheckCircle2,
   ChevronRight,
+  Clock,
   FolderTree,
   Image as ImageIcon,
   Layers,
   Loader2,
   RefreshCw,
+  ShieldCheck,
   Sparkles,
+  Tag,
   UploadCloud,
   Volume2,
   X,
@@ -76,6 +80,9 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
   const [slug, setSlug] = useState("");
   const [origin, setOrigin] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [selectedParentId, setSelectedParentId] = useState("");
+  const [selectedChildId, setSelectedChildId] = useState("");
+  const hasInitializedCategoryRef = useRef(false);
   const [groupId, setGroupId] = useState("");
   const [type, setType] = useState<ContentType>(ContentType.NORMAL);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
@@ -99,6 +106,10 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
   const [thumbProgress, setThumbProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Approval state for pending posts
+  const [isVerifiedFromOrigin, setIsVerifiedFromOrigin] = useState(false);
+  const [isSubmittingWithApprove, setIsSubmittingWithApprove] = useState(false);
+
   // Confirm dialogs
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showReloadConfirm, setShowReloadConfirm] = useState(false);
@@ -113,18 +124,42 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
   const { data: categoryTree = [], isLoading: isTreeLoading } =
     useGetCategoryTree();
 
+  // Active (non-deleted) categories
+  const activeCategories = useMemo(() => {
+    return categories.filter((c) => !c.deletedAt);
+  }, [categories]);
+
   // Organize categories into tree hierarchy
   const organizedCategories = useMemo(() => {
     if (categoryTree && categoryTree.length > 0) {
-      return categoryTree;
+      return categoryTree.filter((cat) => !cat.deletedAt);
     }
     // Fallback if tree endpoint is loading or returns empty
-    const rootCats = categories.filter((c) => !c.parentId);
+    const rootCats = activeCategories.filter((c) => !c.parentId);
     return rootCats.map((root) => ({
       ...root,
-      children: categories.filter((c) => c.parentId === root.id),
+      children: activeCategories.filter((c) => c.parentId === root.id),
     }));
-  }, [categoryTree, categories]);
+  }, [categoryTree, activeCategories]);
+
+  // Available child categories for the currently selected parent
+  const availableChildren = useMemo(() => {
+    if (!selectedParentId) return [];
+    const parent = organizedCategories.find((p) => p.id === selectedParentId);
+    if (parent?.children && parent.children.length > 0) {
+      return parent.children.filter((c) => !c.deletedAt);
+    }
+    return activeCategories.filter((c) => c.parentId === selectedParentId);
+  }, [selectedParentId, organizedCategories, activeCategories]);
+
+  // Selected parent category object
+  const selectedParentObj = useMemo(() => {
+    return (
+      organizedCategories.find((p) => p.id === selectedParentId) ||
+      categories.find((c) => c.id === selectedParentId) ||
+      null
+    );
+  }, [organizedCategories, categories, selectedParentId]);
 
   // Find selected category object
   const selectedCategory = useMemo(() => {
@@ -148,7 +183,21 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       setTitle(post.title || "");
       setSlug(post.slug || "");
       setOrigin(post.origin || "");
-      setCategoryId(post.categoryId || post.category?.id || "");
+      const initialCatId = post.categoryId || post.category?.id || "";
+      setCategoryId(initialCatId);
+
+      // Initialize parent & child from post.category if present
+      if (post.category?.parentId) {
+        setSelectedParentId(post.category.parentId);
+        setSelectedChildId(post.category.id);
+      } else if (post.category?.parent?.id) {
+        setSelectedParentId(post.category.parent.id);
+        setSelectedChildId(post.category.id);
+      } else {
+        setSelectedParentId(initialCatId);
+        setSelectedChildId("");
+      }
+
       setGroupId(post.groupId || post.group?.id || "");
       setType(post.type || ContentType.NORMAL);
       setThumbnailUrl(post.thumbnailUrl || "");
@@ -159,13 +208,73 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       setAttachmentSize(post.attachment?.fileSize || null);
       setPdfFile(null);
       setIsAttachmentDeleted(false);
+      setIsVerifiedFromOrigin(Boolean(post.isVerifiedFromOrigin));
+      setIsSubmittingWithApprove(false);
       setErrors({});
       setSubmitError(null);
       setCurrentStep(1);
       setShowCloseConfirm(false);
       setShowReloadConfirm(false);
+      hasInitializedCategoryRef.current = false;
     }
   }, [post, isOpen, initialContentStr]);
+
+  // Synchronize category parent & child once categories list is loaded (if post only had flat categoryId)
+  useEffect(() => {
+    if (
+      !isOpen ||
+      !post ||
+      hasInitializedCategoryRef.current ||
+      categories.length === 0
+    ) {
+      return;
+    }
+    const targetCatId = post.categoryId || post.category?.id || "";
+    if (!targetCatId) return;
+
+    const cat = categories.find((c) => c.id === targetCatId);
+    if (cat) {
+      if (cat.parentId) {
+        setSelectedParentId(cat.parentId);
+        setSelectedChildId(cat.id);
+        setCategoryId(cat.id);
+      } else {
+        setSelectedParentId(cat.id);
+        setSelectedChildId("");
+        setCategoryId(cat.id);
+      }
+      hasInitializedCategoryRef.current = true;
+    }
+  }, [isOpen, post, categories]);
+
+  // Category change handlers
+  const handleParentCategoryChange = (newParentId: string) => {
+    setSelectedParentId(newParentId);
+    setSelectedChildId("");
+    setCategoryId(newParentId);
+
+    const targetCat = categories.find((c) => c.id === newParentId);
+    if (
+      newParentId === BACH_THOAI_PHAT_PHAP_ID ||
+      targetCat?.parentId === BACH_THOAI_PHAT_PHAP_ID
+    ) {
+      setType(ContentType.AUDIO);
+    }
+  };
+
+  const handleChildCategoryChange = (newChildId: string) => {
+    setSelectedChildId(newChildId);
+    const effectiveId = newChildId || selectedParentId;
+    setCategoryId(effectiveId);
+
+    const targetCat = categories.find((c) => c.id === effectiveId);
+    if (
+      effectiveId === BACH_THOAI_PHAT_PHAP_ID ||
+      targetCat?.parentId === BACH_THOAI_PHAT_PHAP_ID
+    ) {
+      setType(ContentType.AUDIO);
+    }
+  };
 
   // Detect if current post is Niệm Kinh
   const isNiemKinhPost = useMemo(() => {
@@ -271,7 +380,8 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       content !== initialContentStr ||
       audioUrl !== (post.audio?.audioUrl || "") ||
       pdfFile !== null ||
-      isAttachmentDeleted
+      isAttachmentDeleted ||
+      isVerifiedFromOrigin !== Boolean(post.isVerifiedFromOrigin)
     );
   }, [
     post,
@@ -286,6 +396,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
     initialContentStr,
     pdfFile,
     isAttachmentDeleted,
+    isVerifiedFromOrigin,
   ]);
 
   // Intercept F5 and browser reloads (Ctrl+R / Cmd+R)
@@ -325,7 +436,13 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
   // Update mutation
   const updatePostMutation = useUpdatePost({
     onSuccess: (updated) => {
-      toast.success(`Cập nhật bài viết "${updated.title}" thành công!`);
+      if (isSubmittingWithApprove) {
+        toast.success(
+          `Đã cập nhật và phê duyệt bài viết "${updated.title}" thành công!`
+        );
+      } else {
+        toast.success(`Cập nhật bài viết "${updated.title}" thành công!`);
+      }
       pendingEditorImagesMap.forEach((_, blobUrl) => {
         try {
           URL.revokeObjectURL(blobUrl);
@@ -404,13 +521,22 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       toast.error("Vui lòng nhập đầy đủ tiêu đề và slug bài viết!");
       return false;
     }
+
+    if (!selectedParentId && !categoryId) {
+      toast.error("Vui lòng chọn danh mục cho bài viết!");
+      return false;
+    }
     return true;
   };
 
   // Handle Save
-  const handleSubmit = async (e?: React.FormEvent) => {
+  const handleSubmit = async (
+    e?: React.FormEvent,
+    shouldApprove: boolean = false
+  ) => {
     if (e) e.preventDefault();
     setSubmitError(null);
+    setIsSubmittingWithApprove(shouldApprove);
 
     if (!validateStep1()) {
       if (isNiemKinhPost) setCurrentStep(1);
@@ -514,6 +640,13 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       ...(isKhaiThiPost ? { origin: origin.trim() || null } : {}),
       thumbnailUrl: thumbnailUrl.trim() || undefined,
       content: finalContent,
+      ...(shouldApprove
+        ? {
+            status: "APPROVED" as const,
+            isVerifiedFromOrigin: isVerifiedFromOrigin,
+            rejectReason: null,
+          }
+        : {}),
       attachments:
         uploadedImageAttachments.length > 0
           ? uploadedImageAttachments.map((img) => ({
@@ -687,6 +820,28 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                 </div>
               )}
 
+              {/* PENDING POST REVIEW BANNER */}
+              {post.status === "PENDING" && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-2.5 text-xs text-amber-950 font-medium">
+                    <Clock className="h-4 w-4 text-amber-700 shrink-0" />
+                    <span>
+                      Bài viết đang ở trạng thái <strong>Chờ duyệt (PENDING)</strong>. Bạn có thể chỉnh sửa nội dung và bấm <strong>&quot;Lưu & Duyệt bài&quot;</strong> để xuất bản ngay.
+                    </span>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs font-semibold text-amber-950 cursor-pointer shrink-0 select-none bg-white/80 border border-amber-200 px-3 py-1.5 rounded-lg shadow-2xs hover:bg-white transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={isVerifiedFromOrigin}
+                      onChange={(e) => setIsVerifiedFromOrigin(e.target.checked)}
+                      className="h-4 w-4 rounded border-amber-300 text-amber-800 focus:ring-amber-600 accent-amber-800 cursor-pointer"
+                    />
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
+                    <span>Xác minh nguồn gốc</span>
+                  </label>
+                </div>
+              )}
+
               {/* VIEW FOR NIỆM KINH (STEP 1) OR NORMAL POSTS */}
               {(!isNiemKinhPost || currentStep === 1) && (
                 <div className="space-y-5">
@@ -776,83 +931,130 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                     </div>
                   )}
 
-                  {/* 3. Category & Type Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Category Selection */}
-                    <div>
-                      <label className="block text-xs sm:text-sm font-semibold text-neutral-800 mb-1.5 flex items-center justify-between">
-                        <span>Danh mục chuyên mục</span>
-                        {isTreeLoading && (
-                          <span className="text-[10px] text-amber-600 font-normal">Đang tải phân cấp...</span>
-                        )}
-                      </label>
-                      <select
-                        value={categoryId}
-                        onChange={(e) => {
-                          const newCatId = e.target.value;
-                          setCategoryId(newCatId);
-                          const targetCat = categories.find((c) => c.id === newCatId);
-                          if (
-                            newCatId === BACH_THOAI_PHAT_PHAP_ID ||
-                            targetCat?.parentId === BACH_THOAI_PHAT_PHAP_ID
-                          ) {
-                            setType(ContentType.AUDIO);
-                          }
-                        }}
-                        disabled={isCategoriesLoading || isTreeLoading}
-                        className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20"
-                      >
-                        <option value="">-- Chọn danh mục --</option>
-                        {organizedCategories.map((group) => {
-                          const hasChildren = group.children && group.children.length > 0;
-                          if (hasChildren) {
-                            return (
-                              <optgroup key={group.id} label={`📁 ${group.name}`}>
-                                <option value={group.id}>[Chính danh mục] {group.name}</option>
-                                {group.children?.map((child) => (
-                                  <option key={child.id} value={child.id}>
-                                    &nbsp;&nbsp;&nbsp;&nbsp;↳ {child.name}
-                                  </option>
-                                ))}
-                              </optgroup>
-                            );
-                          }
-                          return (
-                            <option key={group.id} value={group.id}>
-                              📁 {group.name}
-                            </option>
-                          );
-                        })}
-                      </select>
-                      {selectedCategory && (
-                        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-neutral-500">
-                          <FolderTree className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                          {selectedCategory.parent || selectedCategory.parentId ? (
-                            <span>
-                              Cây danh mục: <strong className="text-neutral-700">{selectedCategory.parent?.name || organizedCategories.find((g) => g.id === selectedCategory.parentId)?.name}</strong> › <strong className="text-amber-800">{selectedCategory.name}</strong>
-                            </span>
-                          ) : (
-                            <span>
-                              Cây danh mục: <strong className="text-neutral-700">{selectedCategory.name}</strong> (Danh mục gốc)
-                            </span>
+                  {/* 3. Category & Type Selection */}
+                  <div className="space-y-4">
+                    {/* Cascading Category Selection: Danh mục cha & Danh mục con */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Select Danh mục cha */}
+                      <div>
+                        <label className="block text-xs sm:text-sm font-semibold text-neutral-800 mb-1.5 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <Tag className="h-3.5 w-3.5 text-amber-700" />
+                            <span>Danh mục cha</span>
+                            <span className="text-amber-700">*</span>
+                          </span>
+                          {isTreeLoading && (
+                            <span className="text-[10px] text-amber-600 font-normal">Đang tải...</span>
                           )}
+                        </label>
+                        <select
+                          value={selectedParentId}
+                          onChange={(e) => handleParentCategoryChange(e.target.value)}
+                          disabled={isCategoriesLoading || isTreeLoading}
+                          className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-neutral-900 shadow-2xs outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20"
+                        >
+                          <option value="">-- Chọn danh mục cha --</option>
+                          {organizedCategories.map((parent) => (
+                            <option key={parent.id} value={parent.id}>
+                              📁 {parent.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Select Danh mục con */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label
+                            className={`flex items-center gap-1.5 text-xs sm:text-sm font-semibold ${
+                              !selectedParentId ? "text-neutral-400" : "text-neutral-800"
+                            }`}
+                          >
+                            <FolderTree className="h-3.5 w-3.5 text-amber-700" />
+                            <span>Danh mục con</span>
+                          </label>
+                          {!selectedParentId ? (
+                            <span className="text-[10px] font-medium text-neutral-400 italic">
+                              Chọn danh mục cha trước
+                            </span>
+                          ) : availableChildren.length === 0 ? (
+                            <span className="text-[10px] font-medium text-neutral-500 italic">
+                              Không có danh mục con
+                            </span>
+                          ) : null}
                         </div>
-                      )}
+
+                        <select
+                          value={selectedChildId}
+                          onChange={(e) => handleChildCategoryChange(e.target.value)}
+                          disabled={!selectedParentId || availableChildren.length === 0}
+                          className={`w-full rounded-xl border px-3.5 py-2.5 text-xs sm:text-sm shadow-2xs outline-none transition ${
+                            !selectedParentId
+                              ? "border-neutral-200 bg-neutral-100/70 text-neutral-400 cursor-not-allowed"
+                              : availableChildren.length === 0
+                              ? "border-neutral-200 bg-neutral-50 text-neutral-500 cursor-not-allowed"
+                              : "border-neutral-200 bg-white text-neutral-900 focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20"
+                          }`}
+                        >
+                          <option value="">
+                            {!selectedParentId
+                              ? "-- Vui lòng chọn danh mục cha trước --"
+                              : availableChildren.length === 0
+                              ? `-- Không có danh mục con (Gán vào "${selectedParentObj?.name || "Danh mục cha"}") --`
+                              : `-- [Chính danh mục cha] ${selectedParentObj?.name || ""} --`}
+                          </option>
+                          {availableChildren.map((child) => (
+                            <option key={child.id} value={child.id}>
+                              ↳ {child.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
+
+                    {/* Breadcrumb Cây danh mục đã chọn */}
+                    {selectedCategory && (
+                      <div className="rounded-lg bg-amber-50/60 border border-amber-200/60 px-3 py-1.5 flex items-center gap-2 text-xs text-neutral-600">
+                        <FolderTree className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+                        {selectedCategory.parent ||
+                        (selectedCategory.parentId &&
+                          selectedCategory.parentId !== selectedCategory.id) ? (
+                          <span>
+                            Đang chọn:{" "}
+                            <strong className="text-neutral-800">
+                              {selectedParentObj?.name || selectedCategory.parent?.name}
+                            </strong>{" "}
+                            ›{" "}
+                            <strong className="text-amber-800">
+                              {selectedCategory.name}
+                            </strong>
+                          </span>
+                        ) : (
+                          <span>
+                            Đang chọn:{" "}
+                            <strong className="text-amber-800">
+                              {selectedCategory.name}
+                            </strong>{" "}
+                            (Danh mục gốc)
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Content Type */}
                     <div>
                       <label className="block text-xs sm:text-sm font-semibold text-neutral-800 mb-1.5">
                         Định dạng bài viết
                       </label>
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-2 gap-3 sm:max-w-md">
                         <button
                           type="button"
                           onClick={() => setType(ContentType.NORMAL)}
-                          className={`flex-1 flex items-center justify-center gap-2 rounded-xl border py-2 px-3 text-xs sm:text-sm font-semibold transition ${type === ContentType.NORMAL
-                            ? "border-emerald-500 bg-emerald-50 text-emerald-800 shadow-2xs font-bold"
-                            : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
-                            }`}
+                          className={`flex items-center justify-center gap-2 rounded-xl border py-2 px-3 text-xs sm:text-sm font-semibold transition ${
+                            type === ContentType.NORMAL
+                              ? "border-emerald-500 bg-emerald-50 text-emerald-800 shadow-2xs font-bold"
+                              : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
+                          }`}
                         >
                           <BookOpen className="h-4 w-4" />
                           <span>Bài viết thường</span>
@@ -860,10 +1062,11 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setType(ContentType.AUDIO)}
-                          className={`flex-1 flex items-center justify-center gap-2 rounded-xl border py-2 px-3 text-xs sm:text-sm font-semibold transition ${type === ContentType.AUDIO
-                            ? "border-sky-500 bg-sky-50 text-sky-800 shadow-2xs font-bold"
-                            : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
-                            }`}
+                          className={`flex items-center justify-center gap-2 rounded-xl border py-2 px-3 text-xs sm:text-sm font-semibold transition ${
+                            type === ContentType.AUDIO
+                              ? "border-sky-500 bg-sky-50 text-sky-800 shadow-2xs font-bold"
+                              : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
+                          }`}
                         >
                           <Volume2 className="h-4 w-4" />
                           <span>Audio / Bài giảng</span>
@@ -1134,6 +1337,47 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                     <span>Tiếp tục sang Bước 2</span>
                     <ArrowRight className="h-4 w-4" />
                   </Button>
+                ) : post.status === "PENDING" ? (
+                  <>
+                    {/* Save only (keep PENDING) */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={updatePostMutation.isPending || !isDirty}
+                      onClick={() => handleSubmit(undefined, false)}
+                      className="rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold border-amber-300 bg-white text-amber-900 hover:bg-amber-50 shadow-2xs disabled:opacity-50"
+                    >
+                      {updatePostMutation.isPending && !isSubmittingWithApprove ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Đang lưu...</span>
+                        </div>
+                      ) : (
+                        <span>Lưu thay đổi</span>
+                      )}
+                    </Button>
+
+                    {/* Save & Approve */}
+                    <Button
+                      type="button"
+                      variant="golden"
+                      disabled={updatePostMutation.isPending}
+                      onClick={() => handleSubmit(undefined, true)}
+                      className="rounded-xl px-5 py-2 text-xs sm:text-sm font-semibold shadow-xs flex items-center gap-1.5"
+                    >
+                      {updatePostMutation.isPending && isSubmittingWithApprove ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Đang duyệt...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span>Lưu & Duyệt bài</span>
+                        </>
+                      )}
+                    </Button>
+                  </>
                 ) : (
                   <Button
                     type="submit"

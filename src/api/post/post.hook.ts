@@ -224,6 +224,9 @@ export const useUpdatePost = (
       queryClient.invalidateQueries({
         queryKey: [QueryKeyEnum.GET_POST_DETAIL],
       });
+      queryClient.invalidateQueries({
+        queryKey: [QueryKeyEnum.GET_PENDING_POSTS_COUNT],
+      });
       options?.onSuccess?.(...args);
     },
   });

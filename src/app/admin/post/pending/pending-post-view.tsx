@@ -6,6 +6,7 @@ import {
   Clock,
   Eye,
   FileText,
+  Pencil,
   RefreshCw,
   Search,
   ShieldAlert,
@@ -23,6 +24,7 @@ import { stripHtml } from "@/lib/utils";
 import { PostDetailModal } from "@/components/post/post-detail-modal";
 import { ApprovePostModal } from "../components/approve-post-modal";
 import { RejectPostModal } from "../components/reject-post-modal";
+import { UpdatePostModal } from "../components/update-post-modal";
 import { getCategoryBadgeStyle, getGroupBadgeStyle } from "../utils/color-badge";
 
 const PAGE_SIZE = 15;
@@ -40,6 +42,9 @@ export const PendingPostView: React.FC = () => {
 
   const [rejectingPost, setRejectingPost] = useState<PostItemType | null>(null);
   const [isRejectOpen, setIsRejectOpen] = useState(false);
+
+  const [editingPost, setEditingPost] = useState<PostItemType | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   // Query parameters: Filter specifically by status = PENDING
   const queryParams = useMemo(() => {
@@ -74,6 +79,11 @@ export const PendingPostView: React.FC = () => {
   const handleOpenReject = (post: PostItemType) => {
     setRejectingPost(post);
     setIsRejectOpen(true);
+  };
+
+  const handleOpenEdit = (post: PostItemType) => {
+    setEditingPost(post);
+    setIsEditOpen(true);
   };
 
   return (
@@ -163,7 +173,7 @@ export const PendingPostView: React.FC = () => {
                 <th className="py-3 px-4 min-w-[140px] w-[140px]">Nhóm</th>
                 <th className="py-3 px-4 min-w-[130px] w-[130px]">Xác minh nguồn</th>
                 <th className="py-3 px-4 min-w-[100px] w-[100px]">Ngày gửi</th>
-                <th className="py-3 px-4 text-right min-w-[220px] w-[220px]">Hành động</th>
+                <th className="py-3 px-4 text-right min-w-[280px] w-[280px]">Hành động</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EDE5D8]/60">
@@ -310,6 +320,17 @@ export const PendingPostView: React.FC = () => {
                             <span>Xem trước</span>
                           </button>
 
+                          {/* Edit button */}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(post)}
+                            title="Chỉnh sửa nội dung bài viết"
+                            className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 hover:border-amber-400 shadow-2xs cursor-pointer"
+                          >
+                            <Pencil className="h-3.5 w-3.5 text-amber-700" />
+                            <span>Sửa</span>
+                          </button>
+
                           {/* Accept button */}
                           <button
                             type="button"
@@ -393,6 +414,43 @@ export const PendingPostView: React.FC = () => {
         onClose={() => {
           setIsPreviewOpen(false);
           setPreviewPost(null);
+        }}
+        onEdit={() => {
+          if (previewPost) {
+            const target = previewPost;
+            setIsPreviewOpen(false);
+            setPreviewPost(null);
+            handleOpenEdit(target);
+          }
+        }}
+        onApprove={() => {
+          if (previewPost) {
+            const target = previewPost;
+            setIsPreviewOpen(false);
+            setPreviewPost(null);
+            handleOpenApprove(target);
+          }
+        }}
+        onReject={() => {
+          if (previewPost) {
+            const target = previewPost;
+            setIsPreviewOpen(false);
+            setPreviewPost(null);
+            handleOpenReject(target);
+          }
+        }}
+      />
+
+      {/* Edit Post Modal */}
+      <UpdatePostModal
+        post={editingPost}
+        isOpen={isEditOpen}
+        onClose={() => {
+          setIsEditOpen(false);
+          setEditingPost(null);
+        }}
+        onSuccess={() => {
+          refetch();
         }}
       />
 

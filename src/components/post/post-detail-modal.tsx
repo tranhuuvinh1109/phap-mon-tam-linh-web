@@ -1,6 +1,18 @@
 "use client";
 
-import { BookOpen, Calendar, Clock, Sparkles, Tag, User, Volume2, X } from "lucide-react";
+import {
+  BookOpen,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Pencil,
+  Sparkles,
+  Tag,
+  User,
+  Volume2,
+  X,
+  XCircle,
+} from "lucide-react";
 import React, { useEffect } from "react";
 
 import type { PostItemType } from "@/api/post/post.type";
@@ -14,12 +26,18 @@ interface PostDetailModalProps {
   post: PostItemType | null;
   isOpen: boolean;
   onClose: () => void;
+  onEdit?: () => void;
+  onApprove?: () => void;
+  onReject?: () => void;
 }
 
 export const PostDetailModal: React.FC<PostDetailModalProps> = ({
   post,
   isOpen,
   onClose,
+  onEdit,
+  onApprove,
+  onReject,
 }) => {
   // Close on Escape key press & prevent background scroll
   useEffect(() => {
@@ -214,6 +232,45 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({
           >
             Đóng
           </Button>
+
+          {/* Action buttons for admin review */}
+          {(onEdit || onApprove || onReject) && (
+            <div className="flex items-center gap-2">
+              {onReject && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onReject}
+                  className="rounded-xl border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 hover:border-rose-300 transition-colors shadow-2xs"
+                >
+                  <XCircle className="h-4 w-4 mr-1 text-rose-600" />
+                  <span>Từ chối</span>
+                </Button>
+              )}
+              {onEdit && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onEdit}
+                  className="rounded-xl border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 hover:border-amber-400 transition-colors shadow-2xs"
+                >
+                  <Pencil className="h-4 w-4 mr-1 text-amber-700" />
+                  <span>Chỉnh sửa</span>
+                </Button>
+              )}
+              {onApprove && (
+                <Button
+                  type="button"
+                  variant="golden"
+                  onClick={onApprove}
+                  className="rounded-xl px-4 py-2 text-xs font-semibold shadow-xs"
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  <span>Phê duyệt</span>
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
