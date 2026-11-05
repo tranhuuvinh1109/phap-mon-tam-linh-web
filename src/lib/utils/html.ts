@@ -8,10 +8,11 @@ export function stripHtml(html?: unknown): string {
   let rawString = "";
 
   if (typeof html === "string") {
+    const trimmed = html.trim();
     // Check if it's a Niem Kinh steps structure
-    if (html.includes("niem_kinh_steps")) {
+    if (trimmed.includes("niem_kinh_steps")) {
       try {
-        const parsed = JSON.parse(html);
+        const parsed = JSON.parse(trimmed);
         if (parsed?.type === "niem_kinh_steps" && Array.isArray(parsed.steps)) {
           const parts: string[] = [];
           if (parsed.subtitle) parts.push(parsed.subtitle);
@@ -25,6 +26,23 @@ export function stripHtml(html?: unknown): string {
         // Fallback to normal string processing
       }
     }
+
+    // Check if it's a JSON-encoded Quill Delta structure: '{"ops":[...]}'
+    if (trimmed.startsWith("{") && trimmed.includes('"ops"')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && Array.isArray(parsed.ops)) {
+          return parsed.ops
+            .map((op: any) => (typeof op?.insert === "string" ? op.insert : ""))
+            .join(" ")
+            .replace(/\s+/g, " ")
+            .trim();
+        }
+      } catch {
+        // Fallback to normal string processing
+      }
+    }
+
     rawString = html;
   } else if (typeof html === "object") {
     // If it's a Niem Kinh steps object

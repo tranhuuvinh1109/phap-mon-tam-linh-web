@@ -99,7 +99,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-[#FAF7F0] text-neutral-800">
+    <div className="flex min-h-screen w-full max-w-full overflow-x-hidden bg-[#FAF7F0] text-neutral-800">
       {/* Desktop Admin Sidebar */}
       <aside
         className={`hidden lg:flex shrink-0 flex-col justify-between border-r border-[#EDE5D8] bg-[#FBF9F4] sticky top-0 h-screen select-none transition-all duration-300 ease-in-out ${
@@ -287,6 +287,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                       <span className="text-amber-900 font-semibold">Chờ duyệt</span>
                     </>
                   )}
+                  {pathname === "/admin/post/rejected" && (
+                    <>
+                      <ChevronRight className="h-3.5 w-3.5 text-neutral-400" />
+                      <span className="text-amber-900 font-semibold">Đã từ chối</span>
+                    </>
+                  )}
                 </>
               )}
               {pathname.startsWith("/admin/category") && (
@@ -310,7 +316,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </header>
 
         {/* Child Page Content */}
-        <div className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-5xl w-full mx-auto min-w-0">
+        <div className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0">
           {children}
         </div>
       </div>

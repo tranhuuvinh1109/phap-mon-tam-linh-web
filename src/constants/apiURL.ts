@@ -7,6 +7,7 @@ export const API_URL = {
   presignedUploadUrl: "/files/presigned-upload-url",
   posts: "/posts",
   postsPendingCount: "/posts/pending-count",
+  postsRejectedCount: "/posts/rejected-count",
   postById: (id: string) => `/posts/${id}`,
   postApprove: (id: string) => `/posts/${id}/approve`,
   postReject: (id: string) => `/posts/${id}/reject`,

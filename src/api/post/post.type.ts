@@ -44,6 +44,10 @@ export interface PendingPostsCountResponse {
   count: number;
 }
 
+export interface RejectedPostsCountResponse {
+  count: number;
+}
+
 /**
  * Payload for creating a new post (POST /posts)
  */

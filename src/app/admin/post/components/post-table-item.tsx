@@ -15,10 +15,10 @@ import Link from "next/link";
 import React from "react";
 
 import type { PostItemType } from "@/api/post/post.type";
-import { BACH_THOAI_PHAT_PHAP_SLUG } from "@/constants";
+import { BACH_THOAI_PHAT_PHAP_SLUG, KHAI_THI_SLUG } from "@/constants";
 import { ContentType } from "@/enums";
 import { stripHtml } from "@/lib/utils";
-import { isBachThoaiPhatPhap } from "../utils/content-type";
+import { isBachThoaiPhatPhap, isKhaiThi } from "../utils/content-type";
 import { getCategoryBadgeStyle, getGroupBadgeStyle } from "../utils/color-badge";
 
 interface PostTableItemProps {
@@ -48,9 +48,32 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
       post.category?.parentId
     );
 
-  const postUrl = post.category?.slug
-    ? `/${post.category.slug}/${encodeURIComponent(post.slug || post.id)}`
-    : `/${encodeURIComponent(post.slug || post.id)}`;
+  const isKhaiThiPost = Boolean(
+    isKhaiThi(
+      post.categoryId || post.category?.id,
+      post.category?.slug,
+      post.category?.name,
+      post.category?.parentId || post.category?.parent?.id
+    ) ||
+      (post.category?.parent?.slug &&
+        (post.category.parent.slug === KHAI_THI_SLUG ||
+          post.category.parent.slug.includes("khai-thi"))) ||
+      (post.category?.parent?.name &&
+        post.category.parent.name.toLowerCase().includes("khai thị"))
+  );
+
+  const postSlug = encodeURIComponent(post.slug || post.id);
+
+  let postUrl = `/${postSlug}`;
+  if (isKhaiThiPost) {
+    postUrl = `/khai-thi/${postSlug}`;
+  } else if (isBachThoai) {
+    postUrl = `/bach-thoai-phat-phap/${postSlug}`;
+  } else if (post.category?.slug) {
+    postUrl = `/${post.category.slug}/${postSlug}`;
+  } else {
+    postUrl = `/post/${postSlug}`;
+  }
 
   const groupName = post.group?.name;
   const isUndefinedGroup =
@@ -71,7 +94,7 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
   return (
     <tr className="hover:bg-amber-50/40 transition-colors">
       {/* Title & Thumbnail */}
-      <td className="py-3.5 px-4 max-w-xs">
+      <td className="py-3.5 px-4 min-w-[220px] max-w-[280px]">
         <div className="flex items-center gap-3">
           <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-amber-900/10 bg-amber-50">
             <img
@@ -83,16 +106,27 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
               }}
             />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 max-w-[220px]">
             <Link
               href={postUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-bold text-neutral-900 truncate block hover:text-amber-800 hover:underline"
+              title={post.title}
+              className="font-bold text-neutral-900 line-clamp-2 block hover:text-amber-800 hover:underline"
+              style={{
+                display: "-webkit-box",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: 2,
+                overflow: "hidden",
+                wordBreak: "break-word",
+              }}
             >
               {post.title}
             </Link>
-            <span className="text-[11px] text-neutral-400 font-mono">
+            <span
+              className="text-[11px] text-neutral-400 font-mono block truncate"
+              title={post.slug}
+            >
               {post.slug}
             </span>
           </div>
@@ -201,14 +235,28 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
       </td>
 
       {/* Content Excerpt */}
-      <td className="py-3.5 px-4 max-w-sm">
-        {excerpt ? (
-          <p className="line-clamp-2 text-xs text-neutral-600">{excerpt}</p>
-        ) : (
-          <span className="text-xs text-neutral-400 italic">
-            Không có nội dung text
-          </span>
-        )}
+      <td className="py-3.5 px-4 min-w-[220px] max-w-[320px] w-[260px]">
+        <div className="w-full max-w-[280px]">
+          {excerpt ? (
+            <p
+              title={excerpt}
+              className="text-xs text-neutral-600 leading-relaxed line-clamp-2"
+              style={{
+                display: "-webkit-box",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: 2,
+                overflow: "hidden",
+                wordBreak: "break-word",
+              }}
+            >
+              {excerpt}
+            </p>
+          ) : (
+            <span className="text-xs text-neutral-400 italic">
+              Không có nội dung text
+            </span>
+          )}
+        </div>
       </td>
 
       {/* Created Date */}

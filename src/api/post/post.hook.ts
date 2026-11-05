@@ -16,6 +16,7 @@ import {
   createPost,
   deletePost,
   getPendingPostsCount,
+  getRejectedPostsCount,
   getPostBySlug,
   getPosts,
   getPostsByCategory,
@@ -33,6 +34,7 @@ import {
   PendingPostsCountResponse,
   PostItemType,
   RejectPostPayloadType,
+  RejectedPostsCountResponse,
   SearchPostsParams,
   SearchPostsResponse,
   UpdatePostPayloadType,
@@ -227,6 +229,9 @@ export const useUpdatePost = (
       queryClient.invalidateQueries({
         queryKey: [QueryKeyEnum.GET_PENDING_POSTS_COUNT],
       });
+      queryClient.invalidateQueries({
+        queryKey: [QueryKeyEnum.GET_REJECTED_POSTS_COUNT],
+      });
       options?.onSuccess?.(...args);
     },
   });
@@ -251,6 +256,12 @@ export const useDeletePost = (
     onSuccess: (...args) => {
       queryClient.invalidateQueries({
         queryKey: [QueryKeyEnum.GET_POSTS],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QueryKeyEnum.GET_PENDING_POSTS_COUNT],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QueryKeyEnum.GET_REJECTED_POSTS_COUNT],
       });
       queryClient.invalidateQueries({
         queryKey: ["posts-search"],
@@ -278,6 +289,20 @@ export const useGetPendingPostsCount = (
 };
 
 /**
+ * Hook to get count of rejected posts with auto-polling
+ */
+export const useGetRejectedPostsCount = (
+  options?: Omit<UseQueryOptions<RejectedPostsCountResponse, AxiosError>, "queryKey" | "queryFn">
+): UseQueryResult<RejectedPostsCountResponse, AxiosError> => {
+  return useQuery({
+    queryKey: [QueryKeyEnum.GET_REJECTED_POSTS_COUNT],
+    queryFn: getRejectedPostsCount,
+    refetchInterval: 30000,
+    ...options,
+  });
+};
+
+/**
  * Mutation hook to approve a post via PATCH /posts/:id/approve
  */
 export const useApprovePost = (
@@ -294,6 +319,7 @@ export const useApprovePost = (
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_POSTS] });
       queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_PENDING_POSTS_COUNT] });
+      queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_REJECTED_POSTS_COUNT] });
       queryClient.invalidateQueries({ queryKey: ["posts-search"] });
       options?.onSuccess?.(...args);
     },
@@ -317,6 +343,7 @@ export const useRejectPost = (
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_POSTS] });
       queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_PENDING_POSTS_COUNT] });
+      queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_REJECTED_POSTS_COUNT] });
       queryClient.invalidateQueries({ queryKey: ["posts-search"] });
       options?.onSuccess?.(...args);
     },

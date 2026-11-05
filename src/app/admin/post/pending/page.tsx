@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function AdminPendingPostPage() {
   return (
-    <main>
+    <main className="w-full max-w-full min-w-0">
       <Suspense
         fallback={
           <div className="flex min-h-[300px] items-center justify-center">

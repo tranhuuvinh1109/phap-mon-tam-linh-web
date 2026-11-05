@@ -4,6 +4,12 @@
   --color-main: var(--color-amber-600, #d97706);
 }
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

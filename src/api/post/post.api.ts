@@ -6,6 +6,7 @@ import {
   GetPostsByCategoryParams,
   GetPostsResponse,
   PendingPostsCountResponse,
+  RejectedPostsCountResponse,
   PostItemType,
   RejectPostPayloadType,
   SearchPostsParams,
@@ -198,6 +199,16 @@ export const deletePost = async (id: string): Promise<any> => {
 export const getPendingPostsCount = async (): Promise<PendingPostsCountResponse> => {
   const response = await apiClient.get<PendingPostsCountResponse>(
     API_URL.postsPendingCount
+  );
+  return response.data;
+};
+
+/**
+ * API call to get rejected posts count via GET /posts/rejected-count
+ */
+export const getRejectedPostsCount = async (): Promise<RejectedPostsCountResponse> => {
+  const response = await apiClient.get<RejectedPostsCountResponse>(
+    API_URL.postsRejectedCount
   );
   return response.data;
 };

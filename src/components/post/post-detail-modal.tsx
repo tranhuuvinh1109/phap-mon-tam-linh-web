@@ -144,6 +144,33 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({
             {post.title}
           </h2>
 
+          {/* Rejection Alert Banner if post was rejected */}
+          {post.status === "REJECTED" && (
+            <div className="rounded-2xl border border-rose-300 bg-rose-50/90 p-4 flex items-start gap-3.5 shadow-2xs">
+              <XCircle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+              <div className="space-y-1 text-xs">
+                <p className="font-bold text-rose-950 text-sm">
+                  Bài viết đã bị từ chối phê duyệt
+                </p>
+                {post.rejectReason ? (
+                  <p className="text-rose-900 leading-relaxed">
+                    Lý do từ chối:{" "}
+                    <strong className="font-semibold text-rose-950 underline decoration-rose-300 underline-offset-2">
+                      {post.rejectReason}
+                    </strong>
+                  </p>
+                ) : (
+                  <p className="text-rose-800 italic">
+                    Không có lý do cụ thể được ghi lại.
+                  </p>
+                )}
+                <p className="text-[11px] text-rose-700/80 pt-0.5">
+                  Bạn có thể nhấn &quot;Chỉnh sửa&quot; để khắc phục nội dung theo yêu cầu hoặc &quot;Phê duyệt&quot; lại bài viết.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Author and Date Meta Row */}
           <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-[#EDE5D8]/80 bg-white/70 p-3.5 sm:p-4">
             {post.author ? (

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 import { useGetCategories, useGetCategoryTree } from "@/api/category";
@@ -41,10 +41,17 @@ export const AdminPostView: React.FC = () => {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
   const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
+  const pageParam = Number(searchParams.get("page"));
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(pageParam > 0 ? pageParam : 1);
   const [searchQuery, setSearchQuery] = useState(urlSearch);
   const [debouncedSearch, setDebouncedSearch] = useState(urlSearch);
+
+  // Sync currentPage when URL page param changes (e.g. browser back/forward)
+  useEffect(() => {
+    const p = Number(searchParams.get("page"));
+    setCurrentPage(p > 0 ? p : 1);
+  }, [searchParams]);
 
   // Advanced Filters State
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
@@ -64,7 +71,7 @@ export const AdminPostView: React.FC = () => {
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
     );
 
-  // Keep state synced if URL changes externally
+  // Keep search input synced if URL search changes externally
   useEffect(() => {
     setSearchQuery(urlSearch);
     setDebouncedSearch(urlSearch);
@@ -77,7 +84,6 @@ export const AdminPostView: React.FC = () => {
       categoryId: categoryParam || undefined,
       groupId: undefined,
     }));
-    setCurrentPage(1);
   }, [categoryParam]);
 
   // Fetch categories and groups for badge labels
@@ -147,14 +153,21 @@ export const AdminPostView: React.FC = () => {
     },
   });
 
+  const isSearchFirstRender = useRef(true);
+
   // Debounce search query to avoid spamming the backend and sync to URL
   useEffect(() => {
+    if (isSearchFirstRender.current) {
+      isSearchFirstRender.current = false;
+      return;
+    }
+
     const timer = setTimeout(() => {
       const trimmed = searchQuery.trim();
       setDebouncedSearch(trimmed);
       setCurrentPage(1);
 
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(window.location.search);
       if (trimmed) {
         params.set("search", trimmed);
         params.delete("q");
@@ -162,6 +175,7 @@ export const AdminPostView: React.FC = () => {
         params.delete("search");
         params.delete("q");
       }
+      params.delete("page");
       const qs = params.toString();
       const newUrl = qs ? `${pathname}?${qs}` : pathname;
       router.replace(newUrl, { scroll: false });
@@ -174,20 +188,32 @@ export const AdminPostView: React.FC = () => {
       }
     }, 400);
     return () => clearTimeout(timer);
-  }, [searchQuery, pathname, router, searchParams]);
+  }, [searchQuery, pathname, router]);
 
-  // Reset to page 1 when category changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [categoryParam]);
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
+    setCurrentPage(newPage);
+
+    const params = new URLSearchParams(window.location.search);
+    if (newPage > 1) {
+      params.set("page", String(newPage));
+    } else {
+      params.delete("page");
+    }
+    const qs = params.toString();
+    const newUrl = qs ? `${pathname}?${qs}` : pathname;
+    router.replace(newUrl, { scroll: false });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleClearSearch = () => {
     setSearchQuery("");
     setDebouncedSearch("");
     setCurrentPage(1);
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(window.location.search);
     params.delete("search");
     params.delete("q");
+    params.delete("page");
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
@@ -256,7 +282,7 @@ export const AdminPostView: React.FC = () => {
     setCurrentPage(1);
 
     // Keep URL parameter ?category= in sync with applied filter
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(window.location.search);
     if (newFilters.categoryId) {
       const cat = allFlatCategories.find(
         (c) =>
@@ -266,6 +292,7 @@ export const AdminPostView: React.FC = () => {
     } else {
       params.delete("category");
     }
+    params.delete("page");
     const qs = params.toString();
     const newUrl = qs ? `${pathname}?${qs}` : pathname;
     router.replace(newUrl, { scroll: false });
@@ -283,8 +310,9 @@ export const AdminPostView: React.FC = () => {
     setFilters(emptyFilters);
     setCurrentPage(1);
 
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(window.location.search);
     params.delete("category");
+    params.delete("page");
     const qs = params.toString();
     const newUrl = qs ? `${pathname}?${qs}` : pathname;
     router.replace(newUrl, { scroll: false });
@@ -315,11 +343,12 @@ export const AdminPostView: React.FC = () => {
             <button
               key={p}
               type="button"
-              onClick={() => setCurrentPage(p)}
-              className={`h-8 min-w-8 px-2.5 rounded-xl text-xs font-semibold transition ${currentPage === p
+              onClick={() => handlePageChange(p)}
+              className={`h-8 min-w-8 px-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                currentPage === p
                   ? "bg-[#9C5812] text-white shadow-2xs font-bold"
                   : "bg-white text-neutral-700 border border-[#EDE5D8] hover:bg-[#FAF7F0] hover:text-[#9C5812]"
-                }`}
+              }`}
             >
               {p}
             </button>
@@ -594,13 +623,13 @@ export const AdminPostView: React.FC = () => {
             <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-[#EDE5D8] bg-[#FAF7F0]/80 text-neutral-600 text-xs uppercase tracking-wider font-semibold">
-                  <th className="py-3 px-4 min-w-[220px]">Bài viết</th>
+                  <th className="py-3 px-4 min-w-[220px] max-w-[280px]">Bài viết</th>
                   <th className="py-3 px-4 min-w-[130px] w-[130px]">Danh mục</th>
                   <th className="py-3 px-4 min-w-[110px] w-[110px]">Loại</th>
                   <th className="py-3 px-4 min-w-[170px] w-[170px]">Nhóm</th>
                   <th className="py-3 px-4 min-w-[125px] w-[125px]">Trạng thái</th>
                   <th className="py-3 px-4 min-w-[135px] w-[135px]">Đã xác minh</th>
-                  <th className="py-3 px-4 min-w-[200px]">Trích đoạn nội dung</th>
+                  <th className="py-3 px-4 min-w-[220px] max-w-[320px] w-[260px]">Trích đoạn nội dung</th>
                   <th className="py-3 px-4 min-w-[100px] w-[100px]">Ngày tạo</th>
                   <th className="py-3 px-4 text-right min-w-[120px] w-[120px]">Thao tác</th>
                 </tr>
@@ -666,8 +695,8 @@ export const AdminPostView: React.FC = () => {
                   variant="outline"
                   size="sm"
                   disabled={currentPage <= 1 || isLoading}
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  className="h-8 px-2.5 text-xs font-semibold rounded-xl border-[#EDE5D8] hover:bg-white disabled:opacity-40"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  className="h-8 px-2.5 text-xs font-semibold rounded-xl border-[#EDE5D8] hover:bg-white disabled:opacity-40 cursor-pointer"
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
                   <span>Trước</span>
@@ -681,8 +710,8 @@ export const AdminPostView: React.FC = () => {
                   variant="outline"
                   size="sm"
                   disabled={currentPage >= totalPages || isLoading}
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  className="h-8 px-2.5 text-xs font-semibold rounded-xl border-[#EDE5D8] hover:bg-white disabled:opacity-40"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  className="h-8 px-2.5 text-xs font-semibold rounded-xl border-[#EDE5D8] hover:bg-white disabled:opacity-40 cursor-pointer"
                 >
                   <span>Sau</span>
                   <ChevronRight className="h-4 w-4 ml-1" />

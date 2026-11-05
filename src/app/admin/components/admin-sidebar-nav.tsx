@@ -12,13 +12,14 @@ import {
   Settings,
   Sparkles,
   Users,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import React, { useMemo } from "react";
 
 import { useGetCategories } from "@/api/category";
-import { useGetPendingPostsCount } from "@/api/post";
+import { useGetPendingPostsCount, useGetRejectedPostsCount } from "@/api/post";
 import { DEFAULT_CATEGORY_NAMES } from "@/constants";
 import { slugify } from "@/lib/utils";
 
@@ -128,10 +129,14 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
 
   const isDashboardActive = pathname === "/admin";
   const isPendingPostsActive = pathname === "/admin/post/pending";
+  const isRejectedPostsActive = pathname === "/admin/post/rejected";
   const isAllPostsActive = pathname === "/admin/post" && !currentCategory;
 
   const { data: pendingData } = useGetPendingPostsCount();
   const pendingCount = pendingData?.count || 0;
+
+  const { data: rejectedData } = useGetRejectedPostsCount();
+  const rejectedCount = rejectedData?.count || 0;
 
   return (
     <nav className={isCollapsed ? "space-y-3" : "space-y-6"}>
@@ -261,6 +266,63 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
                 Bài viết chờ duyệt
                 {pendingCount > 0 && (
                   <span className="ml-1 text-rose-300 font-bold">({pendingCount})</span>
+                )}
+              </div>
+            </>
+          )}
+        </Link>
+
+        {/* Rejected Posts tab */}
+        <Link
+          href="/admin/post/rejected"
+          onClick={onItemClick}
+          title={isCollapsed ? `Bài viết đã từ chối (${rejectedCount})` : undefined}
+          className={`group relative flex items-center rounded-xl text-sm font-medium transition-all ${
+            isCollapsed
+              ? "justify-center p-2.5"
+              : "justify-between px-4 py-2"
+          } ${
+            isRejectedPostsActive
+              ? "bg-[#F3E8D8] text-[#9C5812] font-semibold shadow-xs"
+              : "text-[#6C6356] hover:bg-[#F8F2E8] hover:text-[#9C5812]"
+          }`}
+        >
+          {!isCollapsed ? (
+            <>
+              <div className="flex items-center gap-3.5 min-w-0">
+                <XCircle
+                  className={`h-4 w-4 shrink-0 ${
+                    isRejectedPostsActive
+                      ? "text-[#9C5812]"
+                      : "text-[#7D7364] group-hover:text-[#9C5812]"
+                  }`}
+                />
+                <span className="truncate">Bài viết đã từ chối</span>
+              </div>
+              {rejectedCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-neutral-600 px-1.5 text-[10px] font-bold text-white shadow-xs">
+                  {rejectedCount > 99 ? "99+" : rejectedCount}
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <XCircle
+                className={`h-4.5 w-4.5 shrink-0 ${
+                  isRejectedPostsActive
+                    ? "text-[#9C5812]"
+                    : "text-[#7D7364] group-hover:text-[#9C5812]"
+                }`}
+              />
+              {rejectedCount > 0 && (
+                <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-neutral-600 px-1 text-[9px] font-bold text-white shadow-xs ring-2 ring-[#FBF9F4]">
+                  {rejectedCount > 99 ? "99+" : rejectedCount}
+                </span>
+              )}
+              <div className="pointer-events-none absolute left-full ml-3 z-50 hidden group-hover:block whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white shadow-xl animate-in fade-in-0 duration-150">
+                Bài viết đã từ chối
+                {rejectedCount > 0 && (
+                  <span className="ml-1 text-neutral-300 font-bold">({rejectedCount})</span>
                 )}
               </div>
             </>

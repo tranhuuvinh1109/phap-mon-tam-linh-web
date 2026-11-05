@@ -20,6 +20,7 @@ import {
   UploadCloud,
   Volume2,
   X,
+  XCircle,
 } from "lucide-react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -842,6 +843,36 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                 </div>
               )}
 
+              {/* REJECTED POST REVIEW BANNER */}
+              {post.status === "REJECTED" && (
+                <div className="rounded-xl border border-rose-300 bg-rose-50/80 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-start gap-2.5 text-xs text-rose-950 font-medium">
+                    <XCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span>
+                        Bài viết đang ở trạng thái <strong>Đã từ chối (REJECTED)</strong>.
+                        {post.rejectReason && (
+                          <> Lý do: <strong className="text-rose-950 underline decoration-rose-300">{post.rejectReason}</strong>.</>
+                        )}
+                      </span>
+                      <p className="text-[11px] text-rose-800 pt-0.5">
+                        Bạn có thể sửa lại nội dung và bấm <strong>&quot;Lưu & Duyệt lại&quot;</strong> để xuất bản bài viết.
+                      </p>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs font-semibold text-rose-950 cursor-pointer shrink-0 select-none bg-white/80 border border-rose-200 px-3 py-1.5 rounded-lg shadow-2xs hover:bg-white transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={isVerifiedFromOrigin}
+                      onChange={(e) => setIsVerifiedFromOrigin(e.target.checked)}
+                      className="h-4 w-4 rounded border-rose-300 text-rose-800 focus:ring-rose-600 accent-rose-800 cursor-pointer"
+                    />
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
+                    <span>Xác minh nguồn gốc</span>
+                  </label>
+                </div>
+              )}
+
               {/* VIEW FOR NIỆM KINH (STEP 1) OR NORMAL POSTS */}
               {(!isNiemKinhPost || currentStep === 1) && (
                 <div className="space-y-5">
@@ -1337,9 +1368,9 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                     <span>Tiếp tục sang Bước 2</span>
                     <ArrowRight className="h-4 w-4" />
                   </Button>
-                ) : post.status === "PENDING" ? (
+                ) : post.status === "PENDING" || post.status === "REJECTED" ? (
                   <>
-                    {/* Save only (keep PENDING) */}
+                    {/* Save only (keep current status) */}
                     <Button
                       type="button"
                       variant="outline"
@@ -1373,7 +1404,9 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                       ) : (
                         <>
                           <CheckCircle2 className="h-4 w-4" />
-                          <span>Lưu & Duyệt bài</span>
+                          <span>
+                            {post.status === "REJECTED" ? "Lưu & Duyệt lại" : "Lưu & Duyệt bài"}
+                          </span>
                         </>
                       )}
                     </Button>
