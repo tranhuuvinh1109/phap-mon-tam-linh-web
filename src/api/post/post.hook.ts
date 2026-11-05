@@ -17,6 +17,7 @@ import {
   deletePost,
   getPendingPostsCount,
   getRejectedPostsCount,
+  getNiemKinhPosts,
   getPostBySlug,
   getPosts,
   getPostsByCategory,
@@ -121,6 +122,24 @@ export const useGetPostsByCategory = (
   return useQuery({
     queryKey: [QueryKeyEnum.GET_POSTS_BY_CATEGORY, params],
     queryFn: () => getPostsByCategory(params),
+    ...options,
+  });
+};
+
+export type UseGetNiemKinhPostsOptions = Omit<
+  UseQueryOptions<GetPostsResponse, AxiosError>,
+  "queryKey" | "queryFn"
+>;
+
+/**
+ * Query hook to fetch posts in category "Niệm Kinh" via GET /posts/niem-kinh
+ */
+export const useGetNiemKinhPosts = (
+  options?: UseGetNiemKinhPostsOptions
+): UseQueryResult<GetPostsResponse, AxiosError> => {
+  return useQuery({
+    queryKey: [QueryKeyEnum.GET_NIEM_KINH_POSTS],
+    queryFn: () => getNiemKinhPosts(),
     ...options,
   });
 };

@@ -99,6 +99,29 @@ export const getPostsByCategory = async (
 };
 
 /**
+ * API call to get posts in category "Niệm Kinh" via GET /posts/niem-kinh
+ */
+export const getNiemKinhPosts = async (): Promise<GetPostsResponse> => {
+  const response = await apiClient.get<GetPostsResponse | PostItemType[]>(
+    API_URL.postsNiemKinh
+  );
+
+  const data = response.data;
+  if (data && typeof data === "object" && "data" in data && Array.isArray((data as any).data)) {
+    return data as GetPostsResponse;
+  }
+
+  if (Array.isArray(data)) {
+    return {
+      data: data as PostItemType[],
+      meta: { total: data.length, limit: data.length, nextCursor: null, hasNextPage: false },
+    };
+  }
+
+  return { data: [], meta: { total: 0, limit: 10, nextCursor: null, hasNextPage: false } };
+};
+
+/**
  * API call to get a single post by slug via GET /posts/slug/:slug
  */
 export const getPostBySlug = async (slug: string): Promise<PostItemType> => {

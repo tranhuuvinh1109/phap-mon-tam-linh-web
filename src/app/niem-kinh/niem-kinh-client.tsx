@@ -17,7 +17,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { useMemo, useState } from "react";
 
-import { useSearchPosts } from "@/api/post";
+import { useGetNiemKinhPosts } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
 import { DEFAULT_NIEM_KINH_DATA, parseNiemKinhContent } from "@/app/admin/post/types";
 import { isNiemKinh } from "@/app/admin/post/utils/content-type";
@@ -31,29 +31,25 @@ import { useFavoritesStore, useIsFavorite } from "@/stores";
 export const NiemKinhClient: React.FC = () => {
   const searchParams = useSearchParams();
   const selectedSlugOrId = searchParams.get("post");
-  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
 
-  // 1. Call API endpoint: /posts/search?category=niem-kinh
+  // 1. Call API endpoint: GET /posts/niem-kinh
   const {
-    data: searchResponse,
-    isLoading: isSearchLoading,
-    isError: isSearchError,
-    error: searchError,
-    refetch: refetchSearch,
-  } = useSearchPosts({
-    category: NIEM_KINH_SLUG,
-    search: urlSearch.trim() || undefined,
-  });
+    data: niemKinhResponse,
+    isLoading: isNiemKinhLoading,
+    isError: isNiemKinhError,
+    error: niemKinhError,
+    refetch: refetchNiemKinh,
+  } = useGetNiemKinhPosts();
 
-  // Get posts list from search response
+  // Get posts list from Niệm Kinh endpoint response
   const niemKinhPosts: PostItemType[] = useMemo(() => {
-    if (!searchResponse) return [];
-    if (Array.isArray(searchResponse)) return searchResponse;
-    if (Array.isArray(searchResponse.data)) return searchResponse.data;
+    if (!niemKinhResponse) return [];
+    if (Array.isArray(niemKinhResponse)) return niemKinhResponse;
+    if (Array.isArray(niemKinhResponse.data)) return niemKinhResponse.data;
     return [];
-  }, [searchResponse]);
+  }, [niemKinhResponse]);
 
-  // Determine active post to display details (default to first element)
+  // Determine active post to display details (default to first element from API)
   const [activePostId, setActivePostId] = useState<string | null>(null);
 
   const displayPost: PostItemType | null = useMemo(() => {
@@ -70,7 +66,7 @@ export const NiemKinhClient: React.FC = () => {
       if (found) return found;
     }
 
-    // Default to first element from /posts/search?category=niệm-kinh
+    // Default to first element returned from /posts/niem-kinh API
     return niemKinhPosts[0] || null;
   }, [activePostId, selectedSlugOrId, niemKinhPosts]);
 
@@ -114,7 +110,7 @@ export const NiemKinhClient: React.FC = () => {
     return DEFAULT_NIEM_KINH_DATA;
   }, [displayPost]);
 
-  const isLoading = isSearchLoading && !displayPost;
+  const isLoading = isNiemKinhLoading && !displayPost;
 
   return (
     <MainLayout activeId="practice">
@@ -156,23 +152,23 @@ export const NiemKinhClient: React.FC = () => {
             {isLoading && <NiemKinhSkeleton />}
 
             {/* Error State */}
-            {!isLoading && isSearchError && !displayPost && (
+            {!isLoading && isNiemKinhError && !displayPost && (
               <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm text-red-700 flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
                   <div>
                     <h3 className="font-bold">Không thể tải bài viết Niệm Kinh</h3>
                     <p className="text-xs text-red-600/90 mt-1">
-                      {searchError?.message || "Vui lòng kiểm tra lại kết nối mạng hoặc thử lại."}
+                      {niemKinhError?.message || "Vui lòng kiểm tra lại kết nối mạng hoặc thử lại."}
                     </p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
-                    refetchSearch();
+                    refetchNiemKinh();
                   }}
-                  className="rounded-xl bg-red-100 px-3.5 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-200 flex items-center gap-1.5 shrink-0 transition"
+                  className="rounded-xl bg-red-100 px-3.5 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-200 flex items-center gap-1.5 shrink-0 transition cursor-pointer"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
                   <span>Thử lại</span>
@@ -181,7 +177,7 @@ export const NiemKinhClient: React.FC = () => {
             )}
 
             {/* Empty State */}
-            {!isLoading && !displayPost && !isSearchError && (
+            {!isLoading && !displayPost && !isNiemKinhError && (
               <div className="flex flex-col items-center justify-center rounded-3xl border border-[#EDE5D8]/90 bg-white/95 p-12 text-center shadow-xs">
                 <BookOpen className="h-10 w-10 text-neutral-300 mb-3" />
                 <h3 className="text-base font-bold text-neutral-800">
