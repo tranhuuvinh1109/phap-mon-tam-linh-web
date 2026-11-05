@@ -17,7 +17,8 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 
-import { useGetGroups } from "@/api/group";
+import { useGetCategories, useGetCategoryTree } from "@/api/category";
+import type { CategoryItemType } from "@/api/category/category.type";
 import { useGetPostsByCategory, useSearchPosts } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
 import { BachThoaiDisplayItem, BachThoaiItem } from "@/components/home";
@@ -25,11 +26,11 @@ import { MainLayout } from "@/components/layout";
 import { BachThoaiSkeleton } from "@/components/skeletons";
 import { BACH_THOAI_PHAT_PHAP_SLUG } from "@/constants";
 import { ContentType } from "@/enums";
-import { getGroupBadgeStyle } from "@/lib/color-badge";
+import { getCategoryBadgeStyle } from "@/lib/color-badge";
 import { trackSearch } from "@/lib/gtm";
-import { formatTime, stripHtml } from "@/lib/utils";
+import { formatTime, slugify, stripHtml } from "@/lib/utils";
 
-import { GroupItem, Pagination, getGroupSlug } from "./components";
+import { Pagination } from "./components";
 
 const PAGE_SIZE = 12;
 
@@ -42,7 +43,12 @@ export const BachThoaiClient: React.FC = () => {
 
   // URL query params as single source of truth
   const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
-  const urlGroupParam = searchParams.get("group") || searchParams.get("groupId") || "ALL";
+  const urlCategoryParam =
+    searchParams.get("category") ||
+    searchParams.get("subCategory") ||
+    searchParams.get("categoryId") ||
+    searchParams.get("group") ||
+    "ALL";
 
   const currentPage = useMemo(() => {
     const p = parseInt(searchParams.get("page") || "1", 10);
@@ -54,38 +60,75 @@ export const BachThoaiClient: React.FC = () => {
   const [debouncedSearch, setDebouncedSearch] = useState<string>(urlSearch);
   const [activeFilter, setActiveFilter] = useState<FilterTab>("ALL");
 
-  // Fetch groups supported for Bach Thoai Phat Phap
-  const { data: groups = [] } = useGetGroups({
-    isSupportForBachThoaiPhatPhap: true,
-  });
+  // Fetch category tree and flat categories list
+  const { data: categoryTree = [] } = useGetCategoryTree();
+  const { data: categories = [] } = useGetCategories();
 
-  // Resolve matching group from URL parameter (group slug, name, or UUID)
-  const selectedGroupObj = useMemo(() => {
-    if (!urlGroupParam || urlGroupParam === "ALL") return null;
-    const target = urlGroupParam.toLowerCase().trim();
+  // Find root "Bạch thoại Phật pháp" category
+  const bachThoaiParent = useMemo(() => {
+    const fromTree = categoryTree.find(
+      (c) =>
+        c.slug === BACH_THOAI_PHAT_PHAP_SLUG ||
+        c.slug === "bach-thoai-phat-phap" ||
+        c.name.toLowerCase().includes("bạch thoại") ||
+        c.name.toLowerCase().includes("bach thoai")
+    );
+    if (fromTree) return fromTree;
+
     return (
-      groups.find((g) => {
-        if (g.id === urlGroupParam) return true;
-        if (g.name.toLowerCase().trim() === target) return true;
-        if (getGroupSlug(g.name) === target) return true;
-        if (
-          (target === "khong-xac-dinh" || target === "undefined" || target === "chua-phan-nhom") &&
-          g.name.toLowerCase() === "undefined"
-        ) {
-          return true;
+      categories.find(
+        (c) =>
+          !c.parentId &&
+          (c.slug === BACH_THOAI_PHAT_PHAP_SLUG ||
+            c.slug === "bach-thoai-phat-phap" ||
+            c.name.toLowerCase().includes("bạch thoại") ||
+            c.name.toLowerCase().includes("bach thoai"))
+      ) || null
+    );
+  }, [categoryTree, categories]);
+
+  // Extract child categories whose parent is "Bạch thoại Phật pháp"
+  const childCategories = useMemo<CategoryItemType[]>(() => {
+    const list: CategoryItemType[] = [];
+    const seen = new Set<string>();
+
+    if (bachThoaiParent?.children && Array.isArray(bachThoaiParent.children)) {
+      bachThoaiParent.children.forEach((c) => {
+        if (!c.deletedAt && !seen.has(c.id)) {
+          seen.add(c.id);
+          list.push(c);
         }
+      });
+    }
+
+    if (bachThoaiParent?.id) {
+      categories.forEach((c) => {
+        if (!c.deletedAt && c.parentId === bachThoaiParent.id && !seen.has(c.id)) {
+          seen.add(c.id);
+          list.push(c);
+        }
+      });
+    }
+
+    return list;
+  }, [bachThoaiParent, categories]);
+
+  // Resolve matching child category from URL parameter (slug, UUID or name)
+  const selectedCategoryObj = useMemo(() => {
+    if (!urlCategoryParam || urlCategoryParam === "ALL") return null;
+    const target = urlCategoryParam.toLowerCase().trim();
+
+    return (
+      childCategories.find((cat) => {
+        if (cat.id === urlCategoryParam) return true;
+        if (cat.slug && cat.slug.toLowerCase().trim() === target) return true;
+        if (slugify(cat.name).toLowerCase() === target) return true;
         return false;
       }) || null
     );
-  }, [urlGroupParam, groups]);
+  }, [urlCategoryParam, childCategories]);
 
-  const effectiveGroupId = selectedGroupObj ? selectedGroupObj.id : undefined;
-
-  const selectedGroupName = selectedGroupObj
-    ? selectedGroupObj.name.toLowerCase() === "undefined"
-      ? "Chưa phân nhóm"
-      : selectedGroupObj.name
-    : null;
+  const selectedCategoryName = selectedCategoryObj?.name || null;
 
   // Sync search input if URL changes externally
   useEffect(() => {
@@ -98,7 +141,7 @@ export const BachThoaiClient: React.FC = () => {
    */
   const updateUrlParams = (updates: {
     page?: number;
-    groupSlug?: string | null;
+    categorySlug?: string | null;
     search?: string | null;
   }) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -114,13 +157,16 @@ export const BachThoaiClient: React.FC = () => {
       }
     }
 
-    // Update group slug
-    if (updates.groupSlug !== undefined) {
-      if (updates.groupSlug && updates.groupSlug !== "ALL") {
-        params.set("group", updates.groupSlug);
+    // Update category slug
+    if (updates.categorySlug !== undefined) {
+      if (updates.categorySlug && updates.categorySlug !== "ALL") {
+        params.set("category", updates.categorySlug);
       } else {
-        params.delete("group");
+        params.delete("category");
       }
+      params.delete("categoryId");
+      params.delete("subCategory");
+      params.delete("group");
       params.delete("groupId");
     }
 
@@ -156,10 +202,14 @@ export const BachThoaiClient: React.FC = () => {
   // 1. Regular category posts query with offset pagination
   const categoryPostsQuery = useGetPostsByCategory(
     {
-      category_name: BACH_THOAI_PHAT_PHAP_SLUG,
+      ...(selectedCategoryObj
+        ? {
+            category_name: selectedCategoryObj.slug || undefined,
+            categoryId: selectedCategoryObj.id,
+          }
+        : { category_name: BACH_THOAI_PHAT_PHAP_SLUG }),
       limit: PAGE_SIZE,
       page: currentPage,
-      ...(effectiveGroupId ? { groupId: effectiveGroupId } : {}),
     },
     { enabled: !isSearching }
   );
@@ -167,11 +217,11 @@ export const BachThoaiClient: React.FC = () => {
   // 2. Search query within Bach Thoai category with offset pagination
   const searchPostsQuery = useSearchPosts(
     {
-      category: BACH_THOAI_PHAT_PHAP_SLUG,
+      category: selectedCategoryObj?.slug || BACH_THOAI_PHAT_PHAP_SLUG,
+      categoryId: selectedCategoryObj?.id,
       search: debouncedSearch,
       limit: PAGE_SIZE,
       page: currentPage,
-      ...(effectiveGroupId ? { groupId: effectiveGroupId } : {}),
     },
     { enabled: isSearching }
   );
@@ -205,6 +255,8 @@ export const BachThoaiClient: React.FC = () => {
         snippet,
         groupId: post.groupId || post.group?.id,
         groupName: post.group?.name,
+        categoryId: post.categoryId || post.category?.id,
+        categoryName: post.category?.name,
       };
     });
   }, [rawPosts]);
@@ -225,22 +277,17 @@ export const BachThoaiClient: React.FC = () => {
     });
   }, [displayItems, activeFilter]);
 
-  // Group items by groupName for sectioned view when viewing ALL groups
+  // Group items by categoryName for sectioned view when viewing ALL categories
   const groupedItems = useMemo(() => {
-    const groupsMap = new Map<string, BachThoaiDisplayItem[]>();
+    const map = new Map<string, BachThoaiDisplayItem[]>();
     for (const item of filteredItems) {
-      const key =
-        item.groupName &&
-          item.groupName.toLowerCase() !== "undefined" &&
-          item.groupName.toLowerCase() !== "không xác định"
-          ? item.groupName
-          : "Chưa phân nhóm";
-      if (!groupsMap.has(key)) {
-        groupsMap.set(key, []);
+      const key = item.categoryName || "Chưa phân loại";
+      if (!map.has(key)) {
+        map.set(key, []);
       }
-      groupsMap.get(key)!.push(item);
+      map.get(key)!.push(item);
     }
-    return Array.from(groupsMap.entries());
+    return Array.from(map.entries());
   }, [filteredItems]);
 
   // Debounced search tracking for GTM & GA4
@@ -259,8 +306,8 @@ export const BachThoaiClient: React.FC = () => {
   const hasNextPage = Boolean(meta?.hasNextPage || (meta?.total && currentPage < totalPages));
   const hasPrevPage = currentPage > 1;
 
-  const handleSelectGroup = (targetGroupSlug: string) => {
-    updateUrlParams({ groupSlug: targetGroupSlug, page: 1 });
+  const handleSelectCategory = (targetCategorySlug: string) => {
+    updateUrlParams({ categorySlug: targetCategorySlug, page: 1 });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -338,20 +385,20 @@ export const BachThoaiClient: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. Group Filter Pills */}
+        {/* 3. Category Filter Pills */}
         <div className="space-y-2.5 rounded-2xl border border-amber-900/10 bg-white/80 p-3.5 shadow-2xs backdrop-blur-xs sm:p-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-xs font-bold text-neutral-800 sm:text-sm">
               <Layers className="h-4 w-4 text-amber-700" />
-              <span>Xem theo Nhóm:</span>
+              <span>Xem theo danh mục:</span>
             </div>
-            {selectedGroupObj && (
+            {selectedCategoryObj && (
               <button
                 type="button"
-                onClick={() => handleSelectGroup("ALL")}
+                onClick={() => handleSelectCategory("ALL")}
                 className="cursor-pointer text-xs font-semibold text-amber-800 underline hover:text-amber-950"
               >
-                Xem tất cả nhóm
+                Xem tất cả danh mục
               </button>
             )}
           </div>
@@ -359,27 +406,60 @@ export const BachThoaiClient: React.FC = () => {
           <div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1 text-xs">
             <button
               type="button"
-              onClick={() => handleSelectGroup("ALL")}
-              title="Tất cả nhóm"
-              className={`flex h-14 w-[140px] max-w-[140px] min-w-[140px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-left text-xs leading-tight font-semibold transition ${!selectedGroupObj
-                ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
-                : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
-                }`}
+              onClick={() => handleSelectCategory("ALL")}
+              title="Tất cả danh mục"
+              className={`flex h-12 sm:h-14 min-w-[120px] max-w-[150px] sm:max-w-[180px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs leading-tight font-semibold transition ${
+                !selectedCategoryObj
+                  ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
+                  : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
+              }`}
             >
               <Sparkles className="h-4 w-4 shrink-0" />
-              <span className="line-clamp-2 leading-tight break-words">Tất cả nhóm</span>
+              <span
+                className="line-clamp-2 leading-tight break-words"
+                style={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                Tất cả danh mục
+              </span>
             </button>
 
-            {groups
-              .filter((grp) => !grp.deletedAt)
-              .map((grp) => (
-                <GroupItem
-                  key={grp.id}
-                  group={grp}
-                  isSelected={selectedGroupObj?.id === grp.id}
-                  onSelect={handleSelectGroup}
-                />
-              ))}
+            {childCategories.map((cat) => {
+              const catSlug = cat.slug || cat.id;
+              const isSelected =
+                selectedCategoryObj?.id === cat.id ||
+                selectedCategoryObj?.slug === cat.slug;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => handleSelectCategory(catSlug)}
+                  title={cat.name}
+                  className={`flex h-12 sm:h-14 min-w-[120px] max-w-[150px] sm:max-w-[180px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs leading-tight font-semibold transition ${
+                    isSelected
+                      ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
+                      : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
+                  }`}
+                >
+                  <FolderTree className="h-4 w-4 shrink-0 opacity-70" />
+                  <span
+                    className="line-clamp-2 leading-tight break-words"
+                    style={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {cat.name}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -465,18 +545,18 @@ export const BachThoaiClient: React.FC = () => {
               <Sparkles className="h-7 w-7 text-amber-700" />
             </div>
             <h3 className="text-base font-bold text-neutral-900 sm:text-lg">
-              {debouncedSearch || selectedGroupObj
+              {debouncedSearch || selectedCategoryObj
                 ? "Không tìm thấy bài viết phù hợp"
                 : "Chưa có bài viết Bạch thoại Phật pháp nào"}
             </h3>
             <p className="mt-1.5 max-w-sm text-xs text-neutral-500 sm:text-sm">
               {debouncedSearch
                 ? `Không có kết quả nào cho "${debouncedSearch}". Hãy thử tìm kiếm với từ khóa khác.`
-                : selectedGroupObj
-                  ? `Chưa có bài viết nào thuộc nhóm "${selectedGroupName}".`
+                : selectedCategoryObj
+                  ? `Chưa có bài viết nào thuộc danh mục "${selectedCategoryName}".`
                   : "Các bài giảng sẽ sớm được cập nhật. Kính mong quý Phật tử hoan hỷ đón đọc."}
             </p>
-            {debouncedSearch || selectedGroupObj ? (
+            {debouncedSearch || selectedCategoryObj ? (
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                 {debouncedSearch && (
                   <button
@@ -486,12 +566,12 @@ export const BachThoaiClient: React.FC = () => {
                     <span>Xóa từ khóa tìm kiếm</span>
                   </button>
                 )}
-                {selectedGroupObj && (
+                {selectedCategoryObj && (
                   <button
-                    onClick={() => handleSelectGroup("ALL")}
+                    onClick={() => handleSelectCategory("ALL")}
                     className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-amber-800 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-amber-900"
                   >
-                    <span>Xem tất cả nhóm</span>
+                    <span>Xem tất cả danh mục</span>
                   </button>
                 )}
               </div>
@@ -505,22 +585,22 @@ export const BachThoaiClient: React.FC = () => {
               </Link>
             )}
           </div>
-        ) : !selectedGroupObj && groupedItems.length > 1 ? (
-          /* Sectioned by Group View when viewing ALL groups */
+        ) : !selectedCategoryObj && groupedItems.length > 1 ? (
+          /* Sectioned by Category View when viewing ALL categories */
           <div className="space-y-8">
-            {groupedItems.map(([groupTitle, items]) => (
-              <div key={groupTitle} className="space-y-3.5">
+            {groupedItems.map(([catTitle, items]) => (
+              <div key={catTitle} className="space-y-3.5">
                 <div className="flex items-center justify-between border-b border-amber-900/10 pb-2.5">
                   <div className="flex items-center gap-2">
                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-800 shadow-2xs">
                       <FolderTree className="h-4 w-4" />
                     </div>
                     <h3 className="text-sm font-bold text-neutral-900 sm:text-base">
-                      {groupTitle}
+                      {catTitle}
                     </h3>
                     <span
-                      className={`inline-block rounded-md border px-2 py-0.5 text-xs font-semibold ${getGroupBadgeStyle(
-                        groupTitle
+                      className={`inline-block rounded-md border px-2 py-0.5 text-xs font-semibold ${getCategoryBadgeStyle(
+                        catTitle
                       )}`}
                     >
                       {items.length} bài
@@ -530,18 +610,16 @@ export const BachThoaiClient: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      const matchGroup = groups.find(
-                        (g) =>
-                          g.name === groupTitle ||
-                          (groupTitle === "Chưa phân nhóm" && g.name.toLowerCase() === "undefined")
+                      const matchCat = childCategories.find(
+                        (c) => c.name === catTitle
                       );
-                      if (matchGroup) {
-                        handleSelectGroup(getGroupSlug(matchGroup.name));
+                      if (matchCat) {
+                        handleSelectCategory(matchCat.slug || matchCat.id);
                       }
                     }}
                     className="flex cursor-pointer items-center gap-0.5 text-xs font-semibold text-amber-800 hover:text-amber-950 hover:underline"
                   >
-                    <span>Chỉ xem nhóm này</span>
+                    <span>Chỉ xem danh mục này</span>
                     <ChevronRight className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -559,28 +637,28 @@ export const BachThoaiClient: React.FC = () => {
             ))}
           </div>
         ) : (
-          /* Filtered by single group or single group result */
+          /* Filtered by single category or single category result */
           <div className="space-y-4">
-            {selectedGroupName && (
+            {selectedCategoryName && (
               <div className="flex items-center justify-between rounded-xl border border-amber-200/80 bg-amber-50/80 px-4 py-2.5">
                 <div className="flex items-center gap-2">
                   <FolderTree className="h-4 w-4 text-amber-800" />
-                  <span className="text-xs text-neutral-600">Đang lọc theo nhóm:</span>
+                  <span className="text-xs text-neutral-600">Đang lọc theo danh mục:</span>
                   <span
-                    className={`inline-block rounded-md border px-2.5 py-0.5 text-xs font-bold ${getGroupBadgeStyle(
-                      selectedGroupName
+                    className={`inline-block rounded-md border px-2.5 py-0.5 text-xs font-bold ${getCategoryBadgeStyle(
+                      selectedCategoryName
                     )}`}
                   >
-                    {selectedGroupName}
+                    {selectedCategoryName}
                   </span>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => handleSelectGroup("ALL")}
+                  onClick={() => handleSelectCategory("ALL")}
                   className="cursor-pointer text-xs font-semibold text-amber-800 underline hover:text-amber-950"
                 >
-                  Bỏ lọc nhóm
+                  Bỏ lọc danh mục
                 </button>
               </div>
             )}

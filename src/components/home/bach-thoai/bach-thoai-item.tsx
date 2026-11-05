@@ -27,6 +27,8 @@ export interface BachThoaiDisplayItem {
   snippet?: string;
   groupId?: string;
   groupName?: string;
+  categoryId?: string;
+  categoryName?: string;
 }
 
 export interface BachThoaiItemProps {
