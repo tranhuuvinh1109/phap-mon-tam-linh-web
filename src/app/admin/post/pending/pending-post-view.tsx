@@ -25,6 +25,14 @@ import { PostDetailModal } from "@/components/post/post-detail-modal";
 import { ApprovePostModal } from "../components/approve-post-modal";
 import { RejectPostModal } from "../components/reject-post-modal";
 import { UpdatePostModal } from "../components/update-post-modal";
+import {
+  BACH_THOAI_DEFAULT_THUMBNAIL,
+  BACH_THOAI_PHAT_PHAP_SLUG,
+  DEFAULT_POST_THUMBNAIL,
+  KHAI_THI_DEFAULT_THUMBNAIL,
+  KHAI_THI_SLUG,
+} from "@/constants";
+import { isBachThoaiPhatPhap, isKhaiThi } from "../utils/content-type";
 import { getCategoryBadgeStyle, getGroupBadgeStyle } from "../utils/color-badge";
 
 const PAGE_SIZE = 15;
@@ -216,6 +224,38 @@ export const PendingPostView: React.FC = () => {
                   const categoryName = post.category?.name || "Chưa phân loại";
                   const groupName = post.group?.name || "không xác định";
 
+                  const isBachThoai =
+                    post.category?.slug === "bach-thoai-phat-phap" ||
+                    post.category?.slug === BACH_THOAI_PHAT_PHAP_SLUG ||
+                    isBachThoaiPhatPhap(
+                      post.categoryId || post.category?.id,
+                      post.category?.slug,
+                      post.category?.name,
+                      post.category?.parentId || post.category?.parent?.id
+                    );
+                  const isKhaiThiPost = Boolean(
+                    isKhaiThi(
+                      post.categoryId || post.category?.id,
+                      post.category?.slug,
+                      post.category?.name,
+                      post.category?.parentId || post.category?.parent?.id
+                    ) ||
+                      (post.category?.parent?.slug &&
+                        (post.category.parent.slug === KHAI_THI_SLUG ||
+                          post.category.parent.slug.includes("khai-thi"))) ||
+                      (post.category?.parent?.name &&
+                        post.category.parent.name.toLowerCase().includes("khai thị"))
+                  );
+                  const defaultThumbnail = isBachThoai
+                    ? BACH_THOAI_DEFAULT_THUMBNAIL
+                    : isKhaiThiPost
+                    ? KHAI_THI_DEFAULT_THUMBNAIL
+                    : DEFAULT_POST_THUMBNAIL;
+                  const thumbnailSrc =
+                    post.thumbnailUrl && post.thumbnailUrl !== DEFAULT_POST_THUMBNAIL
+                      ? post.thumbnailUrl
+                      : defaultThumbnail;
+
                   return (
                     <tr
                       key={post.id}
@@ -226,19 +266,11 @@ export const PendingPostView: React.FC = () => {
                         <div className="flex items-center gap-3">
                           <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-amber-900/10 bg-amber-50">
                             <img
-                              src={
-                                post.thumbnailUrl ||
-                                (post.category?.slug === "bach-thoai-phat-phap"
-                                  ? "/images/bach-thoai-phat-phap.png"
-                                  : "/images/lotus-thumb.jpg")
-                              }
+                              src={thumbnailSrc}
                               alt={post.title}
                               className="h-full w-full object-cover"
                               onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).src =
-                                  post.category?.slug === "bach-thoai-phat-phap"
-                                    ? "/images/bach-thoai-phat-phap.png"
-                                    : "/images/lotus-thumb.jpg";
+                                (e.currentTarget as HTMLImageElement).src = defaultThumbnail;
                               }}
                             />
                           </div>

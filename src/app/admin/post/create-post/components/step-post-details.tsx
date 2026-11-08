@@ -17,6 +17,7 @@ import { CategoryItemType } from "@/api/category";
 import { uploadFile } from "@/api/file";
 import { useGetGroups } from "@/api/group";
 import { useCreatePost } from "@/api/post";
+import { BACH_THOAI_DEFAULT_THUMBNAIL, KHAI_THI_DEFAULT_THUMBNAIL } from "@/constants";
 import { CreatePostPayloadType, PostItemType } from "@/api/post/post.type";
 import { Button } from "@/components/ui";
 import { ContentType } from "@/enums";
@@ -665,6 +666,13 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
         thumbnailKey={formValues.thumbnailKey}
         isUploading={isThumbUploading}
         uploadProgress={thumbProgress}
+        defaultImage={
+          isKhaiThiPost
+            ? KHAI_THI_DEFAULT_THUMBNAIL
+            : isBachThoaiPost
+            ? BACH_THOAI_DEFAULT_THUMBNAIL
+            : undefined
+        }
         onChange={(thumbnail, thumbnailPreview) => {
           onChangeFormValues({
             thumbnail,

@@ -37,7 +37,12 @@ import { NiemKinhStepEditor } from "../create-post/components/niem-kinh-step-edi
 import { RichTextEditor } from "../create-post/components/rich-text-editor";
 import { PdfUpload } from "../create-post/components/pdf-upload";
 import { parseNiemKinhContent } from "../types/niem-kinh.type";
-import { BACH_THOAI_PHAT_PHAP_ID } from "@/constants";
+import {
+  BACH_THOAI_DEFAULT_THUMBNAIL,
+  BACH_THOAI_PHAT_PHAP_ID,
+  DEFAULT_POST_THUMBNAIL,
+  KHAI_THI_DEFAULT_THUMBNAIL,
+} from "@/constants";
 import { allowsGroupCategory, isBachThoaiPhatPhap, isKhaiThi, isNiemKinh } from "../utils/content-type";
 import { ConfirmModal } from "./confirm-modal";
 
@@ -1155,14 +1160,25 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                     <div className="flex flex-col sm:flex-row items-center gap-3">
                       {/* Thumbnail Preview Box */}
                       <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 flex items-center justify-center">
-                        {thumbnailUrl ? (
+                        {thumbnailUrl || isKhaiThiPost || isBachThoai ? (
                           <img
-                            src={thumbnailUrl}
+                            src={
+                              thumbnailUrl ||
+                              (isKhaiThiPost
+                                ? KHAI_THI_DEFAULT_THUMBNAIL
+                                : isBachThoai
+                                ? BACH_THOAI_DEFAULT_THUMBNAIL
+                                : DEFAULT_POST_THUMBNAIL)
+                            }
                             alt="Thumbnail preview"
                             className="h-full w-full object-cover"
                             onError={(e) => {
                               (e.currentTarget as HTMLImageElement).src =
-                                "/images/lotus-thumb.jpg";
+                                isBachThoai
+                                  ? BACH_THOAI_DEFAULT_THUMBNAIL
+                                  : isKhaiThiPost
+                                  ? KHAI_THI_DEFAULT_THUMBNAIL
+                                  : DEFAULT_POST_THUMBNAIL;
                             }}
                           />
                         ) : (
@@ -1175,7 +1191,13 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                           type="text"
                           value={thumbnailUrl}
                           onChange={(e) => setThumbnailUrl(e.target.value)}
-                          placeholder="https://domain.com/path-to-image.jpg"
+                          placeholder={
+                            isKhaiThiPost
+                              ? `Mặc định: ${KHAI_THI_DEFAULT_THUMBNAIL} (hoặc nhập URL)`
+                              : isBachThoai
+                              ? `Mặc định: ${BACH_THOAI_DEFAULT_THUMBNAIL} (hoặc nhập URL)`
+                              : "https://domain.com/path-to-image.jpg"
+                          }
                           className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-xs sm:text-sm text-neutral-900 outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20"
                         />
 

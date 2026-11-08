@@ -24,6 +24,14 @@ import { PostDetailModal } from "@/components/post/post-detail-modal";
 import { ApprovePostModal } from "../components/approve-post-modal";
 import { ConfirmModal } from "../components/confirm-modal";
 import { UpdatePostModal } from "../components/update-post-modal";
+import {
+  BACH_THOAI_DEFAULT_THUMBNAIL,
+  BACH_THOAI_PHAT_PHAP_SLUG,
+  DEFAULT_POST_THUMBNAIL,
+  KHAI_THI_DEFAULT_THUMBNAIL,
+  KHAI_THI_SLUG,
+} from "@/constants";
+import { isBachThoaiPhatPhap, isKhaiThi } from "../utils/content-type";
 import { getCategoryBadgeStyle } from "../utils/color-badge";
 
 const PAGE_SIZE = 15;
@@ -237,6 +245,40 @@ export const RejectedPostView: React.FC = () => {
                     typeof post.content === "string" ? post.content : ""
                   ).slice(0, 110);
 
+                  const isBachThoai =
+                    post.category?.slug === "bach-thoai-phat-phap" ||
+                    post.category?.slug === BACH_THOAI_PHAT_PHAP_SLUG ||
+                    isBachThoaiPhatPhap(
+                      post.categoryId || post.category?.id,
+                      post.category?.slug,
+                      post.category?.name,
+                      post.category?.parentId || post.category?.parent?.id
+                    );
+                  const isKhaiThiPost = Boolean(
+                    isKhaiThi(
+                      post.categoryId || post.category?.id,
+                      post.category?.slug,
+                      post.category?.name,
+                      post.category?.parentId || post.category?.parent?.id
+                    ) ||
+                      (post.category?.parent?.slug &&
+                        (post.category.parent.slug === KHAI_THI_SLUG ||
+                          post.category.parent.slug.includes("khai-thi"))) ||
+                      (post.category?.parent?.name &&
+                        post.category.parent.name.toLowerCase().includes("khai thị"))
+                  );
+                  const defaultThumbnail = isBachThoai
+                    ? BACH_THOAI_DEFAULT_THUMBNAIL
+                    : isKhaiThiPost
+                    ? KHAI_THI_DEFAULT_THUMBNAIL
+                    : DEFAULT_POST_THUMBNAIL;
+                  const thumbnailSrc =
+                    post.thumbnailUrl && post.thumbnailUrl !== DEFAULT_POST_THUMBNAIL
+                      ? post.thumbnailUrl
+                      : isBachThoai || isKhaiThiPost
+                      ? defaultThumbnail
+                      : null;
+
                   return (
                     <tr
                       key={post.id}
@@ -245,14 +287,13 @@ export const RejectedPostView: React.FC = () => {
                       {/* Post info & thumbnail */}
                       <td className="py-3 px-4">
                         <div className="flex items-start gap-3">
-                          {post.thumbnailUrl ? (
+                          {thumbnailSrc ? (
                             <img
-                              src={post.thumbnailUrl}
+                              src={thumbnailSrc}
                               alt={post.title}
                               className="h-12 w-12 shrink-0 rounded-xl object-cover border border-[#EDE5D8] shadow-2xs"
                               onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).src =
-                                  "/images/lotus-thumb.jpg";
+                                (e.currentTarget as HTMLImageElement).src = defaultThumbnail;
                               }}
                             />
                           ) : (

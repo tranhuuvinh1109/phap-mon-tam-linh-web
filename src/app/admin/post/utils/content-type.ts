@@ -1,7 +1,10 @@
 import { PostItemType } from "@/api/post";
 import {
+  BACH_THOAI_DEFAULT_THUMBNAIL,
   BACH_THOAI_PHAT_PHAP_ID,
   BACH_THOAI_PHAT_PHAP_SLUG,
+  DEFAULT_POST_THUMBNAIL,
+  KHAI_THI_DEFAULT_THUMBNAIL,
   KHAI_THI_ID,
   KHAI_THI_SLUG,
   NIEM_KINH_ID,
@@ -32,8 +35,58 @@ export function isBachThoaiPhatPhapCategory(data?: PostItemType | null): boolean
   if (!data?.category) return false;
   return (
     data.category.id === BACH_THOAI_PHAT_PHAP_ID ||
-    data.category.parentId === BACH_THOAI_PHAT_PHAP_ID
+    data.category.parentId === BACH_THOAI_PHAT_PHAP_ID ||
+    data.category.slug === BACH_THOAI_PHAT_PHAP_SLUG ||
+    Boolean(
+      data.category.parent?.slug &&
+        data.category.parent.slug === BACH_THOAI_PHAT_PHAP_SLUG
+    ) ||
+    isBachThoaiPhatPhap(
+      data.category.id,
+      data.category.slug,
+      data.category.name,
+      data.category.parentId || data.category.parent?.id
+    )
   );
+}
+
+export function isKhaiThiCategory(data?: PostItemType | null): boolean {
+  if (!data) return false;
+  return Boolean(
+    isKhaiThi(
+      data.categoryId || data.category?.id,
+      data.category?.slug,
+      data.category?.name,
+      data.category?.parentId || data.category?.parent?.id
+    ) ||
+      (data.category?.parent?.slug &&
+        (data.category.parent.slug === KHAI_THI_SLUG ||
+          data.category.parent.slug.includes("khai-thi"))) ||
+      (data.category?.parent?.name &&
+        data.category.parent.name.toLowerCase().includes("khai thị"))
+  );
+}
+
+export function getAdminPostDefaultThumbnail(data?: PostItemType | null): string {
+  if (isBachThoaiPhatPhapCategory(data)) {
+    return BACH_THOAI_DEFAULT_THUMBNAIL;
+  }
+  if (isKhaiThiCategory(data)) {
+    return KHAI_THI_DEFAULT_THUMBNAIL;
+  }
+  return DEFAULT_POST_THUMBNAIL;
+}
+
+export function getAdminPostThumbnail(data?: PostItemType | null): string {
+  const defaultThumbnail = getAdminPostDefaultThumbnail(data);
+  if (
+    data?.thumbnailUrl &&
+    data.thumbnailUrl.trim() !== "" &&
+    data.thumbnailUrl !== DEFAULT_POST_THUMBNAIL
+  ) {
+    return data.thumbnailUrl;
+  }
+  return defaultThumbnail;
 }
 
 export function isBachThoaiPhatPhap(

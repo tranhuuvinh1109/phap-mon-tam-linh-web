@@ -409,7 +409,8 @@ export const PostDetailClient: React.FC = () => {
               )}
 
               {/* Featured Thumbnail */}
-              {displayPost.thumbnailUrl && (
+              {displayPost.thumbnailUrl &&
+                displayPost.thumbnailUrl !== "/images/khai-thi-default.jpg" && (
                 <div className="relative w-full overflow-hidden rounded-2xl border border-amber-900/10 bg-amber-50/50 shadow-xs">
                   <img
                     src={displayPost.thumbnailUrl}

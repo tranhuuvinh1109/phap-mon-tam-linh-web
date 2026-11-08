@@ -15,7 +15,13 @@ import Link from "next/link";
 import React from "react";
 
 import type { PostItemType } from "@/api/post/post.type";
-import { BACH_THOAI_PHAT_PHAP_SLUG, KHAI_THI_SLUG } from "@/constants";
+import {
+  BACH_THOAI_DEFAULT_THUMBNAIL,
+  BACH_THOAI_PHAT_PHAP_SLUG,
+  DEFAULT_POST_THUMBNAIL,
+  KHAI_THI_DEFAULT_THUMBNAIL,
+  KHAI_THI_SLUG,
+} from "@/constants";
 import { ContentType } from "@/enums";
 import { stripHtml } from "@/lib/utils";
 import { isBachThoaiPhatPhap, isKhaiThi } from "../utils/content-type";
@@ -88,8 +94,15 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
   const parentCategoryName = post.category?.parent?.name;
 
   const defaultThumbnail = isBachThoai
-    ? "/images/bach-thoai-phat-phap.png"
-    : "/images/lotus-thumb.jpg";
+    ? BACH_THOAI_DEFAULT_THUMBNAIL
+    : isKhaiThiPost
+    ? KHAI_THI_DEFAULT_THUMBNAIL
+    : DEFAULT_POST_THUMBNAIL;
+
+  const thumbnailSrc =
+    post.thumbnailUrl && post.thumbnailUrl !== DEFAULT_POST_THUMBNAIL
+      ? post.thumbnailUrl
+      : defaultThumbnail;
 
   return (
     <tr className="hover:bg-amber-50/40 transition-colors">
@@ -98,7 +111,7 @@ export const PostTableItem: React.FC<PostTableItemProps> = ({
         <div className="flex items-center gap-3">
           <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-amber-900/10 bg-amber-50">
             <img
-              src={post.thumbnailUrl || defaultThumbnail}
+              src={thumbnailSrc}
               alt={post.title}
               className="h-full w-full object-cover"
               onError={(e) => {
