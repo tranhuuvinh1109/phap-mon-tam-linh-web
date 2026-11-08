@@ -9,6 +9,8 @@ export const API_URL = {
   postsPendingCount: "/posts/pending-count",
   postsRejectedCount: "/posts/rejected-count",
   postsNiemKinh: "/posts/niem-kinh",
+  postsHomeBachThoai: "/post/home/bach-thoai-phat-phap",
+  postsHomeKhaiThi: "/post/home/khai-thi",
   postById: (id: string) => `/posts/${id}`,
   postApprove: (id: string) => `/posts/${id}/approve`,
   postReject: (id: string) => `/posts/${id}/reject`,

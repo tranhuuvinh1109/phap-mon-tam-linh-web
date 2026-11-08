@@ -18,6 +18,8 @@ import {
   getPendingPostsCount,
   getRejectedPostsCount,
   getNiemKinhPosts,
+  getHomeBachThoaiPosts,
+  getHomeKhaiThiPosts,
   getPostBySlug,
   getPosts,
   getPostsByCategory,
@@ -140,6 +142,42 @@ export const useGetNiemKinhPosts = (
   return useQuery({
     queryKey: [QueryKeyEnum.GET_NIEM_KINH_POSTS],
     queryFn: () => getNiemKinhPosts(),
+    ...options,
+  });
+};
+
+export type UseGetHomeBachThoaiPostsOptions = Omit<
+  UseQueryOptions<GetPostsResponse, AxiosError>,
+  "queryKey" | "queryFn"
+>;
+
+/**
+ * Query hook to fetch top 3 posts for Home in category "Bạch thoại Phật pháp" via GET /post/home/bach-thoai-phat-phap
+ */
+export const useGetHomeBachThoaiPosts = (
+  options?: UseGetHomeBachThoaiPostsOptions
+): UseQueryResult<GetPostsResponse, AxiosError> => {
+  return useQuery({
+    queryKey: [QueryKeyEnum.GET_HOME_BACH_THOAI_POSTS],
+    queryFn: () => getHomeBachThoaiPosts(),
+    ...options,
+  });
+};
+
+export type UseGetHomeKhaiThiPostsOptions = Omit<
+  UseQueryOptions<GetPostsResponse, AxiosError>,
+  "queryKey" | "queryFn"
+>;
+
+/**
+ * Query hook to fetch top 4 posts for Home in category "Khai thị" via GET /post/home/khai-thi
+ */
+export const useGetHomeKhaiThiPosts = (
+  options?: UseGetHomeKhaiThiPostsOptions
+): UseQueryResult<GetPostsResponse, AxiosError> => {
+  return useQuery({
+    queryKey: [QueryKeyEnum.GET_HOME_KHAI_THI_POSTS],
+    queryFn: () => getHomeKhaiThiPosts(),
     ...options,
   });
 };

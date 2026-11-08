@@ -122,6 +122,52 @@ export const getNiemKinhPosts = async (): Promise<GetPostsResponse> => {
 };
 
 /**
+ * API call to get top 3 posts for Home in category "Bạch thoại Phật pháp" via GET /post/home/bach-thoai-phat-phap
+ */
+export const getHomeBachThoaiPosts = async (): Promise<GetPostsResponse> => {
+  const response = await apiClient.get<GetPostsResponse | PostItemType[]>(
+    API_URL.postsHomeBachThoai
+  );
+
+  const data = response.data;
+  if (data && typeof data === "object" && "data" in data && Array.isArray((data as any).data)) {
+    return data as GetPostsResponse;
+  }
+
+  if (Array.isArray(data)) {
+    return {
+      data: data as PostItemType[],
+      meta: { total: data.length, limit: data.length, nextCursor: null, hasNextPage: false },
+    };
+  }
+
+  return { data: [], meta: { total: 0, limit: 3, nextCursor: null, hasNextPage: false } };
+};
+
+/**
+ * API call to get top 4 posts for Home in category "Khai thị" via GET /post/home/khai-thi
+ */
+export const getHomeKhaiThiPosts = async (): Promise<GetPostsResponse> => {
+  const response = await apiClient.get<GetPostsResponse | PostItemType[]>(
+    API_URL.postsHomeKhaiThi
+  );
+
+  const data = response.data;
+  if (data && typeof data === "object" && "data" in data && Array.isArray((data as any).data)) {
+    return data as GetPostsResponse;
+  }
+
+  if (Array.isArray(data)) {
+    return {
+      data: data as PostItemType[],
+      meta: { total: data.length, limit: data.length, nextCursor: null, hasNextPage: false },
+    };
+  }
+
+  return { data: [], meta: { total: 0, limit: 4, nextCursor: null, hasNextPage: false } };
+};
+
+/**
  * API call to get a single post by slug via GET /posts/slug/:slug
  */
 export const getPostBySlug = async (slug: string): Promise<PostItemType> => {

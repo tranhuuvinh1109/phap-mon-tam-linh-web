@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import { useGetPostsByCategory } from "@/api/post";
+import { useGetHomeBachThoaiPosts, useGetHomeKhaiThiPosts } from "@/api/post";
 import { useGetSettingById } from "@/api/setting";
 import {
   BachThoaiSection,
@@ -11,11 +11,7 @@ import {
   QuickPractice,
 } from "@/components/home";
 import { MainLayout } from "@/components/layout";
-import {
-  BACH_THOAI_PHAT_PHAP_SLUG,
-  FEATURE_FLAG_BACH_THOAI_PHAT_PHAP_WEB_ID,
-  KHAI_THI_SLUG,
-} from "@/constants";
+import { FEATURE_FLAG_BACH_THOAI_PHAT_PHAP_WEB_ID } from "@/constants";
 import {
   HERO_BANNER_DATA,
   QUICK_PRACTICE_ITEMS,
@@ -27,20 +23,11 @@ export function HomeView() {
   );
   const isBachThoaiEnabled = bachThoaiSetting ? bachThoaiSetting.isEnabled : true;
 
-  const { data: bachThoaiPosts, isLoading: isBachThoaiLoading } = useGetPostsByCategory(
-    {
-      category_name: BACH_THOAI_PHAT_PHAP_SLUG,
-      limit: 10,
-      page: 1,
-    },
+  const { data: bachThoaiPosts, isLoading: isBachThoaiLoading } = useGetHomeBachThoaiPosts(
     { enabled: isBachThoaiEnabled }
   );
 
-  const { data: khaiThiPostsData, isLoading: isKhaiThiLoading } = useGetPostsByCategory({
-    category_name: KHAI_THI_SLUG,
-    limit: 6,
-    page: 1,
-  });
+  const { data: khaiThiPostsData, isLoading: isKhaiThiLoading } = useGetHomeKhaiThiPosts();
 
   return (
     <MainLayout activeId="home">
@@ -59,11 +46,17 @@ export function HomeView() {
 
           {/* 3. Bạch thoại phật pháp (ẩn/hiện theo setting) */}
           {isBachThoaiEnabled && (
-            <BachThoaiSection posts={bachThoaiPosts?.data} isLoading={isBachThoaiLoading} />
+            <BachThoaiSection
+              posts={bachThoaiPosts?.data}
+              isLoading={isBachThoaiLoading}
+            />
           )}
 
           {/* 4. Khai thị */}
-          <KhaiThiList posts={khaiThiPostsData?.data} isLoading={isKhaiThiLoading} />
+          <KhaiThiList
+            posts={khaiThiPostsData?.data}
+            isLoading={isKhaiThiLoading}
+          />
 
           {/* 5. Latest Content 4-Grid Cards */}
           {/* <LatestContent items={LATEST_CONTENT_ITEMS} /> */}
