@@ -206,9 +206,9 @@ export const BachThoaiClient: React.FC = () => {
     {
       ...(selectedCategoryObj
         ? {
-            category_name: selectedCategoryObj.slug || undefined,
-            categoryId: selectedCategoryObj.id,
-          }
+          category_name: selectedCategoryObj.slug || undefined,
+          categoryId: selectedCategoryObj.id,
+        }
         : { category_name: BACH_THOAI_PHAT_PHAP_SLUG }),
       limit: PAGE_SIZE,
       page: currentPage,
@@ -366,24 +366,6 @@ export const BachThoaiClient: React.FC = () => {
               priority
               className="object-cover object-center"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/25" />
-          </div>
-
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white">
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-amber-300/40 bg-black/35 px-3 py-1 text-xs font-semibold text-amber-200 backdrop-blur-md">
-              <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-              <span>Pháp âm mầu nhiệm</span>
-            </div>
-            <h1
-              className="text-2xl font-bold tracking-wide drop-shadow-md sm:text-3xl lg:text-4xl"
-              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-            >
-              Bạch Thoại Phật Pháp
-            </h1>
-            <p className="mt-2 max-w-xl text-xs font-medium text-amber-100/90 drop-shadow-sm sm:text-sm">
-              Dành cho những người mới bắt đầu tu tập và tìm hiểu chánh pháp, chuyển hóa tâm thức và
-              soi sáng con đường an lạc.
-            </p>
           </div>
         </div>
 
@@ -410,11 +392,10 @@ export const BachThoaiClient: React.FC = () => {
               type="button"
               onClick={() => handleSelectCategory("ALL")}
               title="Tất cả danh mục"
-              className={`flex h-12 sm:h-14 min-w-[120px] max-w-[150px] sm:max-w-[180px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs leading-tight font-semibold transition ${
-                !selectedCategoryObj
-                  ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
-                  : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
-              }`}
+              className={`flex h-12 sm:h-14 min-w-[120px] max-w-[150px] sm:max-w-[180px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs leading-tight font-semibold transition ${!selectedCategoryObj
+                ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
+                : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
+                }`}
             >
               <Sparkles className="h-4 w-4 shrink-0" />
               <span
@@ -441,11 +422,10 @@ export const BachThoaiClient: React.FC = () => {
                   type="button"
                   onClick={() => handleSelectCategory(catSlug)}
                   title={cat.name}
-                  className={`flex h-12 sm:h-14 min-w-[120px] max-w-[150px] sm:max-w-[180px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs leading-tight font-semibold transition ${
-                    isSelected
-                      ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
-                      : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
-                  }`}
+                  className={`flex h-12 sm:h-14 min-w-[120px] max-w-[150px] sm:max-w-[180px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs leading-tight font-semibold transition ${isSelected
+                    ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
+                    : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
+                    }`}
                 >
                   <FolderTree className="h-4 w-4 shrink-0 opacity-70" />
                   <span

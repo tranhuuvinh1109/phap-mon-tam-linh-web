@@ -452,7 +452,7 @@ export const PostDetailClient: React.FC = () => {
 
         {/* Right Sidebar: Listening History (Only for Bach Thoai posts) */}
         {isBachThoai && (
-          <div className="w-full shrink-0 xl:sticky xl:top-20 xl:w-80 2xl:w-96">
+          <div className="w-full shrink-0 xl:sticky xl:top-6 xl:w-80 2xl:w-96">
             <BachThoaiHistorySidebar currentPostId={displayPost?.id} />
           </div>
         )}

@@ -94,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileSidebar, onSearch })
   };
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-[#EDE5D8]/80 bg-[#FAF7F0]/90 px-4 py-3 backdrop-blur-md sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 flex shrink-0 items-center justify-between gap-4 border-b border-[#EDE5D8]/80 bg-[#FAF7F0]/90 px-4 py-3 backdrop-blur-md sm:px-6 lg:px-8">
       {/* Mobile Menu Button & Mobile Brand */}
       <div className="flex items-center gap-3 lg:hidden">
         <button

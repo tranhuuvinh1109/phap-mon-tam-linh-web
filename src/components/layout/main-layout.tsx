@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
@@ -28,6 +28,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 }) => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const mainRef = useRef<HTMLElement>(null);
 
   // Auto detect active sidebar navigation item if not explicitly supplied
   const detectedActiveId = useMemo(() => {
@@ -42,6 +43,33 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     return "home";
   }, [pathname, activeId]);
 
+  // Scroll main content to top on pathname change
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0, behavior: "instant" });
+  }, [pathname]);
+
+  // Intercept window.scrollTo so pagination, filters, and other actions scroll the main container
+  useEffect(() => {
+    const originalScrollTo = window.scrollTo.bind(window);
+    const handleScrollTo = (options?: ScrollToOptions | number, y?: number) => {
+      if (typeof options === "object") {
+        mainRef.current?.scrollTo(options);
+        try {
+          originalScrollTo(options as ScrollToOptions);
+        } catch {
+          // ignore
+        }
+      } else if (typeof options === "number") {
+        mainRef.current?.scrollTo(options, y ?? 0);
+        originalScrollTo(options, y ?? 0);
+      }
+    };
+    window.scrollTo = handleScrollTo as typeof window.scrollTo;
+    return () => {
+      window.scrollTo = originalScrollTo;
+    };
+  }, []);
+
   const maxWidthClass = useMemo(() => {
     switch (maxWidth) {
       case "4xl":
@@ -55,7 +83,12 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   }, [maxWidth]);
 
   return (
-    <div className={cn("flex min-h-screen w-full bg-[#FAF7F0] text-neutral-800", className)}>
+    <div
+      className={cn(
+        "flex h-screen h-dvh w-full overflow-hidden bg-[#FAF7F0] text-neutral-800",
+        className
+      )}
+    >
       {/* Sidebar Navigation */}
       <Sidebar
         activeId={detectedActiveId}
@@ -64,7 +97,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
       />
 
       {/* Main Content Viewport */}
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+      <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
         {/* Sticky Header with Search and Favorites */}
         <Header
           onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
@@ -72,8 +105,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         />
 
         {/* Dashboard Main Content Area (Outlet slot) */}
-        <main className={cn("mx-auto w-full flex-1", maxWidthClass, mainClassName)}>
-          {children}
+        <main
+          ref={mainRef}
+          id="main-content"
+          className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden"
+        >
+          <div className={cn("mx-auto w-full", maxWidthClass, mainClassName)}>
+            {children}
+          </div>
         </main>
       </div>
     </div>

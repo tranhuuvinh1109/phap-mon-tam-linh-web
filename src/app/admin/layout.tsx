@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import toast from "react-hot-toast";
 
@@ -37,9 +37,37 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
 
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isHydrated = useAuthStore((state) => state.isHydrated);
+
+  // Scroll main content to top on pathname change
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0, behavior: "instant" });
+  }, [pathname]);
+
+  // Intercept window.scrollTo so admin tables/pagination scroll the admin main container
+  useEffect(() => {
+    const originalScrollTo = window.scrollTo.bind(window);
+    const handleScrollTo = (options?: ScrollToOptions | number, y?: number) => {
+      if (typeof options === "object") {
+        mainRef.current?.scrollTo(options);
+        try {
+          originalScrollTo(options as ScrollToOptions);
+        } catch {
+          // ignore
+        }
+      } else if (typeof options === "number") {
+        mainRef.current?.scrollTo(options, y ?? 0);
+        originalScrollTo(options, y ?? 0);
+      }
+    };
+    window.scrollTo = handleScrollTo as typeof window.scrollTo;
+    return () => {
+      window.scrollTo = originalScrollTo;
+    };
+  }, []);
 
   useEffect(() => {
     setIsMounted(true);
@@ -99,10 +127,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
-    <div className="flex min-h-screen w-full max-w-full overflow-x-hidden bg-[#FAF7F0] text-neutral-800">
+    <div className="flex h-screen h-dvh w-full max-w-full overflow-hidden bg-[#FAF7F0] text-neutral-800">
       {/* Desktop Admin Sidebar */}
       <aside
-        className={`hidden lg:flex shrink-0 flex-col justify-between border-r border-[#EDE5D8] bg-[#FBF9F4] sticky top-0 h-screen select-none transition-all duration-300 ease-in-out ${
+        className={`hidden lg:flex shrink-0 flex-col justify-between border-r border-[#EDE5D8] bg-[#FBF9F4] h-full select-none transition-all duration-300 ease-in-out ${
           isSidebarCollapsed ? "w-[72px] px-2.5 py-4" : "w-64 p-5"
         }`}
       >
@@ -252,9 +280,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       )}
 
       {/* Main Admin Content Viewport */}
-      <div className="flex flex-1 flex-col min-w-0 min-h-screen overflow-x-hidden">
+      <div className="flex flex-1 flex-col min-w-0 h-full overflow-hidden">
         {/* Top Header */}
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[#EDE5D8]/80 bg-[#FAF7F0]/90 px-4 py-3.5 backdrop-blur-md sm:px-6 lg:px-8">
+        <header className="shrink-0 z-30 flex items-center justify-between border-b border-[#EDE5D8]/80 bg-[#FAF7F0]/90 px-4 py-3.5 backdrop-blur-md sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsMobileOpen(true)}
@@ -316,9 +344,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </header>
 
         {/* Child Page Content */}
-        <div className="flex-1 p-3.5 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0">
-          {children}
-        </div>
+        <main
+          ref={mainRef}
+          id="admin-main-content"
+          className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden"
+        >
+          <div className="p-3.5 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0">
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   );

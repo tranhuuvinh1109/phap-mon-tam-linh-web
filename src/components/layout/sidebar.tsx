@@ -109,10 +109,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const sidebarContent = (
-    <div className="flex h-full flex-col justify-between p-4 sm:p-5">
+    <div className="flex h-full min-h-0 flex-col justify-between p-4 sm:p-5">
       {/* Top Header Logo & Navigation */}
-      <div>
-        <div className="flex items-center justify-between px-2 pb-6">
+      <div className="flex flex-col min-h-0 flex-1">
+        <div className="flex items-center justify-between px-2 pb-6 shrink-0">
           <Link
             href="/"
             onClick={onCloseMobile}
@@ -141,11 +141,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Primary Navigation List */}
-        <nav className="space-y-1">{visibleNavItems.map((item) => renderNavItem(item))}</nav>
+        <nav className="space-y-1 flex-1 overflow-y-auto pr-1">{visibleNavItems.map((item) => renderNavItem(item))}</nav>
       </div>
 
       {/* Bottom Secondary Navigation */}
-      <div className="border-t border-[#EDE5D8]/80 pt-6">
+      <div className="border-t border-[#EDE5D8]/80 pt-6 shrink-0">
         <nav className="space-y-1">{BOTTOM_NAV_ITEMS.map((item) => renderNavItem(item))}</nav>
       </div>
     </div>
@@ -154,7 +154,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {/* Desktop Persistent Sidebar */}
-      <aside className="sticky top-0 hidden h-screen min-h-screen w-60 shrink-0 flex-col border-r border-[#EDE5D8] bg-[#FBF9F4] select-none lg:flex xl:w-64">
+      <aside className="hidden h-full w-60 shrink-0 flex-col border-r border-[#EDE5D8] bg-[#FBF9F4] select-none lg:flex xl:w-64">
         {sidebarContent}
       </aside>
 
