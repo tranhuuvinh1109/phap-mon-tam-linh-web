@@ -23,6 +23,10 @@ export const CategoryDeleteModal: React.FC<CategoryDeleteModalProps> = ({
 
   if (!isOpen || !category) return null;
 
+  const isUncategorized =
+    category.slug === "khong-co-chu-de" ||
+    category.name.trim().toLowerCase() === "không có chủ đề";
+
   const hasActiveChildren = Boolean(
     category.children && category.children.length > 0
   );
@@ -30,7 +34,7 @@ export const CategoryDeleteModal: React.FC<CategoryDeleteModalProps> = ({
   const postCount = category._count?.posts || 0;
 
   const handleDelete = async () => {
-    if (hasActiveChildren) return;
+    if (isUncategorized) return;
 
     try {
       await deleteMutation.mutateAsync(category.id);
@@ -58,12 +62,12 @@ export const CategoryDeleteModal: React.FC<CategoryDeleteModalProps> = ({
         <div className="flex items-start gap-3.5">
           <div
             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${
-              hasActiveChildren
+              isUncategorized || hasActiveChildren
                 ? "bg-amber-100 border-amber-300 text-amber-800"
                 : "bg-red-100 border-red-200 text-red-600"
             }`}
           >
-            {hasActiveChildren ? (
+            {isUncategorized || hasActiveChildren ? (
               <AlertTriangle className="h-5 w-5" />
             ) : (
               <Trash2 className="h-5 w-5" />
@@ -75,29 +79,16 @@ export const CategoryDeleteModal: React.FC<CategoryDeleteModalProps> = ({
               className="text-lg font-bold text-neutral-900"
               style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
-              {hasActiveChildren
-                ? "Không thể xóa danh mục cha"
+              {isUncategorized
+                ? "Không thể xóa danh mục mặc định"
                 : "Xác nhận xóa danh mục"}
             </h3>
 
-            {hasActiveChildren ? (
-              <div className="mt-2 space-y-2 text-xs text-neutral-600 leading-relaxed">
+            {isUncategorized ? (
+              <div className="mt-2 text-xs text-neutral-600 leading-relaxed">
                 <p>
-                  Danh mục <strong>&ldquo;{category.name}&rdquo;</strong> hiện đang có{" "}
-                  <strong className="text-amber-800">
-                    {category.children?.length} danh mục con
-                  </strong>{" "}
-                  trực thuộc.
+                  Danh mục <strong>&ldquo;{category.name}&rdquo;</strong> là danh mục mặc định của hệ thống dùng để lưu trữ các bài viết và danh mục con chưa phân loại. Bạn không thể xóa danh mục này.
                 </p>
-                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-900">
-                  <p className="font-semibold flex items-center gap-1.5">
-                    <FolderTree className="h-4 w-4 shrink-0" />
-                    Chính sách an toàn dữ liệu:
-                  </p>
-                  <p className="mt-1">
-                    Hệ thống không cho phép xóa danh mục cha khi vẫn còn danh mục con đang hoạt động. Vui lòng chuyển hoặc xóa các danh mục con trước.
-                  </p>
-                </div>
               </div>
             ) : (
               <div className="mt-2 text-xs text-neutral-600 space-y-2 leading-relaxed">
@@ -108,9 +99,36 @@ export const CategoryDeleteModal: React.FC<CategoryDeleteModalProps> = ({
                   </strong>{" "}
                   (Slug: <code className="font-mono text-neutral-700">/{category.slug}</code>)?
                 </p>
-                {postCount > 0 && (
+
+                {hasActiveChildren && (
+                  <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-amber-900 space-y-1.5">
+                    <p className="font-semibold flex items-center gap-1.5 text-xs text-amber-800">
+                      <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+                      Cảnh báo xóa danh mục cha:
+                    </p>
+                    <p className="text-xs leading-relaxed">
+                      Danh mục này đang có{" "}
+                      <strong className="text-amber-800">
+                        {category.children?.length} danh mục con
+                      </strong>
+                      . Khi xóa danh mục cha:
+                    </p>
+                    <ul className="text-xs list-disc list-inside space-y-1 text-amber-800">
+                      <li>
+                        Tất cả {category.children?.length} danh mục con sẽ được tự động chuyển sang trực thuộc danh mục <strong>&ldquo;Không có chủ đề&rdquo;</strong>.
+                      </li>
+                      {postCount > 0 && (
+                        <li>
+                          Toàn bộ {postCount} bài viết trực thuộc sẽ được chuyển sang danh mục <strong>&ldquo;Không có chủ đề&rdquo;</strong>.
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+
+                {!hasActiveChildren && postCount > 0 && (
                   <p className="text-amber-800 bg-amber-50 rounded-lg p-2.5 border border-amber-200">
-                    ⚠️ Danh mục này đang có <strong>{postCount} bài viết</strong> liên kết. Khi xóa danh mục, các bài viết này vẫn được giữ nguyên và chuyển sang trạng thái <em>&ldquo;Chưa phân loại&rdquo;</em>.
+                    ⚠️ Danh mục này đang có <strong>{postCount} bài viết</strong> liên kết. Khi xóa danh mục, các bài viết này sẽ được chuyển sang danh mục <strong>&ldquo;Không có chủ đề&rdquo;</strong>.
                   </p>
                 )}
               </div>
@@ -126,10 +144,10 @@ export const CategoryDeleteModal: React.FC<CategoryDeleteModalProps> = ({
             onClick={onClose}
             disabled={deleteMutation.isPending}
           >
-            {hasActiveChildren ? "Đã hiểu" : "Hủy"}
+            {isUncategorized ? "Đã hiểu" : "Hủy"}
           </Button>
 
-          {!hasActiveChildren && (
+          {!isUncategorized && (
             <Button
               type="button"
               onClick={handleDelete}

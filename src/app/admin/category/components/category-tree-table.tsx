@@ -150,6 +150,9 @@ export const CategoryTreeTable: React.FC<CategoryTreeTableProps> = ({
                 ? true
                 : expandedIds.has(parent.id);
               const postStats = calculateTotalPosts(parent);
+              const isParentUncategorized =
+                parent.slug === "khong-co-chu-de" ||
+                parent.name.trim().toLowerCase() === "không có chủ đề";
 
               return (
                 <React.Fragment key={parent.id}>
@@ -194,6 +197,11 @@ export const CategoryTreeTable: React.FC<CategoryTreeTableProps> = ({
                             <span className="inline-flex items-center rounded-md border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900">
                               Danh mục cha
                             </span>
+                            {isParentUncategorized && (
+                              <span className="inline-flex items-center rounded-md border border-neutral-300 bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600">
+                                Mặc định
+                              </span>
+                            )}
                             {hasChildren && (
                               <span className="inline-flex items-center rounded-md border border-neutral-200 bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600">
                                 {parent.children?.length} con
@@ -277,14 +285,25 @@ export const CategoryTreeTable: React.FC<CategoryTreeTableProps> = ({
                         </button>
 
                         {/* Delete Button */}
-                        <button
-                          type="button"
-                          onClick={() => onDelete(parent)}
-                          title="Xóa danh mục"
-                          className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 transition"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        {isParentUncategorized ? (
+                          <button
+                            type="button"
+                            disabled
+                            title="Không thể xóa danh mục mặc định của hệ thống"
+                            className="rounded-lg p-1.5 text-neutral-300 cursor-not-allowed opacity-50"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => onDelete(parent)}
+                            title="Xóa danh mục"
+                            className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 transition"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -293,6 +312,9 @@ export const CategoryTreeTable: React.FC<CategoryTreeTableProps> = ({
                   {isExpanded &&
                     (parent.children || []).map((child) => {
                       const childPostCount = child._count?.posts || 0;
+                      const isChildUncategorized =
+                        child.slug === "khong-co-chu-de" ||
+                        child.name.trim().toLowerCase() === "không có chủ đề";
 
                       return (
                         <tr
@@ -318,6 +340,11 @@ export const CategoryTreeTable: React.FC<CategoryTreeTableProps> = ({
                                 <span className="inline-flex items-center rounded-md border border-neutral-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-neutral-500">
                                   Danh mục con
                                 </span>
+                                {isChildUncategorized && (
+                                  <span className="inline-flex items-center rounded-md border border-neutral-300 bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600">
+                                    Mặc định
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -374,14 +401,25 @@ export const CategoryTreeTable: React.FC<CategoryTreeTableProps> = ({
                               </button>
 
                               {/* Delete Button */}
-                              <button
-                                type="button"
-                                onClick={() => onDelete(child)}
-                                title="Xóa danh mục con"
-                                className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 transition"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+                              {isChildUncategorized ? (
+                                <button
+                                  type="button"
+                                  disabled
+                                  title="Không thể xóa danh mục mặc định của hệ thống"
+                                  className="rounded-lg p-1.5 text-neutral-300 cursor-not-allowed opacity-50"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => onDelete(child)}
+                                  title="Xóa danh mục con"
+                                  className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 transition"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
