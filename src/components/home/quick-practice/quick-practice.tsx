@@ -87,18 +87,18 @@ export const QuickPractice: React.FC<QuickPracticeProps> = ({
             data-track-category="home_quick_practice"
             className={`group flex flex-col items-center justify-center rounded-2xl border ${item.borderClass} ${item.bgClass} p-3 sm:p-4 text-center shadow-2xs transition-all duration-200 select-none hover:-translate-y-1 hover:shadow-md`}
           >
-            {/* Icon Container: 40px (h-10 w-10) on mobile, larger on sm+ */}
-            <div className="flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110">
+            {/* Icon Container: larger on mobile & sm+ */}
+            <div className="flex h-14 w-14 sm:h-14 sm:w-14 items-center justify-center rounded-2xl transition-transform duration-200 group-hover:scale-110">
               {isImageIcon(item.iconType) ? (
                 <Image
                   src={getIconSrc(item.iconType)}
                   alt={item.title}
-                  width={56}
-                  height={56}
-                  className="h-10 w-10 sm:h-12 sm:w-12 object-contain drop-shadow-2xs sm:scale-[1.3]"
+                  width={64}
+                  height={64}
+                  className="h-12 w-12 sm:h-12 sm:w-12 object-contain drop-shadow-2xs scale-[1.25] sm:scale-[1.3]"
                 />
               ) : (
-                <div className="flex items-center justify-center sm:scale-[1.3]">
+                <div className="flex items-center justify-center scale-[1.25] sm:scale-[1.3]">
                   {renderIcon(item.iconType)}
                 </div>
               )}
