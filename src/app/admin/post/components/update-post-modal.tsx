@@ -43,7 +43,7 @@ import {
   DEFAULT_POST_THUMBNAIL,
   KHAI_THI_DEFAULT_THUMBNAIL,
 } from "@/constants";
-import { allowsGroupCategory, isBachThoaiPhatPhap, isKhaiThi, isNiemKinh } from "../utils/content-type";
+import { allowsGroupCategory, isBachThoaiPhatPhap, isKhaiThi, isNiemKinh, isPostStepType } from "../utils/content-type";
 import { ConfirmModal } from "./confirm-modal";
 
 /**
@@ -78,31 +78,56 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  // Compute initial content string safely
+  const initialContentStr = useMemo(() => {
+    if (!post?.content) return "";
+    if (typeof post.content === "string") return post.content;
+    try {
+      return JSON.stringify(post.content);
+    } catch {
+      return "";
+    }
+  }, [post]);
+
+  const initialCatId = post?.categoryId || post?.category?.id || "";
+  const initialParentId =
+    post?.category?.parentId || post?.category?.parent?.id || initialCatId;
+  const initialChildId =
+    post?.category?.parentId || post?.category?.parent?.id
+      ? post?.category?.id || ""
+      : "";
+
   // Step indicator for Niệm Kinh posts (Step 1: Thông tin cơ bản, Step 2: Các bước Niệm Kinh)
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
 
-  // Form fields
-  const [title, setTitle] = useState("");
-  const [slug, setSlug] = useState("");
-  const [origin, setOrigin] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [selectedParentId, setSelectedParentId] = useState("");
-  const [selectedChildId, setSelectedChildId] = useState("");
+  // Form fields initialized directly with post prop
+  const [title, setTitle] = useState(post?.title || "");
+  const [slug, setSlug] = useState(post?.slug || "");
+  const [origin, setOrigin] = useState(post?.origin || "");
+  const [categoryId, setCategoryId] = useState(initialCatId);
+  const [selectedParentId, setSelectedParentId] = useState(initialParentId);
+  const [selectedChildId, setSelectedChildId] = useState(initialChildId);
   const hasInitializedCategoryRef = useRef(false);
-  const [groupId, setGroupId] = useState("");
-  const [type, setType] = useState<ContentType>(ContentType.NORMAL);
-  const [thumbnailUrl, setThumbnailUrl] = useState("");
-  const [content, setContent] = useState("");
+  const [groupId, setGroupId] = useState(post?.groupId || post?.group?.id || "");
+  const [type, setType] = useState<ContentType>(post?.type || ContentType.NORMAL);
+  const [thumbnailUrl, setThumbnailUrl] = useState(post?.thumbnailUrl || "");
+  const [content, setContent] = useState(initialContentStr);
   const [pendingEditorImagesMap, setPendingEditorImagesMap] = useState<
     Map<string, File>
   >(new Map());
-  const [audioUrl, setAudioUrl] = useState("");
+  const [audioUrl, setAudioUrl] = useState(post?.audio?.audioUrl || "");
 
   // Attachment state
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [attachmentUrl, setAttachmentUrl] = useState("");
-  const [attachmentName, setAttachmentName] = useState("");
-  const [attachmentSize, setAttachmentSize] = useState<number | null>(null);
+  const [attachmentUrl, setAttachmentUrl] = useState(
+    post?.attachment?.fileUrl || ""
+  );
+  const [attachmentName, setAttachmentName] = useState(
+    post?.attachment?.fileName || ""
+  );
+  const [attachmentSize, setAttachmentSize] = useState<number | null>(
+    post?.attachment?.fileSize || null
+  );
   const [isAttachmentDeleted, setIsAttachmentDeleted] = useState(false);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const [pdfProgress, setPdfProgress] = useState(0);
@@ -113,7 +138,9 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Approval state for pending posts
-  const [isVerifiedFromOrigin, setIsVerifiedFromOrigin] = useState(false);
+  const [isVerifiedFromOrigin, setIsVerifiedFromOrigin] = useState(
+    Boolean(post?.isVerifiedFromOrigin)
+  );
   const [isSubmittingWithApprove, setIsSubmittingWithApprove] = useState(false);
 
   // Confirm dialogs
@@ -172,25 +199,14 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
     return categories.find((cat) => cat.id === categoryId);
   }, [categories, categoryId]);
 
-  // Compute initial content string safely
-  const initialContentStr = useMemo(() => {
-    if (!post?.content) return "";
-    if (typeof post.content === "string") return post.content;
-    try {
-      return JSON.stringify(post.content);
-    } catch {
-      return "";
-    }
-  }, [post]);
-
-  // Populate initial values when post is selected or modal opened
+  // Populate / reset values whenever post id changes or modal opened
   useEffect(() => {
     if (post && isOpen) {
       setTitle(post.title || "");
       setSlug(post.slug || "");
       setOrigin(post.origin || "");
-      const initialCatId = post.categoryId || post.category?.id || "";
-      setCategoryId(initialCatId);
+      const targetCatId = post.categoryId || post.category?.id || "";
+      setCategoryId(targetCatId);
 
       // Initialize parent & child from post.category if present
       if (post.category?.parentId) {
@@ -200,7 +216,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
         setSelectedParentId(post.category.parent.id);
         setSelectedChildId(post.category.id);
       } else {
-        setSelectedParentId(initialCatId);
+        setSelectedParentId(targetCatId);
         setSelectedChildId("");
       }
 
@@ -223,7 +239,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       setShowReloadConfirm(false);
       hasInitializedCategoryRef.current = false;
     }
-  }, [post, isOpen, initialContentStr]);
+  }, [post?.id, isOpen, initialContentStr]);
 
   // Synchronize category parent & child once categories list is loaded (if post only had flat categoryId)
   useEffect(() => {
@@ -282,13 +298,14 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
     }
   };
 
-  // Detect if current post is Niệm Kinh
+  // Detect if current post is Niệm Kinh or Step post
   const isNiemKinhPost = useMemo(() => {
     return Boolean(
-      isNiemKinh(
+      isPostStepType(
         categoryId,
         selectedCategory?.slug || post?.category?.slug,
-        selectedCategory?.name || post?.category?.name
+        selectedCategory?.name || post?.category?.name,
+        selectedCategory?.parentId || post?.category?.parentId
       ) || parseNiemKinhContent(content) !== null
     );
   }, [categoryId, selectedCategory, post, content]);
@@ -719,7 +736,9 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                   <span>Cập nhật bài viết</span>
                   {isNiemKinhPost && (
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
-                      Niệm Kinh
+                      {isNiemKinh(categoryId, selectedCategory?.slug || post?.category?.slug, selectedCategory?.name || post?.category?.name)
+                        ? "Niệm Kinh"
+                        : "Dạng bước"}
                     </span>
                   )}
                 </h2>
@@ -1295,6 +1314,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                       </label>
                       <div className="rounded-2xl border border-neutral-200 overflow-hidden bg-white">
                         <RichTextEditor
+                          key={`editor-${post.id}`}
                           value={content}
                           onChange={(val) => setContent(val)}
                           placeholder="Nhập nội dung bài viết..."
@@ -1330,7 +1350,10 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
 
                   <div className="rounded-2xl border border-neutral-200 p-4 bg-white shadow-2xs">
                     <NiemKinhStepEditor
+                      key={`step-editor-${post.id}`}
                       value={content}
+                      categorySlug={selectedCategory?.slug || post?.category?.slug}
+                      categoryName={selectedCategory?.name || post?.category?.name}
                       onChange={(newContent) => setContent(newContent)}
                     />
                   </div>

@@ -16,27 +16,35 @@ import React, { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui";
 import { NiemKinhAccordion } from "@/components/post";
 import {
+  DEFAULT_GENERIC_STEP_DATA,
   DEFAULT_NIEM_KINH_DATA,
   NiemKinhContentData,
   NiemKinhStepItem,
   parseNiemKinhContent,
   serializeNiemKinhContent,
 } from "../../types/niem-kinh.type";
+import { isNiemKinh } from "../../utils/content-type";
 import { RichTextEditor } from "./rich-text-editor";
 
 interface NiemKinhStepEditorProps {
   value: string;
   onChange: (value: string) => void;
   error?: string | null;
+  categorySlug?: string;
+  categoryName?: string;
 }
 
 export const NiemKinhStepEditor: React.FC<NiemKinhStepEditorProps> = ({
   value,
   onChange,
   error,
+  categorySlug,
+  categoryName,
 }) => {
   const subtitleId = useId();
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+
+  const isNiemKinhCategory = isNiemKinh(undefined, categorySlug, categoryName);
 
   // Parse initial content or fallback to default template
   const initialData = React.useMemo<NiemKinhContentData>(() => {
@@ -44,13 +52,14 @@ export const NiemKinhStepEditor: React.FC<NiemKinhStepEditorProps> = ({
     if (parsed && parsed.steps && parsed.steps.length > 0) {
       return parsed;
     }
-    return DEFAULT_NIEM_KINH_DATA;
-  }, [value]);
+    return isNiemKinhCategory ? DEFAULT_NIEM_KINH_DATA : DEFAULT_GENERIC_STEP_DATA;
+  }, [value, isNiemKinhCategory]);
 
   const [subtitle, setSubtitle] = useState<string>(
-    initialData.subtitle || "(Cho người mới bắt đầu)\n(每日功課步驟(初學者))"
+    initialData.subtitle || (isNiemKinhCategory ? "(Cho người mới bắt đầu)\n(每日功課步驟(初學者))" : "")
   );
   const [steps, setSteps] = useState<NiemKinhStepItem[]>(initialData.steps);
+  const lastSerializedValueRef = React.useRef<string>(value);
 
   // Expanded steps in edit mode (Step 1 expanded by default)
   const [expandedStepIds, setExpandedStepIds] = useState<Set<string>>(() => {
@@ -68,8 +77,32 @@ export const NiemKinhStepEditor: React.FC<NiemKinhStepEditorProps> = ({
       subtitle: updatedSubtitle,
       steps: updatedSteps,
     };
-    onChange(serializeNiemKinhContent(payload));
+    const serialized = serializeNiemKinhContent(payload);
+    lastSerializedValueRef.current = serialized;
+    onChange(serialized);
   };
+
+  // Synchronize internal state when value or category prop changes from outside (e.g. switching posts)
+  useEffect(() => {
+    if (value !== lastSerializedValueRef.current) {
+      lastSerializedValueRef.current = value;
+      const parsed = parseNiemKinhContent(value);
+      if (parsed && parsed.steps && parsed.steps.length > 0) {
+        setSubtitle(parsed.subtitle || "");
+        setSteps(parsed.steps);
+        if (parsed.steps[0]?.id) {
+          setExpandedStepIds(new Set([parsed.steps[0].id]));
+        }
+      } else {
+        const defaultData = isNiemKinhCategory ? DEFAULT_NIEM_KINH_DATA : DEFAULT_GENERIC_STEP_DATA;
+        setSubtitle(defaultData.subtitle || "");
+        setSteps(defaultData.steps);
+        if (defaultData.steps[0]?.id) {
+          setExpandedStepIds(new Set([defaultData.steps[0].id]));
+        }
+      }
+    }
+  }, [value, isNiemKinhCategory]);
 
   // Synchronize on mount if value is empty so default steps are captured
   useEffect(() => {

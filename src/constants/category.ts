@@ -19,6 +19,16 @@ export const PHAT_NGUYEN_SLUG = 'phat-nguyen';
 export const THAP_HUONG_BAN_THO_PHAT_SLUG = 'thap-huong-ban-tho-phat';
 
 /**
+ * Categories that allow creating posts with step-by-step content (similar to Niệm Kinh)
+ * Can contain category slugs or category IDs.
+ */
+export const LIST_CATEGORY_IS_POST_STEP_TYPE: string[] = [
+  NIEM_KINH_SLUG,
+  NGOI_NHA_NHO_SLUG,
+  PHONG_SINH_SLUG
+];
+
+/**
  * Default categories used across the system and admin sidebar tabs
  */
 export const DEFAULT_CATEGORY_NAMES = [

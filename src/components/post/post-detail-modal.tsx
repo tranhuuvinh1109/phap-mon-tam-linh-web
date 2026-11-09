@@ -16,6 +16,8 @@ import {
 import React, { useEffect } from "react";
 
 import type { PostItemType } from "@/api/post/post.type";
+import { parseNiemKinhContent } from "@/app/admin/post/types";
+import { isPostStepType } from "@/app/admin/post/utils/content-type";
 import { Button } from "@/components/ui";
 import { ContentType } from "@/enums";
 import { formatTime } from "@/lib/utils/format-time";
@@ -70,6 +72,13 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({
 
   const isNormalPost = post.type === ContentType.NORMAL;
   const isAudioPost = post.type === ContentType.AUDIO;
+  const isStepPost =
+    isPostStepType(
+      post.categoryId || post.category?.id,
+      post.category?.slug,
+      post.category?.name,
+      post.category?.parentId
+    ) || parseNiemKinhContent(post.content) !== null;
 
   return (
     <div
@@ -99,14 +108,22 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({
 
             {/* Content Type Badge */}
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${isNormalPost
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                isStepPost
+                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                  : isNormalPost
                   ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                   : isAudioPost
-                    ? "bg-sky-50 text-sky-800 border border-sky-200"
-                    : "bg-neutral-100 text-neutral-700 border border-neutral-200"
-                }`}
+                  ? "bg-sky-50 text-sky-800 border border-sky-200"
+                  : "bg-neutral-100 text-neutral-700 border border-neutral-200"
+              }`}
             >
-              {isNormalPost ? (
+              {isStepPost ? (
+                <>
+                  <BookOpen className="h-3 w-3" />
+                  <span>Nghi thức theo từng bước</span>
+                </>
+              ) : isNormalPost ? (
                 <>
                   <BookOpen className="h-3 w-3" />
                   <span>Bài đọc / Văn bản</span>

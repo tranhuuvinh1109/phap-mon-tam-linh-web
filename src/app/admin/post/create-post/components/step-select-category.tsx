@@ -17,7 +17,7 @@ import React, { useEffect, useId, useMemo, useState } from "react";
 import { useGetCategories, useGetCategoryTree } from "@/api/category";
 import { Button } from "@/components/ui";
 import { ContentType } from "@/enums";
-import { getContentTypeByCategory, isNiemKinh } from "../../utils/content-type";
+import { getContentTypeByCategory, isNiemKinh, isPostStepType } from "../../utils/content-type";
 
 interface StepSelectCategoryProps {
   selectedCategoryId: string;
@@ -158,16 +158,29 @@ export const StepSelectCategory: React.FC<StepSelectCategoryProps> = ({
     if (!determinedContentType || !effectiveCategoryObj) return null;
 
     if (
-      isNiemKinh(
+      isPostStepType(
+        effectiveCategoryObj.id,
+        effectiveCategoryObj.slug,
+        effectiveCategoryObj.name,
+        effectiveCategoryObj.parentId || selectedParentId
+      )
+    ) {
+      const isNiemKinhCat = isNiemKinh(
         effectiveCategoryObj.id,
         effectiveCategoryObj.slug,
         effectiveCategoryObj.name
-      )
-    ) {
+      );
       return (
         <div className="flex items-center gap-2 rounded-xl border border-amber-300/80 bg-amber-50/80 px-3.5 py-2 text-xs font-semibold text-amber-900">
           <BookOpen className="h-4 w-4 text-amber-700" />
-          <span>Loại bài viết tự động gán: <strong>Niệm Kinh (Nội dung theo từng bước tụng niệm)</strong></span>
+          <span>
+            Loại bài viết tự động gán:{" "}
+            <strong>
+              {isNiemKinhCat
+                ? "Niệm Kinh (Nội dung theo từng bước tụng niệm)"
+                : "Dạng bước (Nội dung theo từng bước)"}
+            </strong>
+          </span>
         </div>
       );
     }

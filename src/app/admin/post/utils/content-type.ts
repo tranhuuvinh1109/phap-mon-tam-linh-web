@@ -7,6 +7,7 @@ import {
   KHAI_THI_DEFAULT_THUMBNAIL,
   KHAI_THI_ID,
   KHAI_THI_SLUG,
+  LIST_CATEGORY_IS_POST_STEP_TYPE,
   NIEM_KINH_ID,
   NIEM_KINH_SLUG,
 } from "@/constants";
@@ -133,6 +134,57 @@ export function isNiemKinh(
     }
   }
   return false;
+}
+
+/**
+ * Checks whether a category is configured as a step-by-step post type.
+ * Returns true if it matches Niệm Kinh or any category listed in LIST_CATEGORY_IS_POST_STEP_TYPE.
+ */
+export function isPostStepType(
+  categoryId?: string,
+  slug?: string,
+  name?: string,
+  parentId?: string | null
+): boolean {
+  if (isNiemKinh(categoryId, slug, name)) {
+    return true;
+  }
+
+  if (
+    Array.isArray(LIST_CATEGORY_IS_POST_STEP_TYPE) &&
+    LIST_CATEGORY_IS_POST_STEP_TYPE.length > 0
+  ) {
+    const matchCategory = (val?: string | null) => {
+      if (!val) return false;
+      const lower = val.toLowerCase().trim();
+      return LIST_CATEGORY_IS_POST_STEP_TYPE.some((item) => {
+        if (!item) return false;
+        const itemLower = item.toLowerCase().trim();
+        return itemLower === lower || lower.includes(itemLower);
+      });
+    };
+
+    if (
+      matchCategory(categoryId) ||
+      matchCategory(slug) ||
+      matchCategory(name) ||
+      matchCategory(parentId)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function isPostStepTypeCategory(data?: PostItemType | null): boolean {
+  if (!data?.category) return false;
+  return isPostStepType(
+    data.category.id,
+    data.category.slug,
+    data.category.name,
+    data.category.parentId
+  );
 }
 
 export function isKhaiThi(

@@ -24,7 +24,8 @@ import { formatTime, slugify, stripHtml } from "@/lib/utils";
 
 import { PostContentRenderer } from "./post-content-renderer";
 import { BACH_THOAI_PHAT_PHAP_ID } from "@/constants";
-import { isNiemKinh } from "@/app/admin/post/utils/content-type";
+import { isNiemKinh, isPostStepType } from "@/app/admin/post/utils/content-type";
+import { parseNiemKinhContent } from "@/app/admin/post/types";
 
 interface CategoryGroup {
   id: string;
@@ -312,6 +313,13 @@ export const CategorizedPosts: React.FC<CategorizedPostsProps> = ({
               const isExpanded = expandedPostIds.has(post.id);
               const plainContentSnippet = post.content ? stripHtml(post.content) : "";
               const postCategorySlug = post.category?.slug;
+              const isStepPost =
+                isPostStepType(
+                  post.categoryId || post.category?.id,
+                  postCategorySlug,
+                  post.category?.name,
+                  post.category?.parentId
+                ) || parseNiemKinhContent(post.content) !== null;
               const isNiemKinhPost = isNiemKinh(
                 post.categoryId || post.category?.id,
                 postCategorySlug,
@@ -323,7 +331,11 @@ export const CategorizedPosts: React.FC<CategorizedPostsProps> = ({
                 ? `/niem-kinh/${encodeURIComponent(post.slug || post.id)}`
                 : isBachThoaiPost
                 ? `/bach-thoai-phat-phap/${encodeURIComponent(post.slug || post.id)}`
-                : `/khai-thi/${encodeURIComponent(post.slug || post.id)}`;
+                : postCategorySlug === "ngoi-nha-nho"
+                ? `/ngoi-nha-nho/${encodeURIComponent(post.slug || post.id)}`
+                : postCategorySlug === "khai-thi"
+                ? `/khai-thi/${encodeURIComponent(post.slug || post.id)}`
+                : `/post/${encodeURIComponent(post.slug || post.id)}`;
 
               const defaultThumbnail = isBachThoaiPost
                 ? "/images/bach-thoai-phat-phap.png"
@@ -382,7 +394,11 @@ export const CategorizedPosts: React.FC<CategorizedPostsProps> = ({
                         </Link>
 
                         {/* Content Type Badge */}
-                        {isNormal ? (
+                        {isStepPost ? (
+                          <span className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200/60">
+                            Theo bước
+                          </span>
+                        ) : isNormal ? (
                           <span className="shrink-0 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60">
                             Bài đọc
                           </span>
@@ -394,7 +410,7 @@ export const CategorizedPosts: React.FC<CategorizedPostsProps> = ({
                       </div>
 
                       {/* Excerpt Snippet (For NORMAL posts with HTML content) */}
-                      {isNormal && plainContentSnippet && (
+                      {(isNormal || isStepPost) && plainContentSnippet && (
                         <p className="line-clamp-2 text-xs text-neutral-500 font-normal leading-relaxed">
                           {plainContentSnippet}
                         </p>
@@ -440,16 +456,18 @@ export const CategorizedPosts: React.FC<CategorizedPostsProps> = ({
                         </button>
                       )}
 
-                      {/* Normal Post Reading Button: Redirects directly to /post/slug */}
-                      {isNormal && (
+                      {/* Normal Post Reading Button: Redirects directly to postUrl */}
+                      {(isNormal || isStepPost) && (
                         <Link
                           href={postUrl}
                           onClick={(e) => e.stopPropagation()}
-                          title="Đọc bài viết"
+                          title={isStepPost ? "Xem các bước thực hành" : "Đọc bài viết"}
                           className="flex h-8 items-center gap-1.5 rounded-lg border border-amber-300/80 bg-amber-50/80 px-2.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 hover:border-amber-400 shadow-2xs"
                         >
                           <BookOpen className="h-3.5 w-3.5 text-amber-700" />
-                          <span className="hidden sm:inline">Đọc bài</span>
+                          <span className="hidden sm:inline">
+                            {isStepPost ? "Xem các bước" : "Đọc bài"}
+                          </span>
                         </Link>
                       )}
 

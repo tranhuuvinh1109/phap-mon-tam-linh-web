@@ -2,8 +2,8 @@
 
 import React, { useMemo } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { parseNiemKinhContent } from "@/app/admin/post/types";
-import { isKhaiThi } from "@/app/admin/post/utils/content-type";
+import { DEFAULT_GENERIC_STEP_DATA, parseNiemKinhContent } from "@/app/admin/post/types";
+import { isKhaiThi, isPostStepType } from "@/app/admin/post/utils/content-type";
 import { KHAI_THI_ID, KHAI_THI_SLUG } from "@/constants";
 import type { PostCategoryType, PostItemType } from "@/api/post/post.type";
 import { highlightInHtml } from "@/lib/highlight";
@@ -92,13 +92,63 @@ export const PostContentRenderer: React.FC<PostContentRendererProps> = ({
     return false;
   }, [category, isKhaiThiProp, pathname, post, searchParams]);
 
-  // Check if content is Niem Kinh steps data
-  const niemKinhData = useMemo(() => {
-    return parseNiemKinhContent(content);
-  }, [content]);
+  // Check if post or category belongs to step-by-step post type
+  const isStepCategory = useMemo(() => {
+    const catId =
+      typeof category === "object"
+        ? category?.id
+        : typeof category === "string"
+        ? category
+        : undefined;
+    const catSlug =
+      typeof category === "object"
+        ? category?.slug
+        : typeof category === "string"
+        ? category
+        : undefined;
+    const catName =
+      typeof category === "object"
+        ? category?.name
+        : typeof category === "string"
+        ? category
+        : undefined;
+    const catParentId = typeof category === "object" ? category?.parentId : undefined;
+
+    const finalCatId = post?.categoryId || post?.category?.id || catId;
+    const finalCatSlug = post?.category?.slug || catSlug;
+    const finalCatName = post?.category?.name || catName;
+    const finalCatParentId = post?.category?.parentId || catParentId;
+
+    return isPostStepType(finalCatId, finalCatSlug, finalCatName, finalCatParentId);
+  }, [category, post]);
+
+  // Check if content is Niem Kinh steps data or if category requires step format
+  const stepData = useMemo(() => {
+    const parsed = parseNiemKinhContent(content);
+    if (parsed) return parsed;
+
+    if (isStepCategory) {
+      if (typeof content === "string" && content.trim()) {
+        return {
+          type: "niem_kinh_steps" as const,
+          subtitle: "",
+          steps: [
+            {
+              id: "step-1",
+              title: "Bước 1",
+              content: content,
+            },
+          ],
+        };
+      }
+      return DEFAULT_GENERIC_STEP_DATA;
+    }
+
+    return null;
+  }, [content, isStepCategory]);
 
   const htmlString = useMemo(() => {
-    if (niemKinhData) return "";
+    if (stepData) return "";
     if (content === null || content === undefined) {
       return "";
     }
@@ -174,7 +224,7 @@ export const PostContentRenderer: React.FC<PostContentRendererProps> = ({
     }
 
     return String(content);
-  }, [content, niemKinhData]);
+  }, [content, stepData]);
 
   // Clean non-breaking spaces, inject br spacers for Khai Thi, and apply search highlight
   const cleanHtml = useMemo(() => {
@@ -200,8 +250,8 @@ export const PostContentRenderer: React.FC<PostContentRendererProps> = ({
     return cleaned;
   }, [htmlString, isKhaiThiPost, activeSearchQuery]);
 
-  if (niemKinhData) {
-    return <NiemKinhAccordion data={niemKinhData} className={className} />;
+  if (stepData) {
+    return <NiemKinhAccordion data={stepData} className={className} />;
   }
 
   if (!cleanHtml || !cleanHtml.trim()) {

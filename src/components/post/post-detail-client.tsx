@@ -24,7 +24,8 @@ import React, { useMemo, useState } from "react";
 
 import { useGetPostBySlug } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
-import { isBachThoaiPhatPhapCategory, isKhaiThi } from "@/app/admin/post/utils/content-type";
+import { parseNiemKinhContent } from "@/app/admin/post/types";
+import { isBachThoaiPhatPhapCategory, isKhaiThi, isPostStepType } from "@/app/admin/post/utils/content-type";
 import { MainLayout } from "@/components/layout";
 import {
   BachThoaiAudioPlayer,
@@ -84,6 +85,19 @@ export const PostDetailClient: React.FC = () => {
     }
     return false;
   }, [displayPost, pathname]);
+
+  // Check if post belongs to step-by-step post type
+  const isStepPost = useMemo(() => {
+    if (!displayPost) return false;
+    return (
+      isPostStepType(
+        displayPost.categoryId || displayPost.category?.id,
+        displayPost.category?.slug,
+        displayPost.category?.name,
+        displayPost.category?.parentId
+      ) || parseNiemKinhContent(displayPost.content) !== null
+    );
+  }, [displayPost]);
   const isCurrentPostPlaying =
     displayPost && currentTrack?.id === displayPost.id && isGlobalPlaying;
 
@@ -319,12 +333,19 @@ export const PostDetailClient: React.FC = () => {
 
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
-                      displayPost.type === ContentType.NORMAL
+                      isStepPost
+                        ? "border border-emerald-300 bg-emerald-50 text-emerald-800"
+                        : displayPost.type === ContentType.NORMAL
                         ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
                         : "border border-sky-200 bg-sky-50 text-sky-800"
                     }`}
                   >
-                    {displayPost.type === ContentType.NORMAL ? (
+                    {isStepPost ? (
+                      <>
+                        <BookOpen className="h-3 w-3 text-emerald-700" />
+                        <span>Nghi thức theo từng bước</span>
+                      </>
+                    ) : displayPost.type === ContentType.NORMAL ? (
                       <>
                         <BookOpen className="h-3 w-3" />
                         <span>Bài viết</span>
@@ -409,8 +430,7 @@ export const PostDetailClient: React.FC = () => {
               )}
 
               {/* Featured Thumbnail */}
-              {displayPost.thumbnailUrl &&
-                displayPost.thumbnailUrl !== "/images/khai-thi-default.jpg" && (
+              {displayPost.thumbnailUrl && (
                 <div className="relative w-full overflow-hidden rounded-2xl border border-amber-900/10 bg-amber-50/50 shadow-xs">
                   <img
                     src={displayPost.thumbnailUrl}
@@ -435,8 +455,8 @@ export const PostDetailClient: React.FC = () => {
                 </div>
               )}
 
-              {/* Article HTML Content */}
-              {displayPost.content && (
+              {/* Article HTML Content / Step Content */}
+              {(displayPost.content || isStepPost) && (
                 <div className="pt-2">
                   <PostContentRenderer
                     content={displayPost.content}

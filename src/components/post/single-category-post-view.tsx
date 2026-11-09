@@ -17,11 +17,13 @@ import {
   Volume2,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import React, { useMemo, useState } from "react";
 
 import { useSearchPosts } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
+import { parseNiemKinhContent } from "@/app/admin/post/types";
+import { isPostStepType } from "@/app/admin/post/utils/content-type";
 import { MainLayout } from "@/components/layout";
 import { PostContentRenderer } from "@/components/post/post-content-renderer";
 import { NormalPostSkeleton } from "@/components/skeletons";
@@ -44,6 +46,8 @@ export const SingleCategoryPostView: React.FC<SingleCategoryPostViewProps> = ({
   categoryTitle,
 }) => {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const selectedSlugOrId = searchParams?.get("post");
 
   // Call search posts by category slug
   const {
@@ -56,13 +60,42 @@ export const SingleCategoryPostView: React.FC<SingleCategoryPostViewProps> = ({
     category: categorySlug,
   });
 
-  // Extract the first post element from response
-  const displayPost: PostItemType | null = useMemo(() => {
-    if (!searchResponse) return null;
-    if (Array.isArray(searchResponse)) return searchResponse[0] || null;
-    if (Array.isArray(searchResponse.data)) return searchResponse.data[0] || null;
-    return null;
+  // Extract all posts matching category
+  const postsList: PostItemType[] = useMemo(() => {
+    if (!searchResponse) return [];
+    if (Array.isArray(searchResponse)) return searchResponse;
+    if (Array.isArray(searchResponse.data)) return searchResponse.data;
+    return [];
   }, [searchResponse]);
+
+  const [activePostId, setActivePostId] = useState<string | null>(null);
+
+  // Extract selected or first post element from response
+  const displayPost: PostItemType | null = useMemo(() => {
+    if (activePostId) {
+      const found = postsList.find((p) => p.id === activePostId);
+      if (found) return found;
+    }
+    if (selectedSlugOrId) {
+      const found = postsList.find(
+        (p) => p.slug === selectedSlugOrId || p.id === selectedSlugOrId
+      );
+      if (found) return found;
+    }
+    return postsList[0] || null;
+  }, [activePostId, selectedSlugOrId, postsList]);
+
+  // Check if post belongs to step-by-step post type
+  const isStepCategory = useMemo(() => {
+    return (
+      isPostStepType(
+        displayPost?.categoryId || displayPost?.category?.id,
+        displayPost?.category?.slug || categorySlug,
+        displayPost?.category?.name || categoryTitle,
+        displayPost?.category?.parentId
+      ) || parseNiemKinhContent(displayPost?.content) !== null
+    );
+  }, [displayPost, categorySlug, categoryTitle]);
 
   // Track post view & read events
   useEvent(displayPost?.id);
@@ -218,20 +251,56 @@ export const SingleCategoryPostView: React.FC<SingleCategoryPostViewProps> = ({
 
           {/* Post Content when displayPost exists */}
           {displayPost && (
-            <article className="overflow-hidden rounded-3xl border border-[#EDE5D8]/90 bg-white/95 p-5 shadow-xs sm:p-8 space-y-6">
-              {/* Category Badges & Social Actions */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 pb-4">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100/80 px-3 py-1 text-xs font-bold text-amber-900">
-                    <Tag className="h-3 w-3 text-amber-700" />
-                    <span>{displayPost.category?.name || categoryTitle}</span>
-                  </span>
+            <>
+              {/* Multiple Posts Switcher (if more than 1 post exists in this category) */}
+              {postsList.length > 1 && (
+                <div className="rounded-2xl border border-amber-200/90 bg-[#FDFBF7] p-3 sm:p-4 shadow-2xs">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <BookOpen className="h-3.5 w-3.5 text-amber-700" />
+                      <span>Các bài {categoryTitle} ({postsList.length} bài)</span>
+                    </span>
+                    <span className="text-[11px] text-neutral-400">
+                      Chọn bài để xem chi tiết
+                    </span>
+                  </div>
 
-                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-                    <BookOpen className="h-3 w-3 text-emerald-700" />
-                    <span>Nghi thức thực hành</span>
-                  </span>
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                    {postsList.map((p) => {
+                      const isCurrent = displayPost?.id === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setActivePostId(p.id)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+                            isCurrent
+                              ? "bg-amber-700 text-white shadow-2xs"
+                              : "bg-white text-neutral-700 border border-neutral-200 hover:border-amber-300 hover:bg-amber-50"
+                          }`}
+                        >
+                          {p.title}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+              )}
+
+              <article className="overflow-hidden rounded-3xl border border-[#EDE5D8]/90 bg-white/95 p-5 shadow-xs sm:p-8 space-y-6">
+                {/* Category Badges & Social Actions */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 pb-4">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100/80 px-3 py-1 text-xs font-bold text-amber-900">
+                      <Tag className="h-3 w-3 text-amber-700" />
+                      <span>{displayPost.category?.name || categoryTitle}</span>
+                    </span>
+
+                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+                      <BookOpen className="h-3 w-3 text-emerald-700" />
+                      <span>{isStepCategory ? "Nghi thức theo từng bước" : "Nghi thức thực hành"}</span>
+                    </span>
+                  </div>
 
                 {/* Favorite & Share Buttons */}
                 <div className="flex items-center gap-2">
@@ -358,6 +427,7 @@ export const SingleCategoryPostView: React.FC<SingleCategoryPostViewProps> = ({
                 />
               </div>
             </article>
+            </>
           )}
         </div>
 

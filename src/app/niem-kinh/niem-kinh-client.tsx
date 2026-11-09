@@ -319,6 +319,20 @@ export const NiemKinhClient: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Featured Thumbnail (If post has thumbnail) */}
+                  {displayPost.thumbnailUrl && (
+                    <div className="relative w-full overflow-hidden rounded-2xl border border-amber-900/10 bg-amber-50/50 shadow-xs">
+                      <img
+                        src={displayPost.thumbnailUrl}
+                        alt={displayPost.title}
+                        className="w-full h-auto max-h-[650px] object-contain object-center rounded-2xl mx-auto"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    </div>
+                  )}
+
                   {/* POST CONTENT: RENDERED ACCORDING TO STEPS */}
                   <div className="pt-2">
                     <NiemKinhAccordion data={stepsData} allowToggle={true} />

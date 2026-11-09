@@ -18,6 +18,8 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { useSearchPosts } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
+import { parseNiemKinhContent } from "@/app/admin/post/types";
+import { isPostStepType } from "@/app/admin/post/utils/content-type";
 import { MainLayout } from "@/components/layout";
 import {
   BACH_THOAI_PHAT_PHAP_SLUG,
@@ -142,16 +144,17 @@ export function SearchClient() {
   const getPostLink = (post: PostItemType) => {
     let basePath = "";
     const catSlug = post.category?.slug?.toLowerCase() || "";
+    const postSlugOrId = post.slug || post.id || "";
     if (catSlug.includes("bach-thoai") || catSlug.includes("bạch-thoại")) {
-      basePath = `/bach-thoai-phat-phap/${post.slug}`;
+      basePath = `/bach-thoai-phat-phap/${encodeURIComponent(postSlugOrId)}`;
     } else if (catSlug.includes("khai-thi") || catSlug.includes("khai-thị")) {
-      basePath = `/khai-thi/${post.slug}`;
+      basePath = `/khai-thi/${encodeURIComponent(postSlugOrId)}`;
     } else if (catSlug.includes("ngoi-nha-nho") || catSlug.includes("ngôi-nhà-nhỏ")) {
-      basePath = `/ngoi-nha-nho/${post.slug}`;
+      basePath = `/ngoi-nha-nho/${encodeURIComponent(postSlugOrId)}`;
     } else if (catSlug.includes("niem-kinh") || catSlug.includes("niệm-kinh")) {
-      basePath = `/niem-kinh`;
+      basePath = `/niem-kinh/${encodeURIComponent(postSlugOrId)}`;
     } else {
-      basePath = `/${post.category?.slug || "khai-thi"}/${post.slug}`;
+      basePath = `/post/${encodeURIComponent(postSlugOrId)}`;
     }
 
     if (debouncedSearch.trim()) {
@@ -310,6 +313,13 @@ export function SearchClient() {
               const hasAudio = Boolean(post.audio?.audioUrl);
               const postLink = getPostLink(post);
               const snippet = getSnippetWithContext(post.content, debouncedSearch, 130);
+              const isStepPost =
+                isPostStepType(
+                  post.categoryId || post.category?.id,
+                  post.category?.slug,
+                  post.category?.name,
+                  post.category?.parentId
+                ) || parseNiemKinhContent(post.content) !== null;
 
               return (
                 <Link
@@ -336,7 +346,12 @@ export function SearchClient() {
 
                       {/* Content Type Badge */}
                       <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                        {hasAudio ? (
+                        {isStepPost ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-900/85 px-2 py-0.5 text-[10px] font-bold text-white shadow backdrop-blur-xs">
+                            <BookOpen className="h-3 w-3" />
+                            <span>Theo bước</span>
+                          </span>
+                        ) : hasAudio ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-sky-900/85 px-2 py-0.5 text-[10px] font-bold text-white shadow backdrop-blur-xs">
                             <Headphones className="h-3 w-3" />
                             <span>Audio</span>

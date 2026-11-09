@@ -25,7 +25,7 @@ import { getAudioDuration, slugify } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { CreatePostFormValues } from "../../types/post-form.type";
-import { allowsGroupCategory, isBachThoaiPhatPhap, isKhaiThi, isNiemKinh } from "../../utils/content-type";
+import { allowsGroupCategory, isBachThoaiPhatPhap, isKhaiThi, isNiemKinh, isPostStepType } from "../../utils/content-type";
 import { AudioUpload } from "./audio-upload";
 
 /**
@@ -83,10 +83,11 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
     Map<string, File>
   >(new Map());
 
-  const isNiemKinhPost = isNiemKinh(
+  const isNiemKinhPost = isPostStepType(
     formValues.categoryId,
     category?.slug,
-    category?.name
+    category?.name,
+    category?.parentId
   );
 
   const isBachThoaiPost = isBachThoaiPhatPhap(
@@ -199,7 +200,7 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
       !hasPdf
     ) {
       errors.content = isNiemKinhPost
-        ? "Vui lòng nhập nội dung cho các bước Niệm Kinh."
+        ? "Vui lòng nhập nội dung cho các bước."
         : "Nội dung bài viết không được để trống (hoặc đính kèm tệp PDF).";
     }
   }
@@ -514,7 +515,11 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
           {isNiemKinhPost ? (
             <span className="flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-900 border border-amber-300">
               <BookOpen className="h-3.5 w-3.5 text-amber-700" />
-              <span>Niệm Kinh (Các bước tụng niệm)</span>
+              <span>
+                {isNiemKinh(formValues.categoryId, category?.slug, category?.name)
+                  ? "Niệm Kinh (Các bước tụng niệm)"
+                  : "Bài viết dạng bước (Các bước chi tiết)"}
+              </span>
             </span>
           ) : formValues.contentType === ContentType.AUDIO ? (
             <span className="flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 font-semibold text-amber-900 border border-amber-300">
@@ -741,6 +746,8 @@ export const StepPostDetails: React.FC<StepPostDetailsProps> = ({
             <NiemKinhStepEditor
               value={formValues.content}
               error={errors.content}
+              categorySlug={category?.slug}
+              categoryName={category?.name}
               onChange={(content) => {
                 onChangeFormValues({ content });
                 setValidationSuccess(null);

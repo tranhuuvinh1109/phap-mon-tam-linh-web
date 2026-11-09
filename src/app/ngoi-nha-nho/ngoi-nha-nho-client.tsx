@@ -400,7 +400,7 @@ export const NgoiNhaNhoClient: React.FC = () => {
                   {/* Right Side: Optional Thumbnail & Action Button */}
                   <div className="flex items-center gap-3 sm:gap-4 shrink-0 self-end sm:self-center">
                     {post.thumbnailUrl && (
-                      <div className="hidden md:block h-16 w-22 sm:h-18 sm:w-26 shrink-0 overflow-hidden rounded-xl border border-amber-900/10 bg-amber-50">
+                      <div className="h-14 w-20 sm:h-16 sm:w-22 md:h-18 md:w-26 shrink-0 overflow-hidden rounded-xl border border-amber-900/10 bg-amber-50">
                         <img
                           src={post.thumbnailUrl}
                           alt={post.title}

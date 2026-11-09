@@ -32,6 +32,26 @@ export const DEFAULT_NIEM_KINH_DATA: NiemKinhContentData = {
 };
 
 /**
+ * Generic default step data for any category configured as step-type
+ */
+export const DEFAULT_GENERIC_STEP_DATA: NiemKinhContentData = {
+  type: "niem_kinh_steps",
+  subtitle: "",
+  steps: [
+    {
+      id: "step-1",
+      title: "Bước 1",
+      content: "",
+    },
+    {
+      id: "step-2",
+      title: "Bước 2",
+      content: "",
+    },
+  ],
+};
+
+/**
  * Type guard to check if an object is NiemKinhContentData
  */
 export function isNiemKinhContentData(

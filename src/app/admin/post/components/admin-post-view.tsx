@@ -723,17 +723,20 @@ export const AdminPostView: React.FC = () => {
       </div>
 
       {/* Update Post Modal */}
-      <UpdatePostModal
-        isOpen={isUpdateModalOpen}
-        post={editingPost}
-        onClose={() => {
-          setIsUpdateModalOpen(false);
-          setEditingPost(null);
-        }}
-        onSuccess={() => {
-          refetch();
-        }}
-      />
+      {isUpdateModalOpen && editingPost && (
+        <UpdatePostModal
+          key={editingPost.id}
+          isOpen={isUpdateModalOpen}
+          post={editingPost}
+          onClose={() => {
+            setIsUpdateModalOpen(false);
+            setEditingPost(null);
+          }}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
+      )}
 
       {/* Delete Post Confirmation Modal */}
       <ConfirmModal

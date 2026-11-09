@@ -474,17 +474,20 @@ export const PendingPostView: React.FC = () => {
       />
 
       {/* Edit Post Modal */}
-      <UpdatePostModal
-        post={editingPost}
-        isOpen={isEditOpen}
-        onClose={() => {
-          setIsEditOpen(false);
-          setEditingPost(null);
-        }}
-        onSuccess={() => {
-          refetch();
-        }}
-      />
+      {isEditOpen && editingPost && (
+        <UpdatePostModal
+          key={editingPost.id}
+          post={editingPost}
+          isOpen={isEditOpen}
+          onClose={() => {
+            setIsEditOpen(false);
+            setEditingPost(null);
+          }}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
+      )}
 
       {/* Approve Modal */}
       <ApprovePostModal
