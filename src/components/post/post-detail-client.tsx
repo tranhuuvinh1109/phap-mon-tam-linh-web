@@ -170,6 +170,7 @@ export const PostDetailClient: React.FC = () => {
     if (pathname?.includes("/ngoi-nha-nho")) return "ngoi-nha-nho";
     if (pathname?.includes("/khai-thi")) return "khai-thi";
     if (pathname?.includes("/niem-kinh")) return "niem-kinh";
+    if (pathname?.includes("/thap-huong-ban-tho-phat")) return "thap-huong-ban-tho-phat";
     return "bach-thoai-phat-phap";
   }, [pathname, displayPost?.category?.slug]);
 
@@ -178,6 +179,7 @@ export const PostDetailClient: React.FC = () => {
     if (currentCategorySlug === "ngoi-nha-nho") return "Ngôi Nhà Nhỏ";
     if (currentCategorySlug === "khai-thi") return "Khai thị";
     if (currentCategorySlug === "niem-kinh") return "Niệm kinh";
+    if (currentCategorySlug === "thap-huong-ban-tho-phat") return "Thắp hương bàn thờ Phật";
     return "Bạch thoại Phật pháp";
   }, [displayPost?.category?.name, currentCategorySlug]);
 
@@ -187,7 +189,9 @@ export const PostDetailClient: React.FC = () => {
       ? "bach-thoai"
       : currentCategorySlug === "niem-kinh"
         ? "practice"
-        : currentCategorySlug;
+        : currentCategorySlug === "thap-huong-ban-tho-phat"
+          ? "practice"
+          : currentCategorySlug;
 
   // Find dedicated PDF attachment from post attachments or attachment field
   const pdfAttachment = useMemo(() => {

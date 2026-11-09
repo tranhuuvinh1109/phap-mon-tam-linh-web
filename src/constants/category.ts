@@ -16,7 +16,9 @@ export const KINH_SACH_SLUG = 'kinh-sach';
 
 export const PHONG_SINH_SLUG = 'phong-sinh';
 export const PHAT_NGUYEN_SLUG = 'phat-nguyen';
+
 export const THAP_HUONG_BAN_THO_PHAT_SLUG = 'thap-huong-ban-tho-phat';
+export const THAP_HUONG_BAN_THO_PHAT_ID = '1416d469-5932-4ad7-9703-78122ae071d7';
 
 /**
  * Categories that allow creating posts with step-by-step content (similar to Niệm Kinh)
@@ -25,7 +27,8 @@ export const THAP_HUONG_BAN_THO_PHAT_SLUG = 'thap-huong-ban-tho-phat';
 export const LIST_CATEGORY_IS_POST_STEP_TYPE: string[] = [
   NIEM_KINH_SLUG,
   NGOI_NHA_NHO_SLUG,
-  PHONG_SINH_SLUG
+  PHONG_SINH_SLUG,
+  THAP_HUONG_BAN_THO_PHAT_SLUG
 ];
 
 /**

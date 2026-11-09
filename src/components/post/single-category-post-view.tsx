@@ -20,7 +20,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import React, { useMemo, useState } from "react";
 
-import { useSearchPosts } from "@/api/post";
+import { useGetPostsByCategory } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
 import { parseNiemKinhContent } from "@/app/admin/post/types";
 import { isPostStepType } from "@/app/admin/post/utils/content-type";
@@ -39,34 +39,38 @@ export interface SingleCategoryPostViewProps {
   categorySlug: string;
   categoryTitle: string;
   categorySubtitle?: string;
+  categoryId?: string;
 }
 
 export const SingleCategoryPostView: React.FC<SingleCategoryPostViewProps> = ({
   categorySlug,
   categoryTitle,
+  categoryId,
 }) => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const selectedSlugOrId = searchParams?.get("post");
 
-  // Call search posts by category slug
+  // Call get posts by category API
   const {
-    data: searchResponse,
-    isLoading: isSearchLoading,
-    isError: isSearchError,
-    error: searchError,
-    refetch: refetchSearch,
-  } = useSearchPosts({
-    category: categorySlug,
+    data: categoryResponse,
+    isLoading: isCategoryLoading,
+    isError: isCategoryError,
+    error: categoryError,
+    refetch: refetchCategory,
+  } = useGetPostsByCategory({
+    category_name: categorySlug,
+    ...(categoryId ? { category_id: categoryId } : {}),
+    limit: 50,
   });
 
   // Extract all posts matching category
   const postsList: PostItemType[] = useMemo(() => {
-    if (!searchResponse) return [];
-    if (Array.isArray(searchResponse)) return searchResponse;
-    if (Array.isArray(searchResponse.data)) return searchResponse.data;
+    if (!categoryResponse) return [];
+    if (Array.isArray(categoryResponse)) return categoryResponse;
+    if (Array.isArray(categoryResponse.data)) return categoryResponse.data;
     return [];
-  }, [searchResponse]);
+  }, [categoryResponse]);
 
   const [activePostId, setActivePostId] = useState<string | null>(null);
 
@@ -165,7 +169,7 @@ export const SingleCategoryPostView: React.FC<SingleCategoryPostViewProps> = ({
     }
   };
 
-  const isLoading = isSearchLoading && !displayPost;
+  const isLoading = isCategoryLoading && !displayPost;
 
   return (
     <MainLayout activeId="practice">
@@ -205,21 +209,21 @@ export const SingleCategoryPostView: React.FC<SingleCategoryPostViewProps> = ({
           {isLoading && <NormalPostSkeleton />}
 
           {/* Error State */}
-          {!isLoading && isSearchError && !displayPost && (
+          {!isLoading && isCategoryError && !displayPost && (
             <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm text-red-700 flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-bold">Không thể tải bài viết {categoryTitle}</h3>
                   <p className="text-xs text-red-600/90 mt-1">
-                    {searchError?.message ||
+                    {categoryError?.message ||
                       "Vui lòng kiểm tra lại kết nối mạng hoặc thử lại."}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => refetchSearch()}
+                onClick={() => refetchCategory()}
                 className="rounded-xl bg-red-100 px-3.5 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-200 flex items-center gap-1.5 shrink-0 transition cursor-pointer"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
@@ -229,7 +233,7 @@ export const SingleCategoryPostView: React.FC<SingleCategoryPostViewProps> = ({
           )}
 
           {/* Empty State */}
-          {!isLoading && !displayPost && !isSearchError && (
+          {!isLoading && !displayPost && !isCategoryError && (
             <div className="flex flex-col items-center justify-center rounded-3xl border border-[#EDE5D8]/90 bg-white/95 p-12 text-center shadow-xs">
               <BookOpen className="h-10 w-10 text-neutral-300 mb-3" />
               <h3 className="text-base font-bold text-neutral-800">
@@ -273,11 +277,10 @@ export const SingleCategoryPostView: React.FC<SingleCategoryPostViewProps> = ({
                           key={p.id}
                           type="button"
                           onClick={() => setActivePostId(p.id)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${
-                            isCurrent
+                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${isCurrent
                               ? "bg-amber-700 text-white shadow-2xs"
                               : "bg-white text-neutral-700 border border-neutral-200 hover:border-amber-300 hover:bg-amber-50"
-                          }`}
+                            }`}
                         >
                           {p.title}
                         </button>
@@ -302,131 +305,129 @@ export const SingleCategoryPostView: React.FC<SingleCategoryPostViewProps> = ({
                     </span>
                   </div>
 
-                {/* Favorite & Share Buttons */}
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleToggleFavorite}
-                    title={isBookmarked ? "Bỏ lưu bài viết" : "Lưu vào yêu thích"}
-                    className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition shadow-2xs cursor-pointer ${
-                      isBookmarked
-                        ? "border-amber-400 bg-amber-100/90 text-amber-900 font-bold"
-                        : "border-[#EDE5D8] bg-white text-neutral-600 hover:bg-[#FAF7F0] hover:text-amber-800"
-                    }`}
-                  >
-                    <Bookmark
-                      className={`h-3.5 w-3.5 ${
-                        isBookmarked ? "fill-amber-700 text-amber-700" : ""
-                      }`}
-                    />
-                    <span>{isBookmarked ? "Đã lưu" : "Lưu bài"}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleShare}
-                    title="Sao chép liên kết bài viết"
-                    className="flex items-center gap-1.5 rounded-xl border border-[#EDE5D8] bg-white px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:bg-[#FAF7F0] hover:text-amber-800 transition shadow-2xs cursor-pointer"
-                  >
-                    {isCopied ? (
-                      <>
-                        <Check className="h-3.5 w-3.5 text-emerald-600" />
-                        <span className="text-emerald-700">Đã chép</span>
-                      </>
-                    ) : (
-                      <>
-                        <Share2 className="h-3.5 w-3.5" />
-                        <span>Chia sẻ</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Post Title */}
-              <div>
-                <h1
-                  className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl leading-snug"
-                  style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-                >
-                  {displayPost.title}
-                </h1>
-
-                {/* Author & Meta */}
-                <div className="mt-3 flex items-center gap-4 text-xs text-neutral-500 flex-wrap">
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-                    <span className="font-semibold text-neutral-700">
-                      {displayPost.author?.name || "Ban biên tập Phật Pháp"}
-                    </span>
-                  </div>
-
-                  <span className="text-neutral-300">•</span>
-
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5 text-neutral-400" />
-                    <span>
-                      {displayPost.createdAt
-                        ? new Date(displayPost.createdAt).toLocaleDateString("vi-VN")
-                        : "Hằng ngày"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Audio Player Card (If post has audio) */}
-              {displayPost.audio?.audioUrl && (
-                <div className="flex items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 shadow-2xs">
-                  <div className="flex items-center gap-3">
+                  {/* Favorite & Share Buttons */}
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={toggleAudio}
-                      className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-amber-600 text-white shadow-xs transition hover:bg-amber-700"
+                      onClick={handleToggleFavorite}
+                      title={isBookmarked ? "Bỏ lưu bài viết" : "Lưu vào yêu thích"}
+                      className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition shadow-2xs cursor-pointer ${isBookmarked
+                          ? "border-amber-400 bg-amber-100/90 text-amber-900 font-bold"
+                          : "border-[#EDE5D8] bg-white text-neutral-600 hover:bg-[#FAF7F0] hover:text-amber-800"
+                        }`}
                     >
-                      {isCurrentPostPlaying ? (
-                        <Pause className="h-4 w-4 fill-current" />
+                      <Bookmark
+                        className={`h-3.5 w-3.5 ${isBookmarked ? "fill-amber-700 text-amber-700" : ""
+                          }`}
+                      />
+                      <span>{isBookmarked ? "Đã lưu" : "Lưu bài"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      title="Sao chép liên kết bài viết"
+                      className="flex items-center gap-1.5 rounded-xl border border-[#EDE5D8] bg-white px-3 py-1.5 text-xs font-semibold text-neutral-600 hover:bg-[#FAF7F0] hover:text-amber-800 transition shadow-2xs cursor-pointer"
+                    >
+                      {isCopied ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                          <span className="text-emerald-700">Đã chép</span>
+                        </>
                       ) : (
-                        <Play className="ml-0.5 h-4 w-4 fill-current" />
+                        <>
+                          <Share2 className="h-3.5 w-3.5" />
+                          <span>Chia sẻ</span>
+                        </>
                       )}
                     </button>
-                    <div>
-                      <h4 className="text-xs font-bold text-amber-950 sm:text-sm">
-                        {isCurrentPostPlaying ? "Đang phát audio..." : "Nghe thuyết giảng / tụng niệm"}
-                      </h4>
-                      <span className="text-[11px] text-amber-800/80">
-                        {displayPost.audio.duration
-                          ? formatTime(displayPost.audio.duration)
-                          : "Audio"}
+                  </div>
+                </div>
+
+                {/* Post Title */}
+                <div>
+                  <h1
+                    className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl leading-snug"
+                    style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                  >
+                    {displayPost.title}
+                  </h1>
+
+                  {/* Author & Meta */}
+                  <div className="mt-3 flex items-center gap-4 text-xs text-neutral-500 flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                      <span className="font-semibold text-neutral-700">
+                        {displayPost.author?.name || "Ban biên tập Phật Pháp"}
+                      </span>
+                    </div>
+
+                    <span className="text-neutral-300">•</span>
+
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5 text-neutral-400" />
+                      <span>
+                        {displayPost.createdAt
+                          ? new Date(displayPost.createdAt).toLocaleDateString("vi-VN")
+                          : "Hằng ngày"}
                       </span>
                     </div>
                   </div>
-                  <Volume2 className="h-5 w-5 text-amber-700 shrink-0 opacity-80" />
                 </div>
-              )}
 
-              {/* Featured Thumbnail (If post has thumbnail) */}
-              {displayPost.thumbnailUrl && (
-                <div className="relative max-h-96 w-full overflow-hidden rounded-2xl border border-amber-900/10 bg-amber-50 shadow-xs">
-                  <img
-                    src={displayPost.thumbnailUrl}
-                    alt={displayPost.title}
-                    className="max-h-96 w-full object-cover object-center"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.display = "none";
-                    }}
+                {/* Audio Player Card (If post has audio) */}
+                {displayPost.audio?.audioUrl && (
+                  <div className="flex items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 shadow-2xs">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={toggleAudio}
+                        className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-amber-600 text-white shadow-xs transition hover:bg-amber-700"
+                      >
+                        {isCurrentPostPlaying ? (
+                          <Pause className="h-4 w-4 fill-current" />
+                        ) : (
+                          <Play className="ml-0.5 h-4 w-4 fill-current" />
+                        )}
+                      </button>
+                      <div>
+                        <h4 className="text-xs font-bold text-amber-950 sm:text-sm">
+                          {isCurrentPostPlaying ? "Đang phát audio..." : "Nghe thuyết giảng / tụng niệm"}
+                        </h4>
+                        <span className="text-[11px] text-amber-800/80">
+                          {displayPost.audio.duration
+                            ? formatTime(displayPost.audio.duration)
+                            : "Audio"}
+                        </span>
+                      </div>
+                    </div>
+                    <Volume2 className="h-5 w-5 text-amber-700 shrink-0 opacity-80" />
+                  </div>
+                )}
+
+                {/* Featured Thumbnail (If post has thumbnail) */}
+                {displayPost.thumbnailUrl && (
+                  <div className="relative max-h-96 w-full overflow-hidden rounded-2xl border border-amber-900/10 bg-amber-50 shadow-xs">
+                    <img
+                      src={displayPost.thumbnailUrl}
+                      alt={displayPost.title}
+                      className="max-h-96 w-full object-cover object-center"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* POST CONTENT: RENDERED VIA PostContentRenderer */}
+                <div className="pt-2">
+                  <PostContentRenderer
+                    content={displayPost.content}
+                    category={displayPost.category || categorySlug}
+                    post={displayPost}
                   />
                 </div>
-              )}
-
-              {/* POST CONTENT: RENDERED VIA PostContentRenderer */}
-              <div className="pt-2">
-                <PostContentRenderer
-                  content={displayPost.content}
-                  category={displayPost.category || categorySlug}
-                  post={displayPost}
-                />
-              </div>
-            </article>
+              </article>
             </>
           )}
         </div>
