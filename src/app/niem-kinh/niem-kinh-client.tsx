@@ -20,12 +20,9 @@ import React, { useMemo, useState } from "react";
 import { useGetNiemKinhPosts } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
 import { DEFAULT_NIEM_KINH_DATA, parseNiemKinhContent } from "@/app/admin/post/types";
-import { isNiemKinh } from "@/app/admin/post/utils/content-type";
 import { MainLayout } from "@/components/layout";
-import { CategorizedPosts, NiemKinhAccordion } from "@/components/post";
+import { NiemKinhAccordion } from "@/components/post";
 import { NiemKinhSkeleton } from "@/components/skeletons";
-import { Button } from "@/components/ui";
-import { NIEM_KINH_ID, NIEM_KINH_SLUG } from "@/constants";
 import { useFavoritesStore, useIsFavorite } from "@/stores";
 
 export const NiemKinhClient: React.FC = () => {

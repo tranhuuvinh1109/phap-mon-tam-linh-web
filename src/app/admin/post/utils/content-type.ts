@@ -8,10 +8,23 @@ import {
   KHAI_THI_ID,
   KHAI_THI_SLUG,
   LIST_CATEGORY_IS_POST_STEP_TYPE,
+  NGOI_NHA_NHO_ID,
+  NGOI_NHA_NHO_SLUG,
   NIEM_KINH_ID,
   NIEM_KINH_SLUG,
+  PHONG_SINH_ID,
+  PHONG_SINH_SLUG,
+  THAP_HUONG_BAN_THO_PHAT_ID,
+  THAP_HUONG_BAN_THO_PHAT_SLUG,
 } from "@/constants";
 import { ContentType } from "@/enums";
+
+const CATEGORY_SLUG_TO_ID_MAP: Record<string, string> = {
+  [NIEM_KINH_SLUG]: NIEM_KINH_ID,
+  [NGOI_NHA_NHO_SLUG]: NGOI_NHA_NHO_ID,
+  [PHONG_SINH_SLUG]: PHONG_SINH_ID,
+  [THAP_HUONG_BAN_THO_PHAT_SLUG]: THAP_HUONG_BAN_THO_PHAT_ID,
+};
 
 /**
  * Maps categoryId to its corresponding ContentType (AUDIO, VIDEO, NORMAL)
@@ -138,7 +151,8 @@ export function isNiemKinh(
 
 /**
  * Checks whether a category is configured as a step-by-step post type.
- * Returns true if it matches Niệm Kinh or any category listed in LIST_CATEGORY_IS_POST_STEP_TYPE.
+ * Returns true strictly if its categoryId is listed in LIST_CATEGORY_IS_POST_STEP_TYPE.
+ * If categoryId is not provided, falls back to resolving slug to ID.
  */
 export function isPostStepType(
   categoryId?: string,
@@ -146,32 +160,39 @@ export function isPostStepType(
   name?: string,
   parentId?: string | null
 ): boolean {
-  if (isNiemKinh(categoryId, slug, name)) {
-    return true;
+  if (
+    !Array.isArray(LIST_CATEGORY_IS_POST_STEP_TYPE) ||
+    LIST_CATEGORY_IS_POST_STEP_TYPE.length === 0
+  ) {
+    return false;
   }
 
-  if (
-    Array.isArray(LIST_CATEGORY_IS_POST_STEP_TYPE) &&
-    LIST_CATEGORY_IS_POST_STEP_TYPE.length > 0
-  ) {
-    const matchCategory = (val?: string | null) => {
-      if (!val) return false;
-      const lower = val.toLowerCase().trim();
-      return LIST_CATEGORY_IS_POST_STEP_TYPE.some((item) => {
-        if (!item) return false;
-        const itemLower = item.toLowerCase().trim();
-        return itemLower === lower || lower.includes(itemLower);
-      });
-    };
+  const stepIds = new Set(
+    LIST_CATEGORY_IS_POST_STEP_TYPE.filter(Boolean).map((id) =>
+      id.toLowerCase().trim()
+    )
+  );
 
-    if (
-      matchCategory(categoryId) ||
-      matchCategory(slug) ||
-      matchCategory(name) ||
-      matchCategory(parentId)
-    ) {
+  // 1. Direct match by categoryId: nếu có categoryId thì chỉ kiểm tra categoryId trong LIST_CATEGORY_IS_POST_STEP_TYPE
+  if (categoryId) {
+    return stepIds.has(categoryId.toLowerCase().trim());
+  }
+
+  // 2. Fallback nếu không có categoryId (chỉ có slug khi chưa load xong category object)
+  if (slug) {
+    const slugLower = slug.toLowerCase().trim();
+    const mappedId = CATEGORY_SLUG_TO_ID_MAP[slugLower];
+    if (mappedId && stepIds.has(mappedId.toLowerCase().trim())) {
       return true;
     }
+    if (stepIds.has(slugLower)) {
+      return true;
+    }
+  }
+
+  // 3. Fallback theo parentId nếu categoryId không có
+  if (parentId && stepIds.has(parentId.toLowerCase().trim())) {
+    return true;
   }
 
   return false;
@@ -180,10 +201,10 @@ export function isPostStepType(
 export function isPostStepTypeCategory(data?: PostItemType | null): boolean {
   if (!data?.category) return false;
   return isPostStepType(
-    data.category.id,
+    data.categoryId || data.category.id,
     data.category.slug,
     data.category.name,
-    data.category.parentId
+    data.category.parentId || data.category.parent?.id
   );
 }
 

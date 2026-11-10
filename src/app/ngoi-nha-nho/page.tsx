@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import React, { Suspense } from "react";
 
 import { CategoryPostListView } from "@/components/post";
-import { DEFAULT_META_IMAGE, NGOI_NHA_NHO_SLUG, createOpenGraphMetadata } from "@/constants";
+import {
+  DEFAULT_META_IMAGE,
+  NGOI_NHA_NHO_ID,
+  NGOI_NHA_NHO_SLUG,
+  createOpenGraphMetadata,
+} from "@/constants";
 
 const TITLE = "Ngôi Nhà Nhỏ | Học cách sống an lành | Phật Pháp";
 const DESCRIPTION =
@@ -28,6 +33,7 @@ export default function NgoiNhaNhoPage() {
       }
     >
       <CategoryPostListView
+        categoryId={NGOI_NHA_NHO_ID}
         categorySlug={NGOI_NHA_NHO_SLUG}
         categoryTitle="Ngôi Nhà Nhỏ"
         categoryDescription="Tổng hợp các bài viết hướng dẫn chi tiết về Ngôi Nhà Nhỏ — phương pháp thù thắng giúp tiêu trừ nghiệp chướng, hóa giải oan kết và tích lũy công đức trên con đường tu tập an lành."

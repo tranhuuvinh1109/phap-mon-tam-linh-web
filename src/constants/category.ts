@@ -8,13 +8,17 @@ export const BACH_THOAI_DEFAULT_THUMBNAIL = '/images/bach-thoai-phat-phap.png';
 
 export const DEFAULT_POST_THUMBNAIL = '/images/lotus-thumb.jpg';
 
-export const NIEM_KINH_ID = '35d8a5b1-34d8-472b-9e5e-2d46da8fe033';
+export const NIEM_KINH_ID = 'e723dd56-cfdc-4b5a-8538-b017384f4d55';
 export const NIEM_KINH_SLUG = 'niem-kinh';
 
 export const NGOI_NHA_NHO_SLUG = 'ngoi-nha-nho';
+export const NGOI_NHA_NHO_ID = '62dfaf2f-24ba-43f2-bdd3-e9ad1d6d1da0';
+
 export const KINH_SACH_SLUG = 'kinh-sach';
 
 export const PHONG_SINH_SLUG = 'phong-sinh';
+export const PHONG_SINH_ID = '6eeab3ea-d8cc-48aa-841b-593b47a0ce77';
+
 export const PHAT_NGUYEN_SLUG = 'phat-nguyen';
 
 export const THAP_HUONG_BAN_THO_PHAT_SLUG = 'thap-huong-ban-tho-phat';
@@ -22,13 +26,13 @@ export const THAP_HUONG_BAN_THO_PHAT_ID = '1416d469-5932-4ad7-9703-78122ae071d7'
 
 /**
  * Categories that allow creating posts with step-by-step content (similar to Niệm Kinh)
- * Can contain category slugs or category IDs.
+ * Stores category UUIDs.
  */
 export const LIST_CATEGORY_IS_POST_STEP_TYPE: string[] = [
-  NIEM_KINH_SLUG,
-  NGOI_NHA_NHO_SLUG,
-  PHONG_SINH_SLUG,
-  THAP_HUONG_BAN_THO_PHAT_SLUG
+  NIEM_KINH_ID,
+  NGOI_NHA_NHO_ID,
+  PHONG_SINH_ID,
+  THAP_HUONG_BAN_THO_PHAT_ID
 ];
 
 /**
