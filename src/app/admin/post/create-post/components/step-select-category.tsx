@@ -14,10 +14,18 @@ import {
 } from "lucide-react";
 import React, { useEffect, useId, useMemo, useState } from "react";
 
-import { useGetCategories, useGetCategoryTree } from "@/api/category";
+import { useGetCategories, useGetCategoryTree, type CategoryItemType } from "@/api/category";
 import { Button } from "@/components/ui";
 import { ContentType } from "@/enums";
 import { getContentTypeByCategory, isNiemKinh, isPostStepType } from "../../utils/content-type";
+
+// Helper to prioritize "Không có chủ đề" at the top of category selection
+const isUncategorizedCategory = (cat?: { name?: string | null; slug?: string | null } | null) => {
+  if (!cat) return false;
+  const name = cat.name?.toLowerCase().trim() || "";
+  const slug = cat.slug?.toLowerCase().trim() || "";
+  return name.includes("không có chủ đề") || slug.includes("khong-co-chu-de");
+};
 
 interface StepSelectCategoryProps {
   selectedCategoryId: string;
@@ -56,14 +64,23 @@ export const StepSelectCategory: React.FC<StepSelectCategoryProps> = ({
 
   // Organize categories into hierarchy (parent/root items with children)
   const organizedCategories = useMemo(() => {
+    let list: CategoryItemType[] = [];
     if (categoryTree && categoryTree.length > 0) {
-      return categoryTree.filter((cat) => !cat.deletedAt);
+      list = categoryTree.filter((cat) => !cat.deletedAt);
+    } else {
+      const rootCats = activeCategories.filter((c) => !c.parentId);
+      list = rootCats.map((root) => ({
+        ...root,
+        children: activeCategories.filter((c) => c.parentId === root.id),
+      }));
     }
-    const rootCats = activeCategories.filter((c) => !c.parentId);
-    return rootCats.map((root) => ({
-      ...root,
-      children: activeCategories.filter((c) => c.parentId === root.id),
-    }));
+    return [...list].sort((a, b) => {
+      const isA = isUncategorizedCategory(a);
+      const isB = isUncategorizedCategory(b);
+      if (isA && !isB) return -1;
+      if (!isA && isB) return 1;
+      return 0;
+    });
   }, [categoryTree, activeCategories]);
 
   // Sync initialCategoryId once categories are available
@@ -88,12 +105,24 @@ export const StepSelectCategory: React.FC<StepSelectCategoryProps> = ({
   }, [organizedCategories, selectedParentId]);
 
   // Available child categories for the currently selected parent
+  // Prioritizing "Không có chủ đề" at the top
   const availableChildren = useMemo(() => {
     if (!selectedParent) return [];
+    let list: CategoryItemType[] = [];
     if (selectedParent.children && selectedParent.children.length > 0) {
-      return selectedParent.children.filter((c) => !c.deletedAt);
+      list = (selectedParent.children as CategoryItemType[]).filter(
+        (c: CategoryItemType) => !c.deletedAt
+      );
+    } else {
+      list = activeCategories.filter((c) => c.parentId === selectedParentId);
     }
-    return activeCategories.filter((c) => c.parentId === selectedParentId);
+    return [...list].sort((a, b) => {
+      const isA = isUncategorizedCategory(a);
+      const isB = isUncategorizedCategory(b);
+      if (isA && !isB) return -1;
+      if (!isA && isB) return 1;
+      return 0;
+    });
   }, [selectedParent, selectedParentId, activeCategories]);
 
   // Selected child category object

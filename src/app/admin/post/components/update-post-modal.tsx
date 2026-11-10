@@ -25,7 +25,7 @@ import {
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
-import { useGetCategories, useGetCategoryTree } from "@/api/category";
+import { useGetCategories, useGetCategoryTree, type CategoryItemType } from "@/api/category";
 import { uploadFile } from "@/api/file";
 import { useGetGroups } from "@/api/group";
 import { useUpdatePost } from "@/api/post";
@@ -71,6 +71,14 @@ interface UpdatePostModalProps {
   onClose: () => void;
   onSuccess?: () => void;
 }
+
+// Helper to identify "Không có chủ đề" category to prioritize it at the top
+const isUncategorizedCategory = (cat?: { name?: string | null; slug?: string | null } | null) => {
+  if (!cat) return false;
+  const name = cat.name?.toLowerCase().trim() || "";
+  const slug = cat.slug?.toLowerCase().trim() || "";
+  return name.includes("không có chủ đề") || slug.includes("khong-co-chu-de");
+};
 
 export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
   post,
@@ -162,27 +170,48 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
     return categories.filter((c) => !c.deletedAt);
   }, [categories]);
 
-  // Organize categories into tree hierarchy
+  // Organize categories into tree hierarchy (prioritizing "Không có chủ đề" if present)
   const organizedCategories = useMemo(() => {
+    let list: CategoryItemType[] = [];
     if (categoryTree && categoryTree.length > 0) {
-      return categoryTree.filter((cat) => !cat.deletedAt);
+      list = categoryTree.filter((cat) => !cat.deletedAt);
+    } else {
+      // Fallback if tree endpoint is loading or returns empty
+      const rootCats = activeCategories.filter((c) => !c.parentId);
+      list = rootCats.map((root) => ({
+        ...root,
+        children: activeCategories.filter((c) => c.parentId === root.id),
+      }));
     }
-    // Fallback if tree endpoint is loading or returns empty
-    const rootCats = activeCategories.filter((c) => !c.parentId);
-    return rootCats.map((root) => ({
-      ...root,
-      children: activeCategories.filter((c) => c.parentId === root.id),
-    }));
+
+    return [...list].sort((a, b) => {
+      const isA = isUncategorizedCategory(a);
+      const isB = isUncategorizedCategory(b);
+      if (isA && !isB) return -1;
+      if (!isA && isB) return 1;
+      return 0;
+    });
   }, [categoryTree, activeCategories]);
 
   // Available child categories for the currently selected parent
+  // Đưa option "Không có chủ đề" lên đầu danh sách để dễ thấy và select
   const availableChildren = useMemo(() => {
     if (!selectedParentId) return [];
     const parent = organizedCategories.find((p) => p.id === selectedParentId);
+    let list: CategoryItemType[] = [];
     if (parent?.children && parent.children.length > 0) {
-      return parent.children.filter((c) => !c.deletedAt);
+      list = (parent.children as CategoryItemType[]).filter((c: CategoryItemType) => !c.deletedAt);
+    } else {
+      list = activeCategories.filter((c) => c.parentId === selectedParentId);
     }
-    return activeCategories.filter((c) => c.parentId === selectedParentId);
+
+    return [...list].sort((a, b) => {
+      const isA = isUncategorizedCategory(a);
+      const isB = isUncategorizedCategory(b);
+      if (isA && !isB) return -1;
+      if (!isA && isB) return 1;
+      return 0;
+    });
   }, [selectedParentId, organizedCategories, activeCategories]);
 
   // Selected parent category object

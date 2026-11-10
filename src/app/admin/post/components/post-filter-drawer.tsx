@@ -197,18 +197,32 @@ export const PostFilterDrawer: React.FC<PostFilterDrawerProps> = ({
   }, [selectedParentId, organizedCategories, allCategories]);
 
   // Available child categories for the selected parent
+  // Prioritize "Không có chủ đề" at the top
   const availableChildren = useMemo(() => {
     if (!selectedParentId) return [];
+    let list: CategoryItemType[] = [];
     if (
       activeParent &&
       activeParent.children &&
       activeParent.children.length > 0
     ) {
-      return activeParent.children.filter((c) => !c.deletedAt);
+      list = activeParent.children.filter((c) => !c.deletedAt);
+    } else {
+      list = allCategories.filter(
+        (c) => !c.deletedAt && c.parentId === selectedParentId
+      );
     }
-    return allCategories.filter(
-      (c) => !c.deletedAt && c.parentId === selectedParentId
-    );
+    return [...list].sort((a, b) => {
+      const isA =
+        a.name?.toLowerCase().includes("không có chủ đề") ||
+        a.slug?.toLowerCase().includes("khong-co-chu-de");
+      const isB =
+        b.name?.toLowerCase().includes("không có chủ đề") ||
+        b.slug?.toLowerCase().includes("khong-co-chu-de");
+      if (isA && !isB) return -1;
+      if (!isA && isB) return 1;
+      return 0;
+    });
   }, [activeParent, selectedParentId, allCategories]);
 
   // Find effective selected category object
