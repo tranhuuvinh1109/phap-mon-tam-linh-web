@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
+import { CountdownCalendarWidget } from "@/components/calendar/countdown-calendar-widget";
 import { cn } from "@/lib/utils";
 
 export interface MainLayoutProps {
@@ -105,15 +106,26 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         />
 
         {/* Dashboard Main Content Area (Outlet slot) */}
-        <main
-          ref={mainRef}
-          id="main-content"
-          className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden"
-        >
-          <div className={cn("mx-auto w-full", maxWidthClass, mainClassName)}>
-            {children}
-          </div>
-        </main>
+        <div className="relative flex flex-1 min-h-0 flex-col">
+          <main
+            ref={mainRef}
+            id="main-content"
+            className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden"
+          >
+            <div className={cn("mx-auto w-full", maxWidthClass, mainClassName)}>
+              {children}
+            </div>
+          </main>
+
+          {/* Floating Countdown Calendar Tear-off Widget at top-right below main header */}
+          {!pathname?.startsWith("/admin") && !pathname?.startsWith("/lich-ngay-le") && (
+            <div className="pointer-events-none absolute top-3 right-4 z-20 sm:top-4 sm:right-6 lg:right-8">
+              <div className="pointer-events-auto">
+                <CountdownCalendarWidget />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

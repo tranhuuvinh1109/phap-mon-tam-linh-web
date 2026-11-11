@@ -10,6 +10,12 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
   { id: "home", label: "Trang chủ", iconName: "Home", href: "/" },
   // { id: "practice", label: "Tu tập", iconName: "Flame", href: "#tu-tap" },
   {
+    id: "lich-ngay-le",
+    label: "Lịch ngày lễ",
+    iconName: "Calendar",
+    href: "/lich-ngay-le",
+  },
+  {
     id: "bach-thoai-phat-phap",
     label: "Bạch thoại Phật pháp",
     iconName: "BookOpen",
