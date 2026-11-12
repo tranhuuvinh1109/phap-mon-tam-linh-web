@@ -21,7 +21,7 @@ import {
   generateMonthCalendarDays,
   getCanChiYear,
 } from '@/lib/vietnamese-lunar';
-import { cn } from '@/lib/utils';
+import { cn, formatImportantDateDescriptionPreview } from '@/lib/utils';
 import { ImportantDateDetailModal } from './important-date-detail-modal';
 import { LunarDayLabel } from './lunar-day-label';
 
@@ -227,8 +227,6 @@ export const ImportantDatesCalendarView: React.FC = () => {
                   {monthDays.map((dayItem) => {
                     const hasEvents = dayItem.events.length > 0;
                     const isSpecialLunar = dayItem.isRam || dayItem.isMung1;
-                    // Highlight golden frame for Mùng 1, ngày 15 âm lịch, or dates with events
-                    const shouldHighlightBox = hasEvents || isSpecialLunar;
 
                     return (
                       <div
@@ -241,20 +239,22 @@ export const ImportantDatesCalendarView: React.FC = () => {
                         className={cn(
                           'group relative flex min-h-[95px] sm:min-h-[125px] lg:min-h-[140px] flex-col p-1.5 transition-all',
                           hasEvents
-                            ? 'cursor-pointer hover:bg-amber-100/50'
+                            ? 'cursor-pointer hover:bg-red-50/60'
                             : 'cursor-default',
                           dayItem.dayOfWeek === 0 && 'bg-amber-50/25',
                           dayItem.dayOfWeek === 6 && 'bg-amber-50/20',
                           dayItem.isToday && 'bg-amber-100/70 ring-2 ring-inset ring-amber-500/80',
                         )}
                       >
-                        {/* Highlighted Golden box around special dates (matching design with rich amber border) */}
+                        {/* Highlight box: Distinct warm crimson-amber for special event days, golden amber for Mùng 1 / 15 */}
                         <div
                           className={cn(
                             'flex flex-1 flex-col rounded-xl p-1 sm:p-1.5 transition-all',
-                            shouldHighlightBox
-                              ? 'border-2 border-amber-500/90 bg-amber-50/50 shadow-2xs ring-1 ring-amber-400/30'
-                              : 'border border-transparent',
+                            hasEvents
+                              ? 'border-2 border-red-500/85 bg-gradient-to-br from-amber-100/90 via-orange-50/90 to-red-100/80 shadow-sm ring-1 ring-red-400/30 group-hover:from-amber-100 group-hover:to-red-100'
+                              : isSpecialLunar
+                                ? 'border-2 border-amber-500/90 bg-amber-50/50 shadow-2xs ring-1 ring-amber-400/30'
+                                : 'border border-transparent',
                           )}
                         >
                           {/* Top Row: Solar Day Number (Left) & Lunar Day (Right) */}
@@ -263,11 +263,13 @@ export const ImportantDatesCalendarView: React.FC = () => {
                             <span
                               className={cn(
                                 'text-sm sm:text-lg font-black leading-none',
-                                dayItem.dayOfWeek === 0
-                                  ? 'text-amber-800'
-                                  : dayItem.dayOfWeek === 6
-                                    ? 'text-amber-900'
-                                    : 'text-neutral-900',
+                                hasEvents
+                                  ? 'text-red-700'
+                                  : dayItem.dayOfWeek === 0
+                                    ? 'text-amber-800'
+                                    : dayItem.dayOfWeek === 6
+                                      ? 'text-amber-900'
+                                      : 'text-neutral-900',
                               )}
                             >
                               {dayItem.solarDay}
@@ -286,8 +288,13 @@ export const ImportantDatesCalendarView: React.FC = () => {
                                 className={cn(
                                   'text-[11px] sm:text-xs font-bold leading-none',
                                   isSpecialLunar
-                                    ? 'inline-block rounded-md bg-amber-500/90 px-1.5 py-0.5 text-white font-extrabold shadow-2xs'
-                                    : 'text-neutral-700',
+                                    ? cn(
+                                        'inline-block rounded-md px-1.5 py-0.5 text-white font-extrabold shadow-2xs',
+                                        hasEvents ? 'bg-red-600/90' : 'bg-amber-500/90',
+                                      )
+                                    : hasEvents
+                                      ? 'text-red-800 font-extrabold'
+                                      : 'text-neutral-700',
                                 )}
                               >
                                 <LunarDayLabel lunarDay={dayItem.lunarDay} />
@@ -300,11 +307,14 @@ export const ImportantDatesCalendarView: React.FC = () => {
                             {dayItem.events.map((evt: any) => (
                               <div
                                 key={evt.id}
-                                className="w-full flex flex-col items-center justify-center rounded-lg p-0.5"
+                                className="w-full flex flex-col items-center justify-center gap-1 rounded-lg p-0.5"
                               >
-                                <LotusLogo size={14} className="opacity-90 shrink-0 text-amber-600" />
+                                <LotusLogo
+                                  size={dayItem.events.length > 1 ? 24 : 32}
+                                  className="shrink-0 text-amber-600 drop-shadow-xs transition-transform duration-200 group-hover:scale-110"
+                                />
                                 <span
-                                  className="line-clamp-2 text-[10px] sm:text-[11px] font-bold leading-tight text-amber-900"
+                                  className="line-clamp-2 text-[10px] sm:text-[11px] font-extrabold leading-tight text-red-800"
                                   title={evt.title}
                                 >
                                   {evt.title}
@@ -405,11 +415,16 @@ export const ImportantDatesCalendarView: React.FC = () => {
                             </span>
                           </div>
 
-                          {event.description && (
-                            <p className="mt-1.5 text-xs text-neutral-600 line-clamp-2">
-                              {event.description}
-                            </p>
-                          )}
+                          {(() => {
+                            const preview = formatImportantDateDescriptionPreview(
+                              event.description
+                            );
+                            return preview ? (
+                              <p className="mt-1.5 text-xs text-neutral-600 line-clamp-2">
+                                {preview}
+                              </p>
+                            ) : null;
+                          })()}
                         </div>
                       </div>
 

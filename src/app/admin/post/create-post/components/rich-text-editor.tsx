@@ -102,6 +102,8 @@ interface RichTextEditorProps {
   placeholder?: string;
   error?: string | null;
   label?: string;
+  labelClassName?: string;
+  required?: boolean;
   hideHeader?: boolean;
   minHeight?: string;
   onPendingImagesChange?: (imagesMap: Map<string, File>) => void;
@@ -143,6 +145,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   placeholder = "Nhập nội dung bài viết tại đây...",
   error,
   label = "Nội dung bài viết",
+  labelClassName = "block text-sm font-semibold text-neutral-800",
+  required = true,
   hideHeader = false,
   minHeight = "220px",
   onPendingImagesChange,
@@ -239,8 +243,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     <div className="space-y-2">
       {!hideHeader && (
         <div className="flex items-center justify-between">
-          <label className="block text-sm font-semibold text-neutral-800">
-            {label} <span className="text-amber-700">*</span>
+          <label className={labelClassName}>
+            {label} {required && <span className="text-amber-700">*</span>}
           </label>
 
           {/* Mode switch */}
@@ -281,7 +285,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         }`}
       >
         {activeTab === "edit" ? (
-          <div className="quill-editor-wrapper bg-white">
+          <div
+            className="quill-editor-wrapper bg-white"
+            style={{ "--quill-min-height": minHeight } as React.CSSProperties}
+          >
             <ReactQuill
               forwardedRef={quillRef}
               theme="snow"
@@ -294,7 +301,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           </div>
         ) : (
           /* Preview Mode */
-          <div className="prose prose-neutral max-h-[480px] min-h-[240px] max-w-none overflow-y-auto bg-white p-5 text-sm text-neutral-900">
+          <div
+            className="prose prose-neutral max-h-[480px] max-w-none overflow-y-auto bg-white p-5 text-sm text-neutral-900"
+            style={{ minHeight }}
+          >
             {value ? (
               <div
                 dangerouslySetInnerHTML={{ __html: value }}
@@ -323,14 +333,14 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         }
         .quill-editor-wrapper .ql-container.ql-snow {
           border: none;
-          min-height: 220px;
+          min-height: var(--quill-min-height, 220px);
           max-height: 480px;
           overflow-y: auto;
           font-family: inherit;
           font-size: 0.875rem;
         }
         .quill-editor-wrapper .ql-editor {
-          min-height: 200px;
+          min-height: var(--quill-min-height, 200px);
           padding: 16px;
           line-height: 1.6;
         }

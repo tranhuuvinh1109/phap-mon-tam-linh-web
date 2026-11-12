@@ -4,6 +4,7 @@ export const API_URL = {
   refreshToken: "/auth/refresh",
   me: "/auth/me",
   categories: "/categories",
+  fileUpload: "/files/upload",
   presignedUploadUrl: "/files/presigned-upload-url",
   posts: "/posts",
   postsPendingCount: "/posts/pending-count",

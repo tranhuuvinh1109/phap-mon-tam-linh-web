@@ -3,6 +3,8 @@
 import React from 'react';
 import { Clock, Moon, Repeat, X } from 'lucide-react';
 import { CalendarDayItem } from '@/api/important-date/important-date.type';
+import { PostContentRenderer } from '@/components/post/post-content-renderer';
+import { parseImportantDateDescription } from '@/lib/utils';
 import { VIETNAMESE_WEEKDAYS } from '@/lib/vietnamese-lunar';
 
 export interface ImportantDateDetailModalProps {
@@ -30,7 +32,7 @@ export const ImportantDateDetailModal: React.FC<ImportantDateDetailModalProps> =
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-lg overflow-hidden rounded-3xl border-2 border-amber-300 bg-white p-6 shadow-2xl"
+        className="relative w-full max-w-2xl overflow-hidden rounded-3xl border-2 border-amber-300 bg-white p-6 shadow-2xl"
       >
         <button
           type="button"
@@ -69,40 +71,78 @@ export const ImportantDateDetailModal: React.FC<ImportantDateDetailModalProps> =
         </div>
 
         {/* Day Events Section */}
-        <div className="mt-6 space-y-4 max-h-[60vh] overflow-y-auto pr-1">
-          {selectedDay.events.map((evt) => (
-            <div
-              key={evt.id}
-              className="rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-50/70 to-white p-4 shadow-xs"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-base font-bold text-neutral-900">
-                  {evt.title}
-                </h3>
+        <div className="mt-6 space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+          {selectedDay.events.map((evt) => {
+            const parsedDesc = parseImportantDateDescription(evt.description);
+            const hasDetailHtml =
+              Boolean(parsedDesc.detailHtml) &&
+              parsedDesc.detailHtml.trim() !== '<p><br></p>';
 
-                {evt.recurrence === 'ANNUALLY' && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
-                    <Repeat className="h-3 w-3" /> Lặp lại hàng năm
-                  </span>
+            return (
+              <div
+                key={evt.id}
+                className="rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-50/70 to-white p-4 shadow-xs"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-base font-bold text-neutral-900">
+                    {evt.title}
+                  </h3>
+
+                  {evt.recurrence === 'ANNUALLY' && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
+                      <Repeat className="h-3 w-3" /> Lặp lại hàng năm
+                    </span>
+                  )}
+                </div>
+
+                {/* Practice Count Badges (optional fields) */}
+                {(parsedDesc.maxRepentancePrayers || parsedDesc.maxLittleHouses) && (
+                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {parsedDesc.maxRepentancePrayers && (
+                      <div className="rounded-xl border border-amber-200/80 bg-white/85 px-3 py-2">
+                        <span className="block text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                          Số biến Lễ Phật Đại Sám Hối Văn được niệm tối đa
+                        </span>
+                        <span className="mt-0.5 block text-xs font-bold text-neutral-900">
+                          {parsedDesc.maxRepentancePrayers}
+                        </span>
+                      </div>
+                    )}
+
+                    {parsedDesc.maxLittleHouses && (
+                      <div className="rounded-xl border border-amber-200/80 bg-white/85 px-3 py-2">
+                        <span className="block text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                          Số lượng Ngôi Nhà Nhỏ có thể đốt
+                        </span>
+                        <span className="mt-0.5 block text-xs font-bold text-neutral-900">
+                          {parsedDesc.maxLittleHouses}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 )}
-              </div>
 
-              {evt.description && (
-                <p className="mt-1.5 text-xs leading-relaxed text-neutral-700 whitespace-pre-line">
-                  {evt.description}
-                </p>
-              )}
+                {/* Rich Text Detail HTML + Images */}
+                {hasDetailHtml && (
+                  <div className="mt-3 text-xs leading-relaxed text-neutral-700">
+                    <PostContentRenderer
+                      content={parsedDesc.detailHtml}
+                      className="text-xs [&_img]:mx-auto [&_img]:max-h-72 [&_img]:rounded-xl [&_img]:object-contain"
+                    />
+                  </div>
+                )}
 
-              <div className="mt-3 flex items-center gap-2 border-t border-amber-200/50 pt-2 text-[11px] text-amber-800">
-                <Clock className="h-3 w-3 text-amber-700" />
-                <span>
-                  {evt.calendarType === 'LUNAR'
-                    ? `Âm lịch: Ngày ${evt.lunarDay}/${evt.lunarMonth}`
-                    : `Dương lịch: Ngày ${evt.solarDay}/${evt.solarMonth}`}
-                </span>
+                <div className="mt-3 flex items-center gap-2 border-t border-amber-200/50 pt-2 text-[11px] text-amber-800">
+                  <Clock className="h-3 w-3 text-amber-700" />
+                  <span>
+                    {evt.calendarType === 'LUNAR'
+                      ? `Âm lịch: Ngày ${evt.lunarDay}/${evt.lunarMonth}`
+                      : `Dương lịch: Ngày ${evt.solarDay}/${evt.solarMonth}`}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Close Action */}
@@ -119,4 +159,3 @@ export const ImportantDateDetailModal: React.FC<ImportantDateDetailModalProps> =
     </div>
   );
 };
-

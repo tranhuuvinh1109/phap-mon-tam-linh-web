@@ -293,122 +293,122 @@ export const AdminImportantDatesView: React.FC = () => {
                 ))}
               </div>
 
-            {/* Days Grid */}
-            <div className="grid grid-cols-7 divide-x divide-y divide-amber-200/80 bg-[#FFFDF9]">
-              {Array.from({ length: paddingEmptyDays }).map((_, index) => (
-                <div
-                  key={`empty-${index}`}
-                  className="min-h-[105px] bg-[#FAF5E8]/40 p-2"
-                />
-              ))}
-
-              {monthDays.map((dayItem) => {
-                const hasEvents = dayItem.events.length > 0;
-                const isSpecialLunar = dayItem.isRam || dayItem.isMung1;
-                // Chỉ highlight viền vàng cho ngày mồng 1, ngày 15 âm lịch hàng tháng hoặc ngày có sự kiện
-                const shouldHighlightBox = hasEvents || isSpecialLunar;
-
-                return (
+              {/* Days Grid */}
+              <div className="grid grid-cols-7 divide-x divide-y divide-amber-200/80 bg-[#FFFDF9]">
+                {Array.from({ length: paddingEmptyDays }).map((_, index) => (
                   <div
-                    key={dayItem.solarDate}
-                    className={cn(
-                      'group relative flex min-h-[105px] sm:min-h-[130px] flex-col p-1.5 transition-all hover:bg-amber-100/50',
-                      dayItem.dayOfWeek === 0 && 'bg-amber-50/25',
-                      dayItem.dayOfWeek === 6 && 'bg-amber-50/20',
-                      dayItem.isToday && 'bg-amber-100/70 ring-2 ring-inset ring-amber-500/80',
-                    )}
-                  >
-                    {/* Highlighted Golden box around special dates */}
+                    key={`empty-${index}`}
+                    className="min-h-[105px] bg-[#FAF5E8]/40 p-2"
+                  />
+                ))}
+
+                {monthDays.map((dayItem) => {
+                  const hasEvents = dayItem.events.length > 0;
+                  const isSpecialLunar = dayItem.isRam || dayItem.isMung1;
+                  // Chỉ highlight viền vàng cho ngày mồng 1, ngày 15 âm lịch hàng tháng hoặc ngày có sự kiện
+                  const shouldHighlightBox = hasEvents || isSpecialLunar;
+
+                  return (
                     <div
+                      key={dayItem.solarDate}
                       className={cn(
-                        'flex flex-1 flex-col rounded-xl p-1 sm:p-1.5 transition-all',
-                        shouldHighlightBox
-                          ? 'border-2 border-amber-500/90 bg-amber-50/50 shadow-2xs ring-1 ring-amber-400/30'
-                          : 'border border-transparent',
+                        'group relative flex min-h-[105px] sm:min-h-[130px] flex-col p-1.5 transition-all hover:bg-amber-100/50',
+                        dayItem.dayOfWeek === 0 && 'bg-amber-50/25',
+                        dayItem.dayOfWeek === 6 && 'bg-amber-50/20',
+                        dayItem.isToday && 'bg-amber-100/70 ring-2 ring-inset ring-amber-500/80',
                       )}
                     >
-                      {/* Top Row: Solar Day Number (Left) & Lunar Day (Right) */}
-                      <div className="flex items-start justify-between gap-1">
-                        <span
-                          className={cn(
-                            'text-sm sm:text-base font-black leading-none',
-                            dayItem.dayOfWeek === 0
-                              ? 'text-amber-800'
-                              : dayItem.dayOfWeek === 6
-                                ? 'text-amber-900'
-                                : 'text-neutral-900',
-                          )}
-                        >
-                          {dayItem.solarDay}
-                        </span>
-
-                        <div className="flex items-center gap-1">
+                      {/* Highlighted Golden box around special dates */}
+                      <div
+                        className={cn(
+                          'flex flex-1 flex-col rounded-xl p-1 sm:p-1.5 transition-all',
+                          shouldHighlightBox
+                            ? 'border-2 border-amber-500/90 bg-amber-50/50 shadow-2xs ring-1 ring-amber-400/30'
+                            : 'border border-transparent',
+                        )}
+                      >
+                        {/* Top Row: Solar Day Number (Left) & Lunar Day (Right) */}
+                        <div className="flex items-start justify-between gap-1">
                           <span
-                            title={
-                              dayItem.isMung1
-                                ? 'Ngày Mùng 1 Âm lịch'
-                                : dayItem.isRam
-                                  ? 'Ngày Rằm (15) Âm lịch'
-                                  : undefined
-                            }
                             className={cn(
-                              'text-[10px] sm:text-xs font-bold leading-none',
-                              isSpecialLunar
-                                ? 'inline-block rounded-md bg-amber-500/90 px-1 py-0.5 text-white font-extrabold shadow-2xs'
-                                : 'text-neutral-700',
+                              'text-sm sm:text-base font-black leading-none',
+                              dayItem.dayOfWeek === 0
+                                ? 'text-amber-800'
+                                : dayItem.dayOfWeek === 6
+                                  ? 'text-amber-900'
+                                  : 'text-neutral-900',
                             )}
                           >
-                            <LunarDayLabel lunarDay={dayItem.lunarDay} />
+                            {dayItem.solarDay}
                           </span>
 
-                          {/* Quick Add Button */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openCreateModal(dayItem);
-                            }}
-                            title="Thêm sự kiện vào ngày này"
-                            className="cursor-pointer opacity-0 group-hover:opacity-100 rounded-md bg-amber-200 p-0.5 text-amber-950 transition hover:bg-amber-300"
-                          >
-                            <Plus className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </div>
+                          <div className="flex items-center gap-1">
+                            <span
+                              title={
+                                dayItem.isMung1
+                                  ? 'Ngày Mùng 1 Âm lịch'
+                                  : dayItem.isRam
+                                    ? 'Ngày Rằm (15) Âm lịch'
+                                    : undefined
+                              }
+                              className={cn(
+                                'text-[10px] sm:text-xs font-bold leading-none',
+                                isSpecialLunar
+                                  ? 'inline-block rounded-md bg-amber-500/90 px-1 py-0.5 text-white font-extrabold shadow-2xs'
+                                  : 'text-neutral-700',
+                              )}
+                            >
+                              <LunarDayLabel lunarDay={dayItem.lunarDay} />
+                            </span>
 
-                      {/* Day Events Badges */}
-                      <div className="mt-1 flex flex-1 flex-col gap-1 overflow-hidden">
-                        {dayItem.events.map((evt: any) => (
-                          <div
-                            key={evt.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditModal(evt);
-                            }}
-                            className="group/evt flex items-center justify-between cursor-pointer rounded-md border-l-2 bg-amber-100/90 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-amber-950 shadow-2xs hover:bg-amber-200 transition"
-                            style={{ borderLeftColor: evt.badgeColor || '#D97706' }}
-                            title={evt.title}
-                          >
-                            <div className="flex items-center gap-1 min-w-0">
-                              <LotusLogo size={12} className="shrink-0 opacity-80 text-amber-700" />
-                              <span className="truncate">{evt.title}</span>
-                            </div>
-                            <Edit2 className="h-2.5 w-2.5 opacity-0 group-hover/evt:opacity-100 ml-1 text-neutral-600 shrink-0" />
+                            {/* Quick Add Button */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openCreateModal(dayItem);
+                              }}
+                              title="Thêm sự kiện vào ngày này"
+                              className="cursor-pointer opacity-0 group-hover:opacity-100 rounded-md bg-amber-200 p-0.5 text-amber-950 transition hover:bg-amber-300"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </button>
                           </div>
-                        ))}
-                      </div>
-
-                      {dayItem.isToday && (
-                        <div className="mt-auto text-right">
-                          <span className="text-[9px] font-extrabold text-amber-800">
-                            Hôm nay
-                          </span>
                         </div>
-                      )}
+
+                        {/* Day Events Badges */}
+                        <div className="mt-1 flex flex-1 flex-col gap-1 overflow-hidden">
+                          {dayItem.events.map((evt: any) => (
+                            <div
+                              key={evt.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditModal(evt);
+                              }}
+                              className="group/evt flex items-center justify-between cursor-pointer rounded-md border-l-2 bg-amber-100/90 px-1.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-amber-950 shadow-2xs hover:bg-amber-200 transition"
+                              style={{ borderLeftColor: evt.badgeColor || '#D97706' }}
+                              title={evt.title}
+                            >
+                              <div className="flex items-center gap-1 min-w-0">
+                                <LotusLogo size={12} className="shrink-0 opacity-80 text-amber-700" />
+                                <span className="truncate">{evt.title}</span>
+                              </div>
+                              <Edit2 className="h-2.5 w-2.5 opacity-0 group-hover/evt:opacity-100 ml-1 text-neutral-600 shrink-0" />
+                            </div>
+                          ))}
+                        </div>
+
+                        {dayItem.isToday && (
+                          <div className="mt-auto text-right">
+                            <span className="text-[9px] font-extrabold text-amber-800">
+                              Hôm nay
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -580,20 +580,29 @@ export const AdminImportantDatesView: React.FC = () => {
       )}
 
       {/* Create / Edit Modal */}
-      <ImportantDateModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEventToEdit(null);
-          setInitialDate(null);
-        }}
-        eventToEdit={eventToEdit}
-        initialDate={initialDate}
-        onSuccess={() => {
-          refetchEvents();
-          refetchList();
-        }}
-      />
+      {isModalOpen && (
+        <ImportantDateModal
+          key={
+            eventToEdit?.id ||
+            (initialDate
+              ? `create-${initialDate.year}-${initialDate.month}-${initialDate.day}`
+              : 'create')
+          }
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEventToEdit(null);
+            setInitialDate(null);
+          }}
+          eventToEdit={eventToEdit}
+          initialDate={initialDate}
+          onSuccess={() => {
+            refetchEvents();
+            refetchList();
+          }}
+          onDelete={(evt) => openDeleteModal(evt)}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       <ImportantDateDeleteModal

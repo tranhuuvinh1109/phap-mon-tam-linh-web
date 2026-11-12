@@ -187,6 +187,9 @@ export const useUpdateImportantDate = (
         queryKey: [QueryKeyEnum.GET_UPCOMING_IMPORTANT_DATE],
       });
       queryClient.invalidateQueries({
+        queryKey: [QueryKeyEnum.GET_IMPORTANT_DATES],
+      });
+      queryClient.invalidateQueries({
         queryKey: [QueryKeyEnum.GET_IMPORTANT_DATES_MONTH],
       });
       queryClient.invalidateQueries({

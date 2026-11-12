@@ -10,9 +10,11 @@ import {
   Repeat,
   Sparkles,
   Sun,
+  Trash2,
   X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { uploadFileViaBackend } from '@/api/file';
 import {
   useCreateImportantDate,
   useUpdateImportantDate,
@@ -23,12 +25,17 @@ import {
   EventStatus,
   ImportantDateItemType,
 } from '@/api/important-date/important-date.type';
+import { RichTextEditor } from '@/app/admin/post/create-post/components/rich-text-editor';
 import {
   convertLunar2Solar,
   convertSolar2Lunar,
   getCanChiYear,
 } from '@/lib/vietnamese-lunar';
-import { cn } from '@/lib/utils';
+import {
+  cn,
+  parseImportantDateDescription,
+  serializeImportantDateDescription,
+} from '@/lib/utils';
 
 interface ImportantDateModalProps {
   isOpen: boolean;
@@ -36,6 +43,7 @@ interface ImportantDateModalProps {
   eventToEdit?: ImportantDateItemType | null;
   initialDate?: { year: number; month: number; day: number } | null;
   onSuccess?: () => void;
+  onDelete?: (event: ImportantDateItemType) => void;
 }
 
 const COLOR_PALETTE = [
@@ -54,46 +62,112 @@ export const ImportantDateModal: React.FC<ImportantDateModalProps> = ({
   eventToEdit,
   initialDate,
   onSuccess,
+  onDelete,
 }) => {
   const isEditing = Boolean(eventToEdit);
   // Lock date inputs when opened from clicking "+" on a specific calendar day
   const isDateLocked = !isEditing && Boolean(initialDate);
 
-  // Form states
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [calendarType, setCalendarType] = useState<CalendarType>('LUNAR');
-  const [isAnnually, setIsAnnually] = useState(true);
-  const [badgeColor, setBadgeColor] = useState('#D97706');
-  const [priority, setPriority] = useState(0);
-  const [status, setStatus] = useState<EventStatus>('PUBLISHED');
+  const initialParsedDesc = useMemo(
+    () => parseImportantDateDescription(eventToEdit?.description),
+    [eventToEdit?.description],
+  );
+
+  const initialDates = useMemo(() => {
+    if (eventToEdit?.solarDay && eventToEdit?.solarMonth && eventToEdit?.solarYear) {
+      return {
+        solarDay: eventToEdit.solarDay,
+        solarMonth: eventToEdit.solarMonth,
+        solarYear: eventToEdit.solarYear,
+        lunarDay: eventToEdit.lunarDay ?? 15,
+        lunarMonth: eventToEdit.lunarMonth ?? 4,
+        lunarYear: eventToEdit.lunarYear ?? eventToEdit.solarYear,
+        isLeapMonth: Boolean(eventToEdit.isLeapMonth),
+      };
+    }
+    if (initialDate) {
+      const l = convertSolar2Lunar(initialDate.day, initialDate.month, initialDate.year);
+      return {
+        solarDay: initialDate.day,
+        solarMonth: initialDate.month,
+        solarYear: initialDate.year,
+        lunarDay: l.day,
+        lunarMonth: l.month,
+        lunarYear: l.year,
+        isLeapMonth: l.isLeapMonth,
+      };
+    }
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    const d = now.getDate();
+    const l = convertSolar2Lunar(d, m, y);
+    return {
+      solarDay: d,
+      solarMonth: m,
+      solarYear: y,
+      lunarDay: l.day,
+      lunarMonth: l.month,
+      lunarYear: l.year,
+      isLeapMonth: l.isLeapMonth,
+    };
+  }, [eventToEdit, initialDate]);
+
+  // Form states (initialized synchronously so RichTextEditor receives initial HTML on first mount)
+  const [title, setTitle] = useState(eventToEdit?.title || '');
+  const [maxRepentancePrayers, setMaxRepentancePrayers] = useState(
+    initialParsedDesc.maxRepentancePrayers,
+  );
+  const [maxLittleHouses, setMaxLittleHouses] = useState(
+    initialParsedDesc.maxLittleHouses,
+  );
+  const [detailHtml, setDetailHtml] = useState(initialParsedDesc.detailHtml);
+  const [pendingEditorImagesMap, setPendingEditorImagesMap] = useState<
+    Map<string, File>
+  >(new Map());
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [calendarType, setCalendarType] = useState<CalendarType>(
+    eventToEdit?.calendarType || 'LUNAR',
+  );
+  const [isAnnually, setIsAnnually] = useState(
+    eventToEdit ? eventToEdit.recurrence === 'ANNUALLY' : true,
+  );
+  const [badgeColor, setBadgeColor] = useState(
+    eventToEdit?.badgeColor || '#D97706',
+  );
+  const [status, setStatus] = useState<EventStatus>(
+    eventToEdit?.status || 'PUBLISHED',
+  );
 
   // Solar Date fields
-  const [solarYear, setSolarYear] = useState(2026);
-  const [solarMonth, setSolarMonth] = useState(11);
-  const [solarDay, setSolarDay] = useState(15);
+  const [solarYear, setSolarYear] = useState(initialDates.solarYear);
+  const [solarMonth, setSolarMonth] = useState(initialDates.solarMonth);
+  const [solarDay, setSolarDay] = useState(initialDates.solarDay);
 
   // Lunar Date fields
-  const [lunarDay, setLunarDay] = useState(15);
-  const [lunarMonth, setLunarMonth] = useState(4);
-  const [lunarYear, setLunarYear] = useState(2026);
-  const [isLeapMonth, setIsLeapMonth] = useState(false);
+  const [lunarDay, setLunarDay] = useState(initialDates.lunarDay);
+  const [lunarMonth, setLunarMonth] = useState(initialDates.lunarMonth);
+  const [lunarYear, setLunarYear] = useState(initialDates.lunarYear);
+  const [isLeapMonth, setIsLeapMonth] = useState(initialDates.isLeapMonth);
 
   const { mutate: createEvent, isPending: isCreating } = useCreateImportantDate();
   const { mutate: updateEvent, isPending: isUpdating } = useUpdateImportantDate();
-  const isSubmitting = isCreating || isUpdating;
+  const isSubmitting = isUploadingImages || isCreating || isUpdating;
 
   // Initialize or reset form values
   useEffect(() => {
     if (!isOpen) return;
 
     if (eventToEdit) {
+      const parsedDesc = parseImportantDateDescription(eventToEdit.description);
       setTitle(eventToEdit.title);
-      setDescription(eventToEdit.description || '');
+      setMaxRepentancePrayers(parsedDesc.maxRepentancePrayers);
+      setMaxLittleHouses(parsedDesc.maxLittleHouses);
+      setDetailHtml(parsedDesc.detailHtml);
+      setPendingEditorImagesMap(new Map());
       setCalendarType(eventToEdit.calendarType);
       setIsAnnually(eventToEdit.recurrence === 'ANNUALLY');
       setBadgeColor(eventToEdit.badgeColor || '#D97706');
-      setPriority(eventToEdit.priority ?? 0);
       setStatus(eventToEdit.status);
 
       if (eventToEdit.solarDay && eventToEdit.solarMonth && eventToEdit.solarYear) {
@@ -110,11 +184,13 @@ export const ImportantDateModal: React.FC<ImportantDateModalProps> = ({
     } else {
       // Create mode
       setTitle('');
-      setDescription('');
+      setMaxRepentancePrayers('');
+      setMaxLittleHouses('');
+      setDetailHtml('');
+      setPendingEditorImagesMap(new Map());
       setCalendarType('LUNAR');
       setIsAnnually(true);
       setBadgeColor('#D97706');
-      setPriority(0);
       setStatus('PUBLISHED');
 
       if (initialDate) {
@@ -178,20 +254,70 @@ export const ImportantDateModal: React.FC<ImportantDateModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const revokePendingImages = () => {
+    pendingEditorImagesMap.forEach((_, blobUrl) => {
+      try {
+        URL.revokeObjectURL(blobUrl);
+      } catch {
+        // Ignore cleanup errors
+      }
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
       toast.error('Vui lòng nhập tên ngày quan trọng');
       return;
     }
 
+    // Upload any locally-inserted editor images via Backend -> Cloudflare R2
+    const blobRegex = /blob:[^\s"'>)]+/g;
+    const activeBlobUrls = Array.from(
+      new Set(detailHtml ? detailHtml.match(blobRegex) || [] : []),
+    );
+
+    let finalDetailHtml = detailHtml;
+    if (activeBlobUrls.length > 0) {
+      setIsUploadingImages(true);
+      try {
+        const uploadPromises = activeBlobUrls.map(async (blobUrl) => {
+          const file = pendingEditorImagesMap.get(blobUrl);
+          if (!file) return null;
+          const res = await uploadFileViaBackend(file, 'image');
+          return { blobUrl, fileUrl: res.url };
+        });
+
+        const uploaded = await Promise.all(uploadPromises);
+        uploaded.forEach((item) => {
+          if (item?.fileUrl) {
+            finalDetailHtml = finalDetailHtml
+              .split(item.blobUrl)
+              .join(item.fileUrl);
+          }
+        });
+      } catch {
+        setIsUploadingImages(false);
+        toast.error('Không thể tải hình ảnh lên máy chủ R2. Vui lòng thử lại.');
+        return;
+      }
+      setIsUploadingImages(false);
+    }
+
+    const serializedDescription = serializeImportantDateDescription({
+      maxRepentancePrayers,
+      maxLittleHouses,
+      detailHtml: finalDetailHtml,
+    });
+
     const payload: CreateImportantDatePayload = {
       title: title.trim(),
-      description: description.trim() || undefined,
+      description: isEditing
+        ? serializedDescription
+        : serializedDescription || undefined,
       calendarType,
       recurrence: isAnnually ? 'ANNUALLY' : 'NONE',
       badgeColor,
-      priority: Number(priority),
       status,
       ...(calendarType === 'GREGORIAN'
         ? {
@@ -213,6 +339,7 @@ export const ImportantDateModal: React.FC<ImportantDateModalProps> = ({
         { id: eventToEdit.id, payload },
         {
           onSuccess: () => {
+            revokePendingImages();
             toast.success(`Đã cập nhật sự kiện "${title.trim()}"`);
             onSuccess?.();
             onClose();
@@ -228,6 +355,7 @@ export const ImportantDateModal: React.FC<ImportantDateModalProps> = ({
     } else {
       createEvent(payload, {
         onSuccess: () => {
+          revokePendingImages();
           toast.success(`Đã tạo ngày quan trọng "${title.trim()}"`);
           onSuccess?.();
           onClose();
@@ -243,8 +371,8 @@ export const ImportantDateModal: React.FC<ImportantDateModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-in fade-in overflow-y-auto">
-      <div className="relative w-full max-w-2xl my-8 overflow-hidden rounded-3xl border border-[#EDE5D8] bg-white p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-in fade-in overflow-y-auto">
+      <div className="relative w-full max-w-3xl my-4 sm:my-8 max-h-[90vh] overflow-y-auto rounded-3xl border border-[#EDE5D8] bg-white p-6 shadow-2xl">
         {/* Close Button */}
         <button
           type="button"
@@ -450,81 +578,117 @@ export const ImportantDateModal: React.FC<ImportantDateModalProps> = ({
             />
           </div>
 
-          {/* Badge Color & Priority */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Badge Color */}
+          <div>
+            <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider">
+              Màu sắc hiển thị
+            </label>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {COLOR_PALETTE.map((c) => (
+                <button
+                  key={c.hex}
+                  type="button"
+                  onClick={() => setBadgeColor(c.hex)}
+                  style={{ backgroundColor: c.hex }}
+                  title={c.name}
+                  className={cn(
+                    'cursor-pointer h-7 w-7 rounded-full transition-transform flex items-center justify-center text-white shadow-xs',
+                    badgeColor === c.hex
+                      ? 'ring-2 ring-offset-2 ring-neutral-800 scale-110'
+                      : 'opacity-80 hover:opacity-100',
+                  )}
+                >
+                  {badgeColor === c.hex && <Check className="h-3.5 w-3.5" />}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Optional Practice Limits (stacked vertically) */}
+          <div className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider">
-                Màu sắc hiển thị
+                Số biến Lễ Phật Đại Sám Hối Văn được niệm tối đa
               </label>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                {COLOR_PALETTE.map((c) => (
-                  <button
-                    key={c.hex}
-                    type="button"
-                    onClick={() => setBadgeColor(c.hex)}
-                    style={{ backgroundColor: c.hex }}
-                    title={c.name}
-                    className={cn(
-                      'cursor-pointer h-7 w-7 rounded-full transition-transform flex items-center justify-center text-white shadow-xs',
-                      badgeColor === c.hex
-                        ? 'ring-2 ring-offset-2 ring-neutral-800 scale-110'
-                        : 'opacity-80 hover:opacity-100',
-                    )}
-                  >
-                    {badgeColor === c.hex && <Check className="h-3.5 w-3.5" />}
-                  </button>
-                ))}
-              </div>
+              <input
+                type="text"
+                value={maxRepentancePrayers}
+                onChange={(e) => setMaxRepentancePrayers(e.target.value)}
+                placeholder="Ví dụ: 21 biến, 27 biến..."
+                className="mt-1.5 w-full rounded-xl border border-[#DCD3C5] bg-[#FAF8F5] px-3.5 py-2.5 text-sm text-neutral-900 transition focus:border-amber-600 focus:bg-white focus:outline-none"
+              />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider">
-                Độ ưu tiên hiển thị (0 - 100)
+                Số lượng Ngôi Nhà Nhỏ có thể đốt
               </label>
               <input
-                type="number"
-                min={0}
-                max={100}
-                value={priority}
-                onChange={(e) => setPriority(Number(e.target.value))}
-                placeholder="Số càng cao càng ưu tiên trên widget"
-                className="mt-1.5 w-full rounded-xl border border-[#DCD3C5] bg-[#FAF8F5] px-3.5 py-2 text-sm text-neutral-900 transition focus:border-amber-600 focus:bg-white focus:outline-none"
+                type="text"
+                value={maxLittleHouses}
+                onChange={(e) => setMaxLittleHouses(e.target.value)}
+                placeholder="Ví dụ: 7 tấm, 21 tấm..."
+                className="mt-1.5 w-full rounded-xl border border-[#DCD3C5] bg-[#FAF8F5] px-3.5 py-2.5 text-sm text-neutral-900 transition focus:border-amber-600 focus:bg-white focus:outline-none"
               />
             </div>
           </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider">
-              Mô tả chi tiết / Ý nghĩa ngày lễ
-            </label>
-            <textarea
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Ghi chú ý nghĩa, hướng dẫn tụng kinh, lễ bái hoặc lịch trình..."
-              className="mt-1.5 w-full rounded-xl border border-[#DCD3C5] bg-[#FAF8F5] px-3.5 py-2.5 text-sm text-neutral-900 transition focus:border-amber-600 focus:bg-white focus:outline-none"
-            />
-          </div>
+          {/* Rich Text Editor: Chi tiết (allows image upload via BE -> R2) */}
+          <RichTextEditor
+            key={`editor-${eventToEdit?.id || 'create'}`}
+            label="Chi tiết"
+            labelClassName="block text-xs font-bold text-neutral-700 uppercase tracking-wider"
+            required={false}
+            minHeight="160px"
+            value={detailHtml}
+            onChange={setDetailHtml}
+            onPendingImagesChange={setPendingEditorImagesMap}
+            placeholder="Nhập mô tả chi tiết, ý nghĩa ngày lễ, hướng dẫn tu tập hoặc chèn hình ảnh..."
+          />
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#EDE5D8]">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="cursor-pointer rounded-xl border border-neutral-300 px-4 py-2 text-xs font-semibold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-50"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-700 to-amber-800 px-5 py-2 text-xs font-bold text-white shadow-sm transition hover:from-amber-800 hover:to-amber-900 active:scale-95 disabled:opacity-50"
-            >
-              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              <span>{isEditing ? 'Lưu thay đổi' : 'Tạo sự kiện'}</span>
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#EDE5D8]">
+            <div>
+              {isEditing && eventToEdit && onDelete && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onDelete(eventToEdit);
+                  }}
+                  disabled={isSubmitting}
+                  className="cursor-pointer inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition hover:bg-red-100 hover:text-red-700 active:scale-95 disabled:opacity-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Xóa sự kiện</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="cursor-pointer rounded-xl border border-neutral-300 px-4 py-2 text-xs font-semibold text-neutral-700 transition hover:bg-neutral-100 disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-700 to-amber-800 px-5 py-2 text-xs font-bold text-white shadow-sm transition hover:from-amber-800 hover:to-amber-900 active:scale-95 disabled:opacity-50"
+              >
+                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                <span>
+                  {isUploadingImages
+                    ? 'Đang tải ảnh...'
+                    : isEditing
+                      ? 'Lưu thay đổi'
+                      : 'Tạo sự kiện'}
+                </span>
+              </button>
+            </div>
           </div>
         </form>
       </div>
