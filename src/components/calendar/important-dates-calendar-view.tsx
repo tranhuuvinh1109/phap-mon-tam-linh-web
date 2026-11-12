@@ -17,23 +17,13 @@ import {
 import { LotusLogo } from '@/components/shared/lotus-logo';
 import {
   ENGLISH_MONTH_NAMES,
-  formatLunarDayLabel,
+  VIETNAMESE_WEEKDAYS,
   generateMonthCalendarDays,
   getCanChiYear,
 } from '@/lib/vietnamese-lunar';
 import { cn } from '@/lib/utils';
 import { ImportantDateDetailModal } from './important-date-detail-modal';
-
-// Weekdays arranged Sunday first with Buddhist Golden Palette
-const WEEKDAYS = [
-  { key: 0, label: 'H SUN', vn: 'Chủ Nhật', isSun: true },
-  { key: 1, label: 'MON', vn: 'Thứ Hai', isWeekday: true },
-  { key: 2, label: 'TUE', vn: 'Thứ Ba', isWeekday: true },
-  { key: 3, label: 'WED', vn: 'Thứ Tư', isWeekday: true },
-  { key: 4, label: 'THU', vn: 'Thứ Năm', isWeekday: true },
-  { key: 5, label: 'FRI', vn: 'Thứ Sáu', isWeekday: true },
-  { key: 6, label: 'SAT', vn: 'SAT', isSat: true },
-];
+import { LunarDayLabel } from './lunar-day-label';
 
 export const ImportantDatesCalendarView: React.FC = () => {
   // Current Vietnam date (Asia/Ho_Chi_Minh)
@@ -204,148 +194,145 @@ export const ImportantDatesCalendarView: React.FC = () => {
 
           {/* VIEW MODE 1: Calendar Grid (Golden Buddhist Theme) */}
           {viewMode === 'grid' && (
-            <div className="relative z-10 mt-3 overflow-hidden rounded-2xl border-2 border-amber-300 bg-[#FFFDF9] shadow-md">
-              {/* Header Row: H SUN | MON | TUE | WED | THU | FRI | SAT in Golden Shades */}
-              <div className="grid grid-cols-7 border-b-2 border-amber-300 text-center text-xs font-black uppercase tracking-wider text-white">
-                {WEEKDAYS.map((wd) => (
-                  <div
-                    key={wd.key}
-                    className={cn(
-                      'py-2.5 sm:py-3 transition-colors',
-                      wd.isSun
-                        ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white'
-                        : wd.isSat
+            <div className="relative z-10 mt-3 overflow-x-auto rounded-2xl border-2 border-amber-300 bg-[#FFFDF9] shadow-md">
+              <div className="min-w-[460px] sm:min-w-0">
+                {/* Header Row: Chủ Nhật -> Thứ Bảy */}
+                <div className="grid grid-cols-7 border-b-2 border-amber-300 text-center text-xs font-black uppercase tracking-wider text-white">
+                  {VIETNAMESE_WEEKDAYS.map((label, index) => (
+                    <div
+                      key={label}
+                      className={cn(
+                        'py-2.5 sm:py-3 transition-colors',
+                        index === 0 || index === 6
                           ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white'
                           : 'bg-gradient-to-r from-amber-500 to-amber-600 text-amber-950 border-r border-amber-400/50',
-                    )}
-                  >
-                    <span className="block text-xs sm:text-sm">{wd.label}</span>
-                    <span className="hidden sm:inline-block text-[10px] font-semibold opacity-90">
-                      {wd.vn}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Day Cells Grid */}
-              <div className="grid grid-cols-7 divide-x divide-y divide-amber-200/80 bg-[#FFFDF9]">
-                {/* Padding cells */}
-                {Array.from({ length: paddingEmptyDays }).map((_, index) => (
-                  <div
-                    key={`pad-${index}`}
-                    className="min-h-[95px] sm:min-h-[125px] lg:min-h-[140px] bg-[#FAF5E8]/40 p-1.5"
-                  />
-                ))}
-
-                {/* Days of the Month */}
-                {monthDays.map((dayItem) => {
-                  const hasEvents = dayItem.events.length > 0;
-                  const isSpecialLunar = dayItem.isRam || dayItem.isMung1;
-                  // Highlight golden frame for Mùng 1, ngày 15 âm lịch, or dates with events
-                  const shouldHighlightBox = hasEvents || isSpecialLunar;
-
-                  return (
-                    <div
-                      key={dayItem.solarDate}
-                      onClick={() => {
-                        if (hasEvents) {
-                          setSelectedDay(dayItem as unknown as CalendarDayItem);
-                        }
-                      }}
-                      className={cn(
-                        'group relative flex min-h-[95px] sm:min-h-[125px] lg:min-h-[140px] flex-col p-1.5 transition-all',
-                        hasEvents
-                          ? 'cursor-pointer hover:bg-amber-100/50'
-                          : 'cursor-default',
-                        dayItem.dayOfWeek === 0 && 'bg-amber-50/25',
-                        dayItem.dayOfWeek === 6 && 'bg-amber-50/20',
-                        dayItem.isToday && 'bg-amber-100/70 ring-2 ring-inset ring-amber-500/80',
                       )}
                     >
-                      {/* Highlighted Golden box around special dates (matching design with rich amber border) */}
+                      <span className="block text-[11px] sm:text-sm">{label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Day Cells Grid */}
+                <div className="grid grid-cols-7 divide-x divide-y divide-amber-200/80 bg-[#FFFDF9]">
+                  {/* Padding cells */}
+                  {Array.from({ length: paddingEmptyDays }).map((_, index) => (
+                    <div
+                      key={`pad-${index}`}
+                      className="min-h-[95px] sm:min-h-[125px] lg:min-h-[140px] bg-[#FAF5E8]/40 p-1.5"
+                    />
+                  ))}
+
+                  {/* Days of the Month */}
+                  {monthDays.map((dayItem) => {
+                    const hasEvents = dayItem.events.length > 0;
+                    const isSpecialLunar = dayItem.isRam || dayItem.isMung1;
+                    // Highlight golden frame for Mùng 1, ngày 15 âm lịch, or dates with events
+                    const shouldHighlightBox = hasEvents || isSpecialLunar;
+
+                    return (
                       <div
+                        key={dayItem.solarDate}
+                        onClick={() => {
+                          if (hasEvents) {
+                            setSelectedDay(dayItem as unknown as CalendarDayItem);
+                          }
+                        }}
                         className={cn(
-                          'flex flex-1 flex-col rounded-xl p-1 sm:p-1.5 transition-all',
-                          shouldHighlightBox
-                            ? 'border-2 border-amber-500/90 bg-amber-50/50 shadow-2xs ring-1 ring-amber-400/30'
-                            : 'border border-transparent',
+                          'group relative flex min-h-[95px] sm:min-h-[125px] lg:min-h-[140px] flex-col p-1.5 transition-all',
+                          hasEvents
+                            ? 'cursor-pointer hover:bg-amber-100/50'
+                            : 'cursor-default',
+                          dayItem.dayOfWeek === 0 && 'bg-amber-50/25',
+                          dayItem.dayOfWeek === 6 && 'bg-amber-50/20',
+                          dayItem.isToday && 'bg-amber-100/70 ring-2 ring-inset ring-amber-500/80',
                         )}
                       >
-                        {/* Top Row: Solar Day Number (Left) & Lunar Day (Right) */}
-                        <div className="flex items-start justify-between gap-1">
-                          {/* Solar Day */}
-                          <span
-                            className={cn(
-                              'text-sm sm:text-lg font-black leading-none',
-                              dayItem.dayOfWeek === 0
-                                ? 'text-amber-800'
-                                : dayItem.dayOfWeek === 6
-                                  ? 'text-amber-900'
-                                  : 'text-neutral-900',
-                            )}
-                          >
-                            {dayItem.solarDay}
-                          </span>
-
-                          {/* Lunar Day Label ("Mùng 1", "Mùng 2", ..., "15") */}
-                          <div className="text-right">
+                        {/* Highlighted Golden box around special dates (matching design with rich amber border) */}
+                        <div
+                          className={cn(
+                            'flex flex-1 flex-col rounded-xl p-1 sm:p-1.5 transition-all',
+                            shouldHighlightBox
+                              ? 'border-2 border-amber-500/90 bg-amber-50/50 shadow-2xs ring-1 ring-amber-400/30'
+                              : 'border border-transparent',
+                          )}
+                        >
+                          {/* Top Row: Solar Day Number (Left) & Lunar Day (Right) */}
+                          <div className="flex items-start justify-between gap-1">
+                            {/* Solar Day */}
                             <span
-                              title={
-                                dayItem.isMung1
-                                  ? 'Ngày Mùng 1 Âm lịch'
-                                  : dayItem.isRam
-                                    ? 'Ngày Rằm (15) Âm lịch'
-                                    : undefined
-                              }
                               className={cn(
-                                'text-[11px] sm:text-xs font-bold leading-none',
-                                isSpecialLunar
-                                  ? 'inline-block rounded-md bg-amber-500/90 px-1.5 py-0.5 text-white font-extrabold shadow-2xs'
-                                  : 'text-neutral-700',
+                                'text-sm sm:text-lg font-black leading-none',
+                                dayItem.dayOfWeek === 0
+                                  ? 'text-amber-800'
+                                  : dayItem.dayOfWeek === 6
+                                    ? 'text-amber-900'
+                                    : 'text-neutral-900',
                               )}
                             >
-                              {formatLunarDayLabel(dayItem.lunarDay)}
+                              {dayItem.solarDay}
                             </span>
-                          </div>
-                        </div>
 
-                        {/* Center / Body: Buddhist Event Badge / Chanting Prayer */}
-                        <div className="mt-1 flex flex-1 flex-col items-center justify-center gap-1 overflow-hidden text-center">
-                          {dayItem.events.map((evt: any) => (
-                            <div
-                              key={evt.id}
-                              className="w-full flex flex-col items-center justify-center rounded-lg p-0.5"
-                            >
-                              <LotusLogo size={14} className="opacity-90 shrink-0 text-amber-600" />
+                            {/* Lunar Day Label ("Mùng 1", "Mùng 2", ..., "15") */}
+                            <div className="text-right">
                               <span
-                                className="line-clamp-2 text-[10px] sm:text-[11px] font-bold leading-tight text-amber-900"
-                                title={evt.title}
+                                title={
+                                  dayItem.isMung1
+                                    ? 'Ngày Mùng 1 Âm lịch'
+                                    : dayItem.isRam
+                                      ? 'Ngày Rằm (15) Âm lịch'
+                                      : undefined
+                                }
+                                className={cn(
+                                  'text-[11px] sm:text-xs font-bold leading-none',
+                                  isSpecialLunar
+                                    ? 'inline-block rounded-md bg-amber-500/90 px-1.5 py-0.5 text-white font-extrabold shadow-2xs'
+                                    : 'text-neutral-700',
+                                )}
                               >
-                                {evt.title}
+                                <LunarDayLabel lunarDay={dayItem.lunarDay} />
                               </span>
                             </div>
-                          ))}
+                          </div>
 
-                          {/* Chanting / Tu tập indicator for chanting days */}
-                          {hasEvents && dayItem.events.some((e: any) => e.category === 'CHANTING_DAY') && (
-                            <div className="mt-0.5 flex items-center justify-center gap-1 text-[10px] font-bold text-amber-900 bg-amber-100/80 px-1 rounded-sm">
-                              <span>🙏 21</span>
+                          {/* Center / Body: Buddhist Event Badge / Chanting Prayer */}
+                          <div className="mt-1 flex flex-1 flex-col items-center justify-center gap-1 overflow-hidden text-center">
+                            {dayItem.events.map((evt: any) => (
+                              <div
+                                key={evt.id}
+                                className="w-full flex flex-col items-center justify-center rounded-lg p-0.5"
+                              >
+                                <LotusLogo size={14} className="opacity-90 shrink-0 text-amber-600" />
+                                <span
+                                  className="line-clamp-2 text-[10px] sm:text-[11px] font-bold leading-tight text-amber-900"
+                                  title={evt.title}
+                                >
+                                  {evt.title}
+                                </span>
+                              </div>
+                            ))}
+
+                            {/* Chanting / Tu tập indicator for chanting days */}
+                            {hasEvents && dayItem.events.some((e: any) => e.category === 'CHANTING_DAY') && (
+                              <div className="mt-0.5 flex items-center justify-center gap-1 text-[10px] font-bold text-amber-900 bg-amber-100/80 px-1 rounded-sm">
+                                <span>🙏 21</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Today flag */}
+                          {dayItem.isToday && (
+                            <div className="mt-auto text-right">
+                              <span className="text-[9px] font-extrabold text-amber-800">
+                                Hôm nay
+                              </span>
                             </div>
                           )}
                         </div>
-
-                        {/* Today flag */}
-                        {dayItem.isToday && (
-                          <div className="mt-auto text-right">
-                            <span className="text-[9px] font-extrabold text-amber-800">
-                              Hôm nay
-                            </span>
-                          </div>
-                        )}
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}

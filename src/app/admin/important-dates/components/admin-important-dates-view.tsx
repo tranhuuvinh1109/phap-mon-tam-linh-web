@@ -29,24 +29,14 @@ import {
 import { LotusLogo } from '@/components/shared/lotus-logo';
 import {
   ENGLISH_MONTH_NAMES,
-  formatLunarDayLabel,
+  VIETNAMESE_WEEKDAYS,
   generateMonthCalendarDays,
   getCanChiYear,
 } from '@/lib/vietnamese-lunar';
+import { LunarDayLabel } from '@/components/calendar/lunar-day-label';
 import { ImportantDateModal } from './important-date-modal';
 import { ImportantDateDeleteModal } from './important-date-delete-modal';
 import { cn } from '@/lib/utils';
-
-// Weekdays arranged Sunday first with Buddhist Golden Palette
-const WEEKDAYS = [
-  { key: 0, label: 'H SUN', vn: 'Chủ Nhật', isSun: true },
-  { key: 1, label: 'MON', vn: 'Thứ Hai', isWeekday: true },
-  { key: 2, label: 'TUE', vn: 'Thứ Ba', isWeekday: true },
-  { key: 3, label: 'WED', vn: 'Thứ Tư', isWeekday: true },
-  { key: 4, label: 'THU', vn: 'Thứ Năm', isWeekday: true },
-  { key: 5, label: 'FRI', vn: 'Thứ Sáu', isWeekday: true },
-  { key: 6, label: 'SAT', vn: 'SAT', isSat: true },
-];
 
 const STATUS_LABELS: Record<EventStatus, { text: string; bg: string }> = {
   PUBLISHED: { text: 'Công khai', bg: 'bg-emerald-100 text-emerald-800' },
@@ -284,28 +274,24 @@ export const AdminImportantDatesView: React.FC = () => {
           </div>
 
           {/* Calendar Grid Container */}
-          <div className="overflow-hidden rounded-2xl border-2 border-amber-300 bg-[#FFFDF9] shadow-md">
-            {/* Weekday Header: H SUN | MON | TUE | WED | THU | FRI | SAT in Golden Theme */}
-            <div className="grid grid-cols-7 border-b-2 border-amber-300 text-center text-xs font-black uppercase tracking-wider text-white">
-              {WEEKDAYS.map((wd) => (
-                <div
-                  key={wd.key}
-                  className={cn(
-                    'py-2.5 sm:py-3 transition-colors',
-                    wd.isSun
-                      ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white'
-                      : wd.isSat
+          <div className="overflow-x-auto rounded-2xl border-2 border-amber-300 bg-[#FFFDF9] shadow-md">
+            <div className="min-w-[450px] sm:min-w-0">
+              {/* Weekday Header: Chủ Nhật -> Thứ Bảy */}
+              <div className="grid grid-cols-7 border-b-2 border-amber-300 text-center text-xs font-black uppercase tracking-wider text-white">
+                {VIETNAMESE_WEEKDAYS.map((label, index) => (
+                  <div
+                    key={label}
+                    className={cn(
+                      'py-2.5 sm:py-3 transition-colors',
+                      index === 0 || index === 6
                         ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white'
                         : 'bg-gradient-to-r from-amber-500 to-amber-600 text-amber-950 border-r border-amber-400/50',
-                  )}
-                >
-                  <span className="block text-xs sm:text-sm">{wd.label}</span>
-                  <span className="hidden sm:inline-block text-[10px] font-semibold opacity-90">
-                    {wd.vn}
-                  </span>
-                </div>
-              ))}
-            </div>
+                    )}
+                  >
+                    <span className="block text-[11px] sm:text-sm">{label}</span>
+                  </div>
+                ))}
+              </div>
 
             {/* Days Grid */}
             <div className="grid grid-cols-7 divide-x divide-y divide-amber-200/80 bg-[#FFFDF9]">
@@ -372,7 +358,7 @@ export const AdminImportantDatesView: React.FC = () => {
                                 : 'text-neutral-700',
                             )}
                           >
-                            {formatLunarDayLabel(dayItem.lunarDay)}
+                            <LunarDayLabel lunarDay={dayItem.lunarDay} />
                           </span>
 
                           {/* Quick Add Button */}
@@ -423,6 +409,7 @@ export const AdminImportantDatesView: React.FC = () => {
                   </div>
                 );
               })}
+              </div>
             </div>
           </div>
         </div>
