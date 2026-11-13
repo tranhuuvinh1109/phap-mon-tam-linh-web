@@ -206,5 +206,5 @@ export const CONTINUE_LISTENING_DATA = {
 export const HERO_BANNER_DATA = {
   quote: "“Pháp môn tâm linh - Quảng Độ Chúng Sanh Hữu Duyên.”",
   author: "",
-  bannerImage: "/images/hero-banner.jpg",
+  bannerImage: "/images/phap-mon-tam-lin-hero-banner.jpg",
 };
