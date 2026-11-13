@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const DEFAULT_META_IMAGE = "/images/hero-banner.jpg";
+export const DEFAULT_META_IMAGE = "/images/phap-mon-tam-lin-hero-banner.jpg";
 
 export const DEFAULT_SITE_TITLE = "Pháp Môn Tâm Linh";
 export const DEFAULT_SITE_DESCRIPTION =

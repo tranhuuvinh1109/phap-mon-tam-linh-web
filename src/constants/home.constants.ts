@@ -10,6 +10,12 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
   { id: "home", label: "Trang chủ", iconName: "Home", href: "/" },
   // { id: "practice", label: "Tu tập", iconName: "Flame", href: "#tu-tap" },
   {
+    id: "lich-ngay-le",
+    label: "Lịch ngày lễ",
+    iconName: "Calendar",
+    href: "/lich-ngay-le",
+  },
+  {
     id: "bach-thoai-phat-phap",
     label: "Bạch thoại Phật pháp",
     iconName: "BookOpen",
@@ -200,5 +206,5 @@ export const CONTINUE_LISTENING_DATA = {
 export const HERO_BANNER_DATA = {
   quote: "“Pháp môn tâm linh - Quảng Độ Chúng Sanh Hữu Duyên.”",
   author: "",
-  bannerImage: "/images/hero-banner.jpg",
+  bannerImage: "/images/phap-mon-tam-lin-hero-banner.jpg",
 };

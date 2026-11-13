@@ -87,3 +87,53 @@ export const uploadFile = async (
     attachment: presigned.attachment,
   };
 };
+
+interface BackendUploadedFileResponse {
+  key: string;
+  url: string;
+  originalName?: string;
+  mimeType?: string;
+  size?: number;
+}
+
+/**
+ * Direct backend upload workflow: POST /files/upload (multipart/form-data) -> BE uploads to R2 -> Return R2 URL & key
+ */
+export const uploadFileViaBackend = async (
+  file: File,
+  folder = "image",
+  onProgress?: (percent: number) => void
+): Promise<UploadFileResult> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (folder) {
+    formData.append("folder", folder);
+  }
+
+  const response = await apiClient.post<
+    BackendUploadedFileResponse | { data: BackendUploadedFileResponse }
+  >(API_URL.fileUpload, formData, {
+    onUploadProgress: (progressEvent) => {
+      if (progressEvent.total) {
+        const percentCompleted = Math.round(
+          (progressEvent.loaded * 100) / progressEvent.total
+        );
+        onProgress?.(percentCompleted);
+      }
+    },
+  });
+
+  const raw = response.data;
+  const uploaded =
+    raw && typeof raw === "object" && "data" in raw
+      ? raw.data
+      : (raw as BackendUploadedFileResponse);
+
+  return {
+    url: uploaded.url,
+    key: uploaded.key,
+    fileName: uploaded.originalName || file.name,
+    fileSize: uploaded.size ?? file.size,
+    mimeType: uploaded.mimeType || file.type || "application/octet-stream",
+  };
+};

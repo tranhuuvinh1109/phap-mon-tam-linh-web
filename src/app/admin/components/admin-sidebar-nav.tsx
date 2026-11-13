@@ -3,6 +3,7 @@
 import {
   BookOpen,
   BookText,
+  Calendar,
   Clock,
   FileText,
   Flame,
@@ -425,6 +426,36 @@ export const AdminSidebarNav: React.FC<AdminSidebarNavProps> = ({
           {isCollapsed && (
             <div className="pointer-events-none absolute left-full ml-3 z-50 hidden group-hover:block whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white shadow-xl animate-in fade-in-0 duration-150">
               Quản lý danh mục
+            </div>
+          )}
+        </Link>
+
+        {/* Quản lý ngày quan trọng */}
+        <Link
+          href="/admin/important-dates"
+          onClick={onItemClick}
+          title={isCollapsed ? "Ngày quan trọng" : undefined}
+          className={`group relative flex items-center rounded-xl text-sm font-medium transition-all ${
+            isCollapsed
+              ? "justify-center p-2.5"
+              : "gap-3.5 px-4 py-2.5"
+          } ${
+            pathname.startsWith("/admin/important-dates")
+              ? "bg-[#F3E8D8] text-[#9C5812] font-semibold shadow-xs"
+              : "text-[#6C6356] hover:bg-[#F8F2E8] hover:text-[#9C5812]"
+          }`}
+        >
+          <Calendar
+            className={`h-4.5 w-4.5 shrink-0 ${
+              pathname.startsWith("/admin/important-dates")
+                ? "text-[#9C5812]"
+                : "text-[#7D7364] group-hover:text-[#9C5812]"
+            }`}
+          />
+          {!isCollapsed && <span>Ngày quan trọng</span>}
+          {isCollapsed && (
+            <div className="pointer-events-none absolute left-full ml-3 z-50 hidden group-hover:block whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-1 text-xs font-semibold text-white shadow-xl animate-in fade-in-0 duration-150">
+              Ngày quan trọng
             </div>
           )}
         </Link>

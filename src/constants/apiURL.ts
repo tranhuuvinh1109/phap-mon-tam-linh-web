@@ -4,6 +4,7 @@ export const API_URL = {
   refreshToken: "/auth/refresh",
   me: "/auth/me",
   categories: "/categories",
+  fileUpload: "/files/upload",
   presignedUploadUrl: "/files/presigned-upload-url",
   posts: "/posts",
   postsPendingCount: "/posts/pending-count",
@@ -30,5 +31,11 @@ export const API_URL = {
   settingById: (id: string) => `/settings/${id}`,
   settingByKey: (key: string) => `/settings/key/${key}`,
   groups: "/groups",
+  importantDates: "/important-dates",
+  importantDatesUpcoming: "/important-dates/upcoming",
+  importantDatesMonth: "/important-dates/month",
+  importantDateById: (id: string) => `/important-dates/${id}`,
+  adminImportantDates: "/admin/important-dates",
+  adminImportantDateById: (id: string) => `/admin/important-dates/${id}`,
 };
 

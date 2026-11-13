@@ -110,9 +110,7 @@ export const BachThoaiClient: React.FC = () => {
       });
     }
 
-    return list.sort((a, b) =>
-      a.name.localeCompare(b.name, "vi", { sensitivity: "base" })
-    );
+    return list.sort((a, b) => a.name.localeCompare(b.name, "vi", { sensitivity: "base" }));
   }, [bachThoaiParent, categories]);
 
   // Resolve matching child category from URL parameter (slug, UUID or name)
@@ -206,9 +204,9 @@ export const BachThoaiClient: React.FC = () => {
     {
       ...(selectedCategoryObj
         ? {
-          category_name: selectedCategoryObj.slug || undefined,
-          categoryId: selectedCategoryObj.id,
-        }
+            category_name: selectedCategoryObj.slug || undefined,
+            categoryId: selectedCategoryObj.id,
+          }
         : { category_name: BACH_THOAI_PHAT_PHAP_SLUG }),
       limit: PAGE_SIZE,
       page: currentPage,
@@ -360,7 +358,7 @@ export const BachThoaiClient: React.FC = () => {
         <div className="relative overflow-hidden rounded-3xl border border-amber-900/10 shadow-sm">
           <div className="relative h-48 w-full sm:h-60">
             <Image
-              src="/images/hero-banner.jpg"
+              src="/images/phap-mon-tam-lin-hero-banner.jpg"
               alt="Bạch thoại Phật pháp"
               fill
               priority
@@ -392,10 +390,11 @@ export const BachThoaiClient: React.FC = () => {
               type="button"
               onClick={() => handleSelectCategory("ALL")}
               title="Tất cả danh mục"
-              className={`flex h-12 sm:h-14 min-w-[120px] max-w-[150px] sm:max-w-[180px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs leading-tight font-semibold transition ${!selectedCategoryObj
-                ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
-                : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
-                }`}
+              className={`flex h-12 max-w-[150px] min-w-[120px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs leading-tight font-semibold transition sm:h-14 sm:max-w-[180px] ${
+                !selectedCategoryObj
+                  ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
+                  : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
+              }`}
             >
               <Sparkles className="h-4 w-4 shrink-0" />
               <span
@@ -414,18 +413,18 @@ export const BachThoaiClient: React.FC = () => {
             {childCategories.map((cat) => {
               const catSlug = cat.slug || cat.id;
               const isSelected =
-                selectedCategoryObj?.id === cat.id ||
-                selectedCategoryObj?.slug === cat.slug;
+                selectedCategoryObj?.id === cat.id || selectedCategoryObj?.slug === cat.slug;
               return (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => handleSelectCategory(catSlug)}
                   title={cat.name}
-                  className={`flex h-12 sm:h-14 min-w-[120px] max-w-[150px] sm:max-w-[180px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs leading-tight font-semibold transition ${isSelected
-                    ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
-                    : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
-                    }`}
+                  className={`flex h-12 max-w-[150px] min-w-[120px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs leading-tight font-semibold transition sm:h-14 sm:max-w-[180px] ${
+                    isSelected
+                      ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
+                      : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
+                  }`}
                 >
                   <FolderTree className="h-4 w-4 shrink-0 opacity-70" />
                   <span
@@ -577,9 +576,7 @@ export const BachThoaiClient: React.FC = () => {
                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-800 shadow-2xs">
                       <FolderTree className="h-4 w-4" />
                     </div>
-                    <h3 className="text-sm font-bold text-neutral-900 sm:text-base">
-                      {catTitle}
-                    </h3>
+                    <h3 className="text-sm font-bold text-neutral-900 sm:text-base">{catTitle}</h3>
                     <span
                       className={`inline-block rounded-md border px-2 py-0.5 text-xs font-semibold ${getCategoryBadgeStyle(
                         catTitle
@@ -592,9 +589,7 @@ export const BachThoaiClient: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      const matchCat = childCategories.find(
-                        (c) => c.name === catTitle
-                      );
+                      const matchCat = childCategories.find((c) => c.name === catTitle);
                       if (matchCat) {
                         handleSelectCategory(matchCat.slug || matchCat.id);
                       }
@@ -608,11 +603,7 @@ export const BachThoaiClient: React.FC = () => {
 
                 <div className="grid grid-cols-1 gap-3.5 sm:gap-4 md:grid-cols-2">
                   {items.map((item) => (
-                    <BachThoaiItem
-                      key={item.id}
-                      item={item}
-                      searchQuery={debouncedSearch}
-                    />
+                    <BachThoaiItem key={item.id} item={item} searchQuery={debouncedSearch} />
                   ))}
                 </div>
               </div>
@@ -647,11 +638,7 @@ export const BachThoaiClient: React.FC = () => {
 
             <div className="grid grid-cols-1 gap-3.5 sm:gap-4 md:grid-cols-2">
               {filteredItems.map((item) => (
-                <BachThoaiItem
-                  key={item.id}
-                  item={item}
-                  searchQuery={debouncedSearch}
-                />
+                <BachThoaiItem key={item.id} item={item} searchQuery={debouncedSearch} />
               ))}
             </div>
           </div>
