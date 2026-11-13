@@ -358,7 +358,7 @@ export const BachThoaiClient: React.FC = () => {
         <div className="relative overflow-hidden rounded-3xl border border-amber-900/10 shadow-sm">
           <div className="relative h-48 w-full sm:h-60">
             <Image
-              src="/images/phap-mon-tam-lin-hero-banner.jpg"
+              src="/images/phap-mon-tam-linh-hero-banner.jpg"
               alt="Bạch thoại Phật pháp"
               fill
               priority

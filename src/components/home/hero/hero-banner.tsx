@@ -10,7 +10,7 @@ interface HeroBannerProps {
 export const HeroBanner: React.FC<HeroBannerProps> = ({
   quote = "“Pháp môn tâm linh - Quảng Độ Chúng Sanh Hữu Duyên.”",
   author = "",
-  bannerImage = "/images/phap-mon-tam-lin-hero-banner.jpg",
+  bannerImage = "/images/phap-mon-tam-linh-hero-banner.jpg",
 }) => {
   return (
     <section className="relative overflow-hidden rounded-2xl border border-[#EBE2D4]/60 shadow-sm sm:rounded-3xl">
