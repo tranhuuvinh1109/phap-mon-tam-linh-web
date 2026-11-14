@@ -11,7 +11,7 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
   // { id: "practice", label: "Tu tập", iconName: "Flame", href: "#tu-tap" },
   {
     id: "lich-ngay-le",
-    label: "Lịch ngày lễ",
+    label: "Lịch ngày vía",
     iconName: "Calendar",
     href: "/lich-ngay-le",
   },

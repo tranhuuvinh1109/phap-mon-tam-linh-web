@@ -2,16 +2,32 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Calendar, ChevronRight, ChevronUp, Moon, Sparkles } from 'lucide-react';
+import {
+  BookOpen,
+  Calendar,
+  ChevronRight,
+  ChevronUp,
+  Flame,
+  Moon,
+  Sparkles,
+} from 'lucide-react';
 import { useGetUpcomingImportantDate } from '@/api/important-date';
 import {
   VIETNAMESE_WEEKDAYS,
   convertSolar2Lunar,
   formatLunarDate,
 } from '@/lib/vietnamese-lunar';
-import { cn } from '@/lib/utils';
+import { cn, parseImportantDateDescription } from '@/lib/utils';
 
 const STORAGE_KEY = 'countdown_calendar_widget_collapsed';
+
+const formatPracticeText = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/Lễ Phật Đại Sám Hối Văn/gi, 'LPĐSHV')
+    .replace(/Ngôi Nhà Nhỏ/gi, 'NNN')
+    .replace(/ngôi nhà nhỏ/gi, 'NNN');
+};
 
 export interface CountdownCalendarWidgetProps {
   className?: string;
@@ -82,6 +98,32 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
   const weekdayName = VIETNAMESE_WEEKDAYS[dayOfWeek] ?? '';
   const isSunday = dayOfWeek === 0;
 
+  const practiceInfo = useMemo(() => {
+    if (!upcomingData) return null;
+    const events = [
+      upcomingData.event,
+      ...(upcomingData.coOccurringEvents || []),
+    ].filter(Boolean);
+
+    let maxRepentancePrayers = '';
+    let maxLittleHouses = '';
+
+    for (const evt of events) {
+      if (evt?.description) {
+        const parsed = parseImportantDateDescription(evt.description);
+        if (!maxRepentancePrayers && parsed.maxRepentancePrayers) {
+          maxRepentancePrayers = parsed.maxRepentancePrayers.trim();
+        }
+        if (!maxLittleHouses && parsed.maxLittleHouses) {
+          maxLittleHouses = parsed.maxLittleHouses.trim();
+        }
+      }
+    }
+
+    if (!maxRepentancePrayers && !maxLittleHouses) return null;
+    return { maxRepentancePrayers, maxLittleHouses };
+  }, [upcomingData]);
+
   // Notification-style Calendar icon with red badge when collapsed
   if (isCollapsed) {
     const badgeCount = upcomingData?.event ? upcomingData.totalEventsOnDate : null;
@@ -93,7 +135,15 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
         aria-label="Mở rộng lịch đếm ngược"
         title={
           upcomingData?.event
-            ? `${eventTitle} (${countdownText}) - Bấm để mở tờ lịch`
+            ? `${eventTitle} (${countdownText})${
+                practiceInfo?.maxRepentancePrayers
+                  ? ` • LPĐSHV: ${formatPracticeText(practiceInfo.maxRepentancePrayers)}`
+                  : ''
+              }${
+                practiceInfo?.maxLittleHouses
+                  ? ` • NNN: ${formatPracticeText(practiceInfo.maxLittleHouses)}`
+                  : ''
+              } - Bấm để mở tờ lịch`
             : 'Bấm để mở lịch đếm ngược'
         }
         className={cn(
@@ -123,7 +173,7 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
   return (
     <div
       className={cn(
-        'group relative block w-[134px] sm:w-[154px] select-none transition-all duration-300 hover:-translate-y-1',
+        'group relative block w-[214px] sm:w-[236px] select-none transition-all duration-300 hover:-translate-y-0.5',
         className,
       )}
     >
@@ -133,9 +183,9 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
         onClick={() => toggleCollapsed(true)}
         aria-label="Thu gọn lịch đếm ngược"
         title="Thu gọn"
-        className="cursor-pointer absolute -top-2 -right-2 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-amber-300 bg-white text-amber-900 shadow-md transition-all hover:scale-110 hover:bg-amber-50 hover:text-amber-950 active:scale-95"
+        className="cursor-pointer absolute -top-2 -right-2 z-20 flex h-5.5 w-5.5 items-center justify-center rounded-full border border-amber-300 bg-white text-amber-900 shadow-md transition-all hover:scale-110 hover:bg-amber-50 hover:text-amber-950 active:scale-95"
       >
-        <ChevronUp className="h-3.5 w-3.5" />
+        <ChevronUp className="h-3 w-3" />
       </button>
 
       <Link
@@ -143,96 +193,121 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
         title="Bấm để xem Lịch ngày lễ & Âm lịch chi tiết"
         className="block"
       >
-        {/* Floating Tear-Off Calendar Block */}
+        {/* Floating Tear-Off Calendar Card */}
         <div className="relative">
-          {/* Main Front Calendar Leaf */}
-          <div className="relative z-10 overflow-hidden rounded-xl border border-amber-300/90 bg-gradient-to-b from-[#FFFDF9] via-[#FCF6E8] to-[#F6E8CC] shadow-[0_18px_36px_-8px_rgba(120,53,15,0.32),0_8px_16px_-6px_rgba(120,53,15,0.20)] transition-shadow duration-300 group-hover:shadow-[0_26px_46px_-8px_rgba(120,53,15,0.42),0_12px_20px_-6px_rgba(120,53,15,0.25)]">
-            {/* Top Tear-Off Binding Bar (Gáy lịch) with Ring Holes */}
-            <div className="relative bg-gradient-to-b from-amber-700 via-amber-800 to-amber-900 px-2.5 pt-3 pb-2 text-center text-white">
-              {/* Two Punched Binding Ring Holes */}
-              <div className="pointer-events-none absolute top-1.5 inset-x-3.5 flex items-center justify-between">
-                <span className="h-2 w-2 rounded-full border border-amber-950/60 bg-[#FAF7F0] shadow-inner" />
-                <span className="h-2 w-2 rounded-full border border-amber-950/60 bg-[#FAF7F0] shadow-inner" />
-              </div>
+          {/* Main Front Card */}
+          <div className="relative z-10 overflow-hidden rounded-2xl border border-amber-300/90 bg-gradient-to-b from-[#FFFDF9] via-[#FCF6E8] to-[#F6E8CC] p-2.5 sm:p-3 shadow-[0_12px_24px_-6px_rgba(120,53,15,0.28),0_4px_10px_-4px_rgba(120,53,15,0.16)] transition-shadow duration-300 group-hover:shadow-[0_18px_32px_-6px_rgba(120,53,15,0.36),0_6px_14px_-4px_rgba(120,53,15,0.20)]">
+            {/* Top Row: Left Calendar Tile + Right Event Info */}
+            <div className="flex items-center gap-2.5">
+              {/* Left Mini Tear-Off Date Tile */}
+              <div className="relative flex h-[64px] w-[54px] sm:h-[68px] sm:w-[58px] shrink-0 flex-col items-center justify-between overflow-hidden rounded-xl border border-amber-300/90 bg-gradient-to-b from-[#FFFDF9] to-[#FAF1DE] shadow-2xs">
+                {/* Binding header bar */}
+                <div className="relative w-full bg-gradient-to-r from-amber-700 via-amber-800 to-amber-900 py-0.5 text-center text-[8.5px] font-extrabold uppercase tracking-wider text-amber-100 leading-tight">
+                  <span className="pointer-events-none absolute top-1 left-1.5 h-1 w-1 rounded-full bg-[#FAF7F0] opacity-80" />
+                  <span className="pointer-events-none absolute top-1 right-1.5 h-1 w-1 rounded-full bg-[#FAF7F0] opacity-80" />
+                  <span>T.{solarMonth}</span>
+                </div>
 
-              <div className="mt-0.5 flex items-center justify-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-amber-100">
-                <span>Tháng {solarMonth}</span>
-                <span className="text-amber-300/80">•</span>
-                <span>{solarYear}</span>
-              </div>
-            </div>
+                {/* Perforated tear line */}
+                <div className="w-full border-b border-dashed border-amber-300/70" />
 
-            {/* Perforated Tear-Off Line */}
-            <div className="border-b border-dashed border-amber-400/80 bg-amber-100/40" />
-
-            {/* Calendar Sheet Body */}
-            <div className="flex flex-col items-center px-2.5 pt-2.5 pb-3 text-center sm:px-3 sm:pt-3 sm:pb-3.5">
-              {/* Weekday */}
-              <span
-                className={cn(
-                  'text-[10px] font-extrabold uppercase tracking-widest',
-                  isSunday ? 'text-red-700' : 'text-amber-800',
-                )}
-              >
-                {weekdayName}
-              </span>
-
-              {/* Prominent Centered Solar Day Number */}
-              <div
-                className={cn(
-                  'mt-0.5 font-serif text-4xl sm:text-[44px] font-black leading-none tracking-tight',
-                  isSunday ? 'text-red-700' : 'text-amber-950',
-                )}
-              >
-                {String(solarDay).padStart(2, '0')}
-              </div>
-
-              {/* Lunar Date Pill */}
-              <div className="mt-1.5 inline-flex max-w-full items-center justify-center gap-1 rounded-full border border-amber-200/80 bg-amber-100/85 px-2 py-0.5 text-center text-[10px] font-bold leading-tight text-amber-900">
-                <Moon className="h-2.5 w-2.5 shrink-0 fill-amber-500/30 text-amber-600" />
-                <span>{lunarFormatted}</span>
-              </div>
-
-              {/* Hairline Divider */}
-              <div className="my-2.5 h-px w-full bg-gradient-to-r from-transparent via-amber-300/90 to-transparent" />
-
-              {/* Upcoming Event Title */}
-              <div className="line-clamp-2 min-h-[30px] text-[11px] sm:text-xs font-bold leading-snug text-neutral-900 transition-colors group-hover:text-amber-800">
-                {eventTitle}
-              </div>
-
-              {/* Countdown Badge & Co-occurring Events */}
-              <div className="mt-2 flex w-full flex-col items-center gap-1">
-                <span
+                {/* Solar day number */}
+                <div
                   className={cn(
-                    'inline-flex max-w-full items-center justify-center gap-1 rounded-full px-2.5 py-0.5 text-center text-[10px] font-bold leading-tight tracking-wide shadow-2xs',
-                    isToday
-                      ? 'animate-pulse bg-amber-600 text-white'
-                      : 'border border-amber-300/90 bg-amber-200/85 text-amber-950',
+                    'my-auto font-serif text-2xl sm:text-[26px] font-black leading-none',
+                    isSunday ? 'text-red-700' : 'text-amber-950',
                   )}
                 >
-                  <Sparkles className="h-2.5 w-2.5 shrink-0" />
-                  <span>{countdownText}</span>
-                </span>
+                  {String(solarDay).padStart(2, '0')}
+                </div>
 
-                {coOccurringCount > 0 && (
-                  <span className="text-[9px] font-semibold text-neutral-500">
-                    +{coOccurringCount} sự kiện khác
-                  </span>
-                )}
+                {/* Lunar date pill at bottom */}
+                <div className="w-full bg-amber-100/90 py-0.5 text-center text-[7.5px] sm:text-[8px] font-bold text-amber-900 leading-none truncate px-0.5">
+                  {lunarFormatted}
+                </div>
               </div>
 
-              {/* Subtle View Calendar Cue */}
-              <div className="mt-2 flex items-center justify-center gap-0.5 text-[10px] font-semibold text-amber-800/80 transition-colors group-hover:text-amber-950">
-                <span>Xem lịch</span>
-                <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+              {/* Right Event Info Column */}
+              <div className="flex min-w-0 flex-1 flex-col justify-between h-[64px] sm:h-[68px]">
+                {/* Weekday & Countdown Pill */}
+                <div className="flex items-center justify-between gap-1">
+                  <span
+                    className={cn(
+                      'text-[9.5px] font-extrabold uppercase tracking-wider truncate',
+                      isSunday ? 'text-red-700' : 'text-amber-800',
+                    )}
+                  >
+                    {weekdayName}
+                  </span>
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[8.5px] font-bold leading-none tracking-tight shadow-2xs shrink-0',
+                      isToday
+                        ? 'animate-pulse bg-amber-600 text-white'
+                        : 'border border-amber-300/80 bg-amber-200/90 text-amber-950',
+                    )}
+                  >
+                    <Sparkles className="h-2 w-2 shrink-0" />
+                    <span>{countdownText}</span>
+                  </span>
+                </div>
+
+                {/* Event Title */}
+                <div className="line-clamp-2 text-[11px] sm:text-xs font-bold leading-tight text-neutral-900 transition-colors group-hover:text-amber-800 my-auto">
+                  {eventTitle}
+                </div>
+
+                {/* Co-occurring count & View calendar link */}
+                <div className="flex items-center justify-between text-[9px] text-amber-800/80">
+                  {coOccurringCount > 0 ? (
+                    <span className="font-semibold text-neutral-500">
+                      +{coOccurringCount} sự kiện khác
+                    </span>
+                  ) : (
+                    <span className="text-[8.5px] text-neutral-400">
+                      Năm {solarYear}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-0.5 font-bold text-amber-800 group-hover:text-amber-950">
+                    <span>Xem lịch</span>
+                    <ChevronRight className="h-2.5 w-2.5 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </div>
               </div>
             </div>
+
+            {/* Bottom Row: Practice Guidance Limits (LPĐSHV & NNN) */}
+            {practiceInfo && (practiceInfo.maxRepentancePrayers || practiceInfo.maxLittleHouses) && (
+              <div className="mt-2 pt-1.5 border-t border-amber-300/70 space-y-0.5 text-left">
+                {practiceInfo.maxRepentancePrayers && (
+                  <div className="flex items-baseline gap-1.5 text-[9.5px] sm:text-[10px] leading-tight">
+                    <BookOpen className="h-2.5 w-2.5 shrink-0 text-amber-700 self-center" />
+                    <span className="font-semibold text-amber-900/90 shrink-0">
+                      LPĐSHV tối đa:
+                    </span>
+                    <span className="font-extrabold text-red-600">
+                      {formatPracticeText(practiceInfo.maxRepentancePrayers)}
+                    </span>
+                  </div>
+                )}
+
+                {practiceInfo.maxLittleHouses && (
+                  <div className="flex items-baseline gap-1.5 text-[9px] sm:text-[9.5px] leading-tight">
+                    <Flame className="h-2.5 w-2.5 shrink-0 text-orange-600 self-center" />
+                    <div className="min-w-0 flex-1">
+                      <span className="font-semibold text-amber-900/90">Hóa đốt NNN: </span>
+                      <span className="font-bold text-neutral-800">
+                        {formatPracticeText(practiceInfo.maxLittleHouses)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Stacked Underlying Calendar Sheets */}
-          <div className="mx-1.5 h-1.5 rounded-b-lg border-x border-b border-amber-300/90 bg-[#EFE1C6] shadow-xs" />
-          <div className="mx-3 h-1 rounded-b-md border-x border-b border-amber-300/75 bg-[#E5D2AF]" />
+          {/* Stacked Underlying Calendar Sheet for 3D effect */}
+          <div className="mx-2 h-1 rounded-b-md border-x border-b border-amber-300/80 bg-[#EFE1C6] shadow-2xs" />
         </div>
       </Link>
     </div>
