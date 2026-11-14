@@ -29,6 +29,27 @@ const formatPracticeText = (text: string): string => {
     .replace(/ngôi nhà nhỏ/gi, 'NNN');
 };
 
+const renderWithHighlightedNumbers = (text: string) => {
+  if (!text) return null;
+  const formatted = formatPracticeText(text);
+  const parts = formatted.split(/(\d+)/g);
+
+  return (
+    <span className="font-bold text-neutral-800">
+      {parts.map((part, index) => {
+        if (/^\d+$/.test(part)) {
+          return (
+            <span key={index} className="font-black text-red-600">
+              {part}
+            </span>
+          );
+        }
+        return <React.Fragment key={index}>{part}</React.Fragment>;
+      })}
+    </span>
+  );
+};
+
 export interface CountdownCalendarWidgetProps {
   className?: string;
   variant?: 'card' | 'compact';
@@ -135,15 +156,13 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
         aria-label="Mở rộng lịch đếm ngược"
         title={
           upcomingData?.event
-            ? `${eventTitle} (${countdownText})${
-                practiceInfo?.maxRepentancePrayers
-                  ? ` • LPĐSHV: ${formatPracticeText(practiceInfo.maxRepentancePrayers)}`
-                  : ''
-              }${
-                practiceInfo?.maxLittleHouses
-                  ? ` • NNN: ${formatPracticeText(practiceInfo.maxLittleHouses)}`
-                  : ''
-              } - Bấm để mở tờ lịch`
+            ? `${eventTitle} (${countdownText})${practiceInfo?.maxRepentancePrayers
+              ? ` • LPĐSHV: ${formatPracticeText(practiceInfo.maxRepentancePrayers)}`
+              : ''
+            }${practiceInfo?.maxLittleHouses
+              ? ` • NNN: ${formatPracticeText(practiceInfo.maxLittleHouses)}`
+              : ''
+            } - Bấm để mở tờ lịch`
             : 'Bấm để mở lịch đếm ngược'
         }
         className={cn(
@@ -241,7 +260,7 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
                   </span>
                   <span
                     className={cn(
-                      'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[8.5px] font-bold leading-none tracking-tight shadow-2xs shrink-0',
+                      'hidden sm:inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[8.5px] font-bold leading-none tracking-tight shadow-2xs shrink-0',
                       isToday
                         ? 'animate-pulse bg-amber-600 text-white'
                         : 'border border-amber-300/80 bg-amber-200/90 text-amber-950',
@@ -264,9 +283,20 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
                       +{coOccurringCount} sự kiện khác
                     </span>
                   ) : (
-                    <span className="text-[8.5px] text-neutral-400">
-                      Năm {solarYear}
-                    </span>
+                    <>
+                      <span className="hidden sm:inline text-[8.5px] text-neutral-400">
+                        Năm {solarYear}
+                      </span>
+                      <span
+                        className={cn(
+                          'sm:hidden inline-flex items-center gap-0.5 text-[8.5px] font-bold truncate',
+                          isToday ? 'text-amber-700' : 'text-amber-900',
+                        )}
+                      >
+                        <Sparkles className="h-2 w-2 shrink-0 text-amber-600" />
+                        <span>{countdownText}</span>
+                      </span>
+                    </>
                   )}
                   <span className="inline-flex items-center gap-0.5 font-bold text-amber-800 group-hover:text-amber-950">
                     <span>Xem lịch</span>
@@ -285,9 +315,7 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
                     <span className="font-semibold text-amber-900/90 shrink-0">
                       LPĐSHV tối đa:
                     </span>
-                    <span className="font-extrabold text-red-600">
-                      {formatPracticeText(practiceInfo.maxRepentancePrayers)}
-                    </span>
+                    {renderWithHighlightedNumbers(practiceInfo.maxRepentancePrayers)}
                   </div>
                 )}
 
@@ -295,10 +323,8 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
                   <div className="flex items-baseline gap-1.5 text-[9px] sm:text-[9.5px] leading-tight">
                     <Flame className="h-2.5 w-2.5 shrink-0 text-orange-600 self-center" />
                     <div className="min-w-0 flex-1">
-                      <span className="font-semibold text-amber-900/90">Hóa đốt NNN: </span>
-                      <span className="font-bold text-neutral-800">
-                        {formatPracticeText(practiceInfo.maxLittleHouses)}
-                      </span>
+                      <span className="font-semibold text-amber-900/90">Đốt NNN: </span>
+                      {renderWithHighlightedNumbers(practiceInfo.maxLittleHouses)}
                     </div>
                   </div>
                 )}
