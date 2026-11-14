@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Clock, Moon, Repeat, X } from 'lucide-react';
+import { AlertCircle, Clock, Moon, Repeat, X } from 'lucide-react';
 import { CalendarDayItem } from '@/api/important-date/important-date.type';
 import { PostContentRenderer } from '@/components/post/post-content-renderer';
 import { parseImportantDateDescription } from '@/lib/utils';
@@ -143,6 +143,44 @@ export const ImportantDateDetailModal: React.FC<ImportantDateDetailModalProps> =
               </div>
             );
           })}
+
+          {/* Practice Guidance Note / Lưu ý */}
+          <div className="rounded-2xl border border-amber-300/80 bg-gradient-to-br from-amber-50/80 via-white to-orange-50/30 p-4 shadow-2xs">
+            <div className="mb-2.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-950">
+              <AlertCircle className="h-4 w-4 shrink-0 text-amber-700" />
+              <span>Lưu ý:</span>
+            </div>
+
+            <div className="space-y-2.5 text-xs">
+              <div className="flex items-start gap-2.5">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200/90 text-[11px] font-bold text-amber-900">
+                  1
+                </span>
+                <div className="leading-relaxed">
+                  <div className="font-bold text-red-600">
+                    Các SH chưa bắt đầu niệm NNN:
+                  </div>
+                  <div className="text-neutral-700 text-base">
+                    Chỉ được niệm <span className="font-bold text-red-600">1</span> biến LPĐSHV để không bị kích hoạt nghiệp chướng.
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200/90 text-[11px] font-bold text-amber-900">
+                  2
+                </span>
+                <div className="leading-relaxed">
+                  <div className="font-bold text-red-600">
+                    Thai phụ, sản phụ ở cữ, trẻ em từ 5-12 tuổi:
+                  </div>
+                  <div className="text-neutral-700 text-base">
+                    Không niệm quá <span className="font-bold text-red-600">7</span> biến LPĐSHV
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Close Action */}
