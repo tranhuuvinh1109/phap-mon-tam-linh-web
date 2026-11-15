@@ -166,11 +166,11 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
             : 'Bấm để mở lịch đếm ngược'
         }
         className={cn(
-          'group relative flex h-11 w-11 sm:h-12 sm:w-12 cursor-pointer items-center justify-center rounded-2xl border border-amber-300/90 bg-gradient-to-b from-[#FFFDF9] via-[#FCF6E8] to-[#F6E8CC] text-amber-800 shadow-[0_14px_28px_-6px_rgba(120,53,15,0.34),0_6px_12px_-4px_rgba(120,53,15,0.20)] transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400 hover:text-amber-950 hover:shadow-[0_18px_34px_-6px_rgba(120,53,15,0.42)] active:scale-95',
+          'group relative flex h-11 w-11 lg:h-12 lg:w-12 cursor-pointer items-center justify-center rounded-2xl border border-amber-300/90 bg-gradient-to-b from-[#FFFDF9] via-[#FCF6E8] to-[#F6E8CC] text-amber-800 shadow-[0_14px_28px_-6px_rgba(120,53,15,0.34),0_6px_12px_-4px_rgba(120,53,15,0.20)] transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400 hover:text-amber-950 hover:shadow-[0_18px_34px_-6px_rgba(120,53,15,0.42)] active:scale-95',
           className,
         )}
       >
-        <Calendar className="h-5 w-5 sm:h-5.5 sm:w-5.5 transition-transform duration-300 group-hover:scale-110" />
+        <Calendar className="h-5 w-5 lg:h-5.5 lg:w-5.5 transition-transform duration-300 group-hover:scale-110" />
 
         {/* Red Notification Badge */}
         <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center">
@@ -192,7 +192,7 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
   return (
     <div
       className={cn(
-        'group relative block w-[214px] sm:w-[236px] select-none transition-all duration-300 hover:-translate-y-0.5',
+        'group relative block w-[214px] lg:w-[236px] select-none transition-all duration-300 hover:-translate-y-0.5',
         className,
       )}
     >
@@ -215,16 +215,16 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
         {/* Floating Tear-Off Calendar Card */}
         <div className="relative">
           {/* Main Front Card */}
-          <div className="relative z-10 overflow-hidden rounded-2xl border border-amber-300/90 bg-gradient-to-b from-[#FFFDF9] via-[#FCF6E8] to-[#F6E8CC] p-2.5 sm:p-3 shadow-[0_12px_24px_-6px_rgba(120,53,15,0.28),0_4px_10px_-4px_rgba(120,53,15,0.16)] transition-shadow duration-300 group-hover:shadow-[0_18px_32px_-6px_rgba(120,53,15,0.36),0_6px_14px_-4px_rgba(120,53,15,0.20)]">
+          <div className="relative z-10 overflow-hidden rounded-2xl border border-amber-300/90 bg-gradient-to-b from-[#FFFDF9] via-[#FCF6E8] to-[#F6E8CC] p-2.5 lg:p-3 shadow-[0_12px_24px_-6px_rgba(120,53,15,0.28),0_4px_10px_-4px_rgba(120,53,15,0.16)] transition-shadow duration-300 group-hover:shadow-[0_18px_32px_-6px_rgba(120,53,15,0.36),0_6px_14px_-4px_rgba(120,53,15,0.20)]">
             {/* Top Row: Left Calendar Tile + Right Event Info */}
             <div className="flex items-center gap-2.5">
               {/* Left Mini Tear-Off Date Tile */}
-              <div className="relative flex h-[64px] w-[54px] sm:h-[68px] sm:w-[58px] shrink-0 flex-col items-center justify-between overflow-hidden rounded-xl border border-amber-300/90 bg-gradient-to-b from-[#FFFDF9] to-[#FAF1DE] shadow-2xs">
+              <div className="relative flex h-[64px] w-[56px] lg:h-[68px] lg:w-[60px] shrink-0 flex-col items-center justify-between overflow-hidden rounded-xl border border-amber-300/90 bg-gradient-to-b from-[#FFFDF9] to-[#FAF1DE] shadow-2xs">
                 {/* Binding header bar */}
-                <div className="relative w-full bg-gradient-to-r from-amber-700 via-amber-800 to-amber-900 py-0.5 text-center text-[8.5px] font-extrabold uppercase tracking-wider text-amber-100 leading-tight">
-                  <span className="pointer-events-none absolute top-1 left-1.5 h-1 w-1 rounded-full bg-[#FAF7F0] opacity-80" />
-                  <span className="pointer-events-none absolute top-1 right-1.5 h-1 w-1 rounded-full bg-[#FAF7F0] opacity-80" />
-                  <span>T.{solarMonth}</span>
+                <div className="relative w-full bg-gradient-to-r from-amber-700 via-amber-800 to-amber-900 py-0.5 text-center text-[7.5px] lg:text-[8px] font-extrabold uppercase tracking-tight text-amber-100 leading-tight">
+                  <span className="pointer-events-none absolute top-1 left-1 h-1 w-1 rounded-full bg-[#FAF7F0] opacity-80" />
+                  <span className="pointer-events-none absolute top-1 right-1 h-1 w-1 rounded-full bg-[#FAF7F0] opacity-80" />
+                  <span>Tháng {solarMonth}</span>
                 </div>
 
                 {/* Perforated tear line */}
@@ -233,7 +233,7 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
                 {/* Solar day number */}
                 <div
                   className={cn(
-                    'my-auto font-serif text-2xl sm:text-[26px] font-black leading-none',
+                    'my-auto font-serif text-2xl lg:text-[26px] font-black leading-none',
                     isSunday ? 'text-red-700' : 'text-amber-950',
                   )}
                 >
@@ -241,13 +241,13 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
                 </div>
 
                 {/* Lunar date pill at bottom */}
-                <div className="w-full bg-amber-100/90 py-0.5 text-center text-[7.5px] sm:text-[8px] font-bold text-amber-900 leading-none truncate px-0.5">
+                <div className="w-full bg-amber-100/90 py-0.5 text-center text-[7.5px] lg:text-[8px] font-bold text-amber-900 leading-none truncate px-0.5">
                   {lunarFormatted}
                 </div>
               </div>
 
               {/* Right Event Info Column */}
-              <div className="flex min-w-0 flex-1 flex-col justify-between h-[64px] sm:h-[68px]">
+              <div className="flex min-w-0 flex-1 flex-col justify-between h-[64px] lg:h-[68px]">
                 {/* Weekday & Countdown Pill */}
                 <div className="flex items-center justify-between gap-1">
                   <span
@@ -260,7 +260,7 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
                   </span>
                   <span
                     className={cn(
-                      'hidden sm:inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[8.5px] font-bold leading-none tracking-tight shadow-2xs shrink-0',
+                      'hidden lg:inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[8.5px] font-bold leading-none tracking-tight shadow-2xs shrink-0',
                       isToday
                         ? 'animate-pulse bg-amber-600 text-white'
                         : 'border border-amber-300/80 bg-amber-200/90 text-amber-950',
@@ -272,7 +272,7 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
                 </div>
 
                 {/* Event Title */}
-                <div className="line-clamp-2 text-[11px] sm:text-xs font-bold leading-tight text-neutral-900 transition-colors group-hover:text-amber-800 my-auto">
+                <div className="line-clamp-2 text-[11px] lg:text-xs font-bold leading-tight text-neutral-900 transition-colors group-hover:text-amber-800 my-auto">
                   {eventTitle}
                 </div>
 
@@ -284,12 +284,12 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
                     </span>
                   ) : (
                     <>
-                      <span className="hidden sm:inline text-[8.5px] text-neutral-400">
+                      <span className="hidden lg:inline text-[8.5px] text-neutral-400">
                         Năm {solarYear}
                       </span>
                       <span
                         className={cn(
-                          'sm:hidden inline-flex items-center gap-0.5 text-[8.5px] font-bold truncate',
+                          'lg:hidden inline-flex items-center gap-0.5 text-[8.5px] font-bold truncate',
                           isToday ? 'text-amber-700' : 'text-amber-900',
                         )}
                       >
@@ -298,7 +298,7 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
                       </span>
                     </>
                   )}
-                  <span className="inline-flex items-center gap-0.5 font-bold text-amber-800 group-hover:text-amber-950">
+                  <span className="hidden lg:inline-flex items-center gap-0.5 font-bold text-amber-800 group-hover:text-amber-950">
                     <span>Xem lịch</span>
                     <ChevronRight className="h-2.5 w-2.5 transition-transform group-hover:translate-x-0.5" />
                   </span>
@@ -310,7 +310,7 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
             {practiceInfo && (practiceInfo.maxRepentancePrayers || practiceInfo.maxLittleHouses) && (
               <div className="mt-2 pt-1.5 border-t border-amber-300/70 space-y-0.5 text-left">
                 {practiceInfo.maxRepentancePrayers && (
-                  <div className="flex items-baseline gap-1.5 text-[9.5px] sm:text-[10px] leading-tight">
+                  <div className="flex items-baseline gap-1.5 text-[9.5px] lg:text-[10px] leading-tight">
                     <BookOpen className="h-2.5 w-2.5 shrink-0 text-amber-700 self-center" />
                     <span className="font-semibold text-amber-900/90 shrink-0">
                       LPĐSHV tối đa:
@@ -320,7 +320,7 @@ export const CountdownCalendarWidget: React.FC<CountdownCalendarWidgetProps> = (
                 )}
 
                 {practiceInfo.maxLittleHouses && (
-                  <div className="flex items-baseline gap-1.5 text-[9px] sm:text-[9.5px] leading-tight">
+                  <div className="flex items-baseline gap-1.5 text-[9px] lg:text-[9.5px] leading-tight">
                     <Flame className="h-2.5 w-2.5 shrink-0 text-orange-600 self-center" />
                     <div className="min-w-0 flex-1">
                       <span className="font-semibold text-amber-900/90">Đốt NNN: </span>
