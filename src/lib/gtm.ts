@@ -125,7 +125,7 @@ export const trackAudioClick = ({
   trackTitle,
   trackId,
 }: {
-  action: "play" | "pause" | "close";
+  action: "play" | "pause" | "close" | "next_track" | "previous_track";
   trackTitle?: string;
   trackId?: string;
 }): void => {

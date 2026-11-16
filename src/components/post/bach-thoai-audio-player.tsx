@@ -46,6 +46,8 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
 
   const playTrack = useAudioPlayerStore((s) => s.playTrack);
   const togglePlay = useAudioPlayerStore((s) => s.togglePlay);
+  const playNextTrack = useAudioPlayerStore((s) => s.playNextTrack);
+  const setNextTrack = useAudioPlayerStore((s) => s.setNextTrack);
   const seek = useAudioPlayerStore((s) => s.seek);
   const setPlaybackRate = useAudioPlayerStore((s) => s.setPlaybackRate);
   const setIsRepeat = useAudioPlayerStore((s) => s.setIsRepeat);
@@ -110,6 +112,57 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
     }
   }, [searchParams, isCurrentActive, post, audioSource, playTrack, seek]);
 
+  // Set nextTrack from post.nextPost if available
+  useEffect(() => {
+    if (post.nextPost && post.nextPost.audioUrl) {
+      setNextTrack({
+        id: post.nextPost.id,
+        title: post.nextPost.title,
+        slug: post.nextPost.slug,
+        authorName: post.nextPost.authorName || post.author?.name || "TT. Thích Minh Niệm",
+        categoryName: post.nextPost.categoryName || post.category?.name || "Bạch thoại Phật pháp",
+        categorySlug: post.nextPost.categorySlug || post.category?.slug || "bach-thoai-phat-phap",
+        thumbnailUrl: post.nextPost.thumbnailUrl || post.thumbnailUrl || undefined,
+        audioUrl: post.nextPost.audioUrl,
+        duration: post.nextPost.duration,
+      });
+    }
+  }, [
+    post.nextPost,
+    post.author?.name,
+    post.category?.name,
+    post.category?.slug,
+    post.thumbnailUrl,
+    setNextTrack,
+  ]);
+
+  // When playback automatically or manually switches to the next track while viewing this page
+  const wasActiveRef = useRef(false);
+  useEffect(() => {
+    if (isCurrentActive) {
+      wasActiveRef.current = true;
+    }
+  }, [isCurrentActive]);
+
+  useEffect(() => {
+    if (
+      wasActiveRef.current &&
+      currentTrack?.slug &&
+      currentTrack.slug !== post.slug &&
+      (currentTrack.categorySlug === "bach-thoai-phat-phap" ||
+        currentTrack.categoryName?.toLowerCase().includes("bạch thoại"))
+    ) {
+      wasActiveRef.current = false;
+      router.push(`/bach-thoai-phat-phap/${encodeURIComponent(currentTrack.slug)}`);
+    }
+  }, [
+    currentTrack?.slug,
+    post.slug,
+    currentTrack?.categorySlug,
+    currentTrack?.categoryName,
+    router,
+  ]);
+
   // Play / Pause toggle
   const handleTogglePlay = () => {
     if (isCurrentActive) {
@@ -157,6 +210,31 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
     }
     const newTime = Math.min(Math.max(currentTime + seconds, 0), duration);
     seek(newTime);
+  };
+
+  // Play Next Track
+  const handlePlayNext = () => {
+    // If post.nextPost is available and user is actively listening to current post
+    if (post.nextPost && post.nextPost.audioUrl && currentTrack?.id === post.id) {
+      playTrack({
+        id: post.nextPost.id,
+        title: post.nextPost.title,
+        slug: post.nextPost.slug,
+        authorName: post.nextPost.authorName || post.author?.name || "TT. Thích Minh Niệm",
+        categoryName: post.nextPost.categoryName || post.category?.name || "Bạch thoại Phật pháp",
+        categorySlug: post.nextPost.categorySlug || post.category?.slug || "bach-thoai-phat-phap",
+        thumbnailUrl: post.nextPost.thumbnailUrl || post.thumbnailUrl || undefined,
+        audioUrl: post.nextPost.audioUrl,
+        duration: post.nextPost.duration,
+      });
+      return;
+    }
+
+    const next = playNextTrack();
+    if (!next) {
+      setToastMessage("Đã là bài cuối cùng trong danh sách!");
+      setTimeout(() => setToastMessage(null), 2500);
+    }
   };
 
   // Ensure track is active in store
@@ -551,9 +629,10 @@ export const BachThoaiAudioPlayer: React.FC<BachThoaiAudioPlayerProps> = ({
             {/* Next Track */}
             <button
               type="button"
-              onClick={() => handleSkip(60)}
+              onClick={handlePlayNext}
               aria-label="Bài tiếp theo"
-              className="p-2.5 rounded-xl text-neutral-400 transition hover:text-amber-800"
+              title="Phát bài tiếp theo"
+              className="p-2.5 rounded-xl text-neutral-400 transition hover:text-amber-800 active:scale-95 cursor-pointer"
             >
               <SkipForward className="h-5 w-5" />
             </button>

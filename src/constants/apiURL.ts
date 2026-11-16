@@ -18,6 +18,8 @@ export const API_URL = {
   postVerify: (id: string) => `/posts/${id}/verify`,
   postsCategory: "/posts/category",
   postBySlug: (slug: string) => `/posts/slug/${slug}`,
+  nextAudioPost: (slug: string) => `/posts/slug/${slug}/next`,
+  nextAudioPostById: (id: string) => `/posts/${id}/next`,
   permissions: "/permissions",
   users: "/users",
   upgradeRole: "/users/upgrade-role",

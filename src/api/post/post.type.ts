@@ -152,6 +152,18 @@ export interface PostGroupType {
   updatedAt?: string;
 }
 
+export interface NextAudioTrackType {
+  id: string;
+  title: string;
+  slug: string;
+  thumbnailUrl?: string | null;
+  audioUrl?: string | null;
+  duration?: number;
+  authorName?: string;
+  categoryName?: string;
+  categorySlug?: string;
+}
+
 export interface PostItemType {
   id: string;
   title: string;
@@ -174,6 +186,7 @@ export interface PostItemType {
   status: PostApprovalStatus;
   isVerifiedFromOrigin: boolean;
   rejectReason?: string | null;
+  nextPost?: NextAudioTrackType | null;
   deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;

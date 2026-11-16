@@ -13,7 +13,7 @@ import React from "react";
 import { ContentType } from "@/enums";
 import { getGroupBadgeStyle } from "@/lib/color-badge";
 import { HighlightedText } from "@/lib/highlight";
-import { useAudioPlayerStore } from "@/stores";
+import { type AudioTrack, useAudioPlayerStore } from "@/stores";
 
 export interface BachThoaiDisplayItem {
   id: string;
@@ -34,9 +34,10 @@ export interface BachThoaiDisplayItem {
 export interface BachThoaiItemProps {
   item: BachThoaiDisplayItem;
   searchQuery?: string;
+  playlist?: BachThoaiDisplayItem[];
 }
 
-export const BachThoaiItem: React.FC<BachThoaiItemProps> = ({ item, searchQuery }) => {
+export const BachThoaiItem: React.FC<BachThoaiItemProps> = ({ item, searchQuery, playlist }) => {
   const currentTrack = useAudioPlayerStore((s) => s.currentTrack);
   const isAudioPlaying = useAudioPlayerStore((s) => s.isPlaying);
   const playTrack = useAudioPlayerStore((s) => s.playTrack);
@@ -60,17 +61,40 @@ export const BachThoaiItem: React.FC<BachThoaiItemProps> = ({ item, searchQuery 
     if (currentTrack?.id === item.id) {
       togglePlay();
     } else {
-      playTrack({
-        id: item.id,
-        title: item.title,
-        slug: item.slug,
-        authorName: item.authorName,
-        categoryName: "Bạch thoại Phật pháp",
-        categorySlug: "bach-thoai-phat-phap",
-        postUrl,
-        thumbnailUrl: item.thumbnailUrl || "/images/bach-thoai-phat-phap.png",
-        audioUrl: item.audioUrl,
-      });
+      const audioPlaylist: AudioTrack[] | undefined = playlist
+        ?.filter((p) => !!p.audioUrl)
+        .map((p) => {
+          const pBaseUrl = `/bach-thoai-phat-phap/${encodeURIComponent(p.slug || p.id)}`;
+          const pPostUrl = searchQuery?.trim()
+            ? `${pBaseUrl}?search=${encodeURIComponent(searchQuery.trim())}`
+            : pBaseUrl;
+          return {
+            id: p.id,
+            title: p.title,
+            slug: p.slug,
+            authorName: p.authorName,
+            categoryName: p.categoryName || "Bạch thoại Phật pháp",
+            categorySlug: "bach-thoai-phat-phap",
+            postUrl: pPostUrl,
+            thumbnailUrl: p.thumbnailUrl || "/images/bach-thoai-phat-phap.png",
+            audioUrl: p.audioUrl as string,
+          };
+        });
+
+      playTrack(
+        {
+          id: item.id,
+          title: item.title,
+          slug: item.slug,
+          authorName: item.authorName,
+          categoryName: item.categoryName || "Bạch thoại Phật pháp",
+          categorySlug: "bach-thoai-phat-phap",
+          postUrl,
+          thumbnailUrl: item.thumbnailUrl || "/images/bach-thoai-phat-phap.png",
+          audioUrl: item.audioUrl,
+        },
+        audioPlaylist,
+      );
     }
   };
 

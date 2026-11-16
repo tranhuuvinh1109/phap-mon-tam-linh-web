@@ -5,6 +5,7 @@ import {
   CreatePostPayloadType,
   GetPostsByCategoryParams,
   GetPostsResponse,
+  NextAudioTrackType,
   PendingPostsCountResponse,
   RejectedPostsCountResponse,
   PostItemType,
@@ -192,6 +193,35 @@ export const getPostBySlug = async (slug: string): Promise<PostItemType> => {
       return matched;
     }
     throw error;
+  }
+};
+
+/**
+ * API call to get next audio post in series via GET /posts/slug/:slug/next
+ */
+export const getNextAudioPost = async (
+  slugOrId: string,
+): Promise<NextAudioTrackType | null> => {
+  if (!slugOrId) return null;
+  try {
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        slugOrId,
+      );
+    const url = isUuid
+      ? API_URL.nextAudioPostById(slugOrId)
+      : API_URL.nextAudioPost(slugOrId);
+
+    const response = await apiClient.get<
+      NextAudioTrackType | { data: NextAudioTrackType | null } | null
+    >(url);
+    const data = response.data;
+    if (data && typeof data === "object" && "data" in data) {
+      return (data as { data: NextAudioTrackType | null }).data;
+    }
+    return (data as NextAudioTrackType) || null;
+  } catch {
+    return null;
   }
 };
 

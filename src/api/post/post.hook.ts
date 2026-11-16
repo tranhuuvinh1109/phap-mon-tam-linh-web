@@ -18,6 +18,7 @@ import {
   getPendingPostsCount,
   getRejectedPostsCount,
   getNiemKinhPosts,
+  getNextAudioPost,
   getHomeBachThoaiPosts,
   getHomeKhaiThiPosts,
   getPostBySlug,
@@ -34,6 +35,7 @@ import {
   CreatePostPayloadType,
   GetPostsByCategoryParams,
   GetPostsResponse,
+  NextAudioTrackType,
   PendingPostsCountResponse,
   PostItemType,
   RejectPostPayloadType,
@@ -108,6 +110,27 @@ export const useGetPostBySlug = (
     queryKey: [QueryKeyEnum.GET_POST_DETAIL, slug],
     queryFn: () => getPostBySlug(slug),
     enabled: !!slug,
+    ...options,
+  });
+};
+
+export type UseGetNextAudioPostOptions = Omit<
+  UseQueryOptions<NextAudioTrackType | null, AxiosError>,
+  "queryKey" | "queryFn"
+>;
+
+/**
+ * Query hook to fetch next audio post via GET /posts/slug/:slug/next
+ */
+export const useGetNextAudioPost = (
+  slugOrId?: string,
+  options?: UseGetNextAudioPostOptions
+): UseQueryResult<NextAudioTrackType | null, AxiosError> => {
+  return useQuery({
+    queryKey: [QueryKeyEnum.GET_NEXT_AUDIO_POST, slugOrId],
+    queryFn: () => (slugOrId ? getNextAudioPost(slugOrId) : Promise.resolve(null)),
+    enabled: !!slugOrId,
+    staleTime: 5 * 60 * 1000,
     ...options,
   });
 };

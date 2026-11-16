@@ -1,9 +1,10 @@
 "use client";
 
-import { Pause, Play, X } from "lucide-react";
+import { Pause, Play, SkipForward, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 
+import { getNextAudioPost } from "@/api/post";
 import { formatTime } from "@/lib/utils";
 import { trackAudioClick } from "@/lib/gtm";
 import { useEvent } from "@/hooks";
@@ -33,12 +34,17 @@ export const PersistentAudioPlayer: React.FC = () => {
   const duration = useAudioPlayerStore((s) => s.duration);
   const playbackRate = useAudioPlayerStore((s) => s.playbackRate);
   const isRepeat = useAudioPlayerStore((s) => s.isRepeat);
+  const isAutoPlayNext = useAudioPlayerStore((s) => s.isAutoPlayNext);
   const isMiniPlayerVisible = useAudioPlayerStore((s) => s.isMiniPlayerVisible);
   const seekTarget = useAudioPlayerStore((s) => s.seekTarget);
   const sleepTimer = useAudioPlayerStore((s) => s.sleepTimer);
+  const playlist = useAudioPlayerStore((s) => s.playlist);
+  const currentIndex = useAudioPlayerStore((s) => s.currentIndex);
 
   const togglePlay = useAudioPlayerStore((s) => s.togglePlay);
   const pause = useAudioPlayerStore((s) => s.pause);
+  const playNextTrack = useAudioPlayerStore((s) => s.playNextTrack);
+  const setNextTrack = useAudioPlayerStore((s) => s.setNextTrack);
   const setCurrentTime = useAudioPlayerStore((s) => s.setCurrentTime);
   const setDuration = useAudioPlayerStore((s) => s.setDuration);
   const clearSeekTarget = useAudioPlayerStore((s) => s.clearSeekTarget);
@@ -103,6 +109,50 @@ export const PersistentAudioPlayer: React.FC = () => {
     return () => clearTimeout(timerId);
   }, [sleepTimer, pause]);
 
+  // Prefetch next audio track if not already in local playlist
+  useEffect(() => {
+    if (!currentTrack) return;
+
+    const hasNextInPlaylist =
+      playlist.length > 0 &&
+      currentIndex >= 0 &&
+      currentIndex < playlist.length - 1;
+
+    if (hasNextInPlaylist) return;
+
+    let isMounted = true;
+    const identifier = currentTrack.slug || currentTrack.id;
+    if (identifier) {
+      getNextAudioPost(identifier)
+        .then((next) => {
+          if (isMounted && next && next.audioUrl) {
+            setNextTrack({
+              id: next.id,
+              title: next.title,
+              slug: next.slug,
+              authorName: next.authorName || currentTrack.authorName,
+              categoryName: next.categoryName || currentTrack.categoryName,
+              categorySlug: next.categorySlug || currentTrack.categorySlug,
+              thumbnailUrl: next.thumbnailUrl || currentTrack.thumbnailUrl,
+              audioUrl: next.audioUrl,
+              duration: next.duration,
+            });
+          }
+        })
+        .catch(() => {});
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    currentTrack?.id,
+    currentTrack?.slug,
+    playlist.length,
+    currentIndex,
+    setNextTrack,
+  ]);
+
   // Event listeners on HTML5 audio
   useEffect(() => {
     const audio = audioRef.current;
@@ -157,6 +207,11 @@ export const PersistentAudioPlayer: React.FC = () => {
       if (isRepeat) {
         audio.currentTime = 0;
         audio.play().catch(() => {});
+      } else if (isAutoPlayNext) {
+        const next = playNextTrack();
+        if (!next) {
+          pause();
+        }
       } else {
         pause();
       }
@@ -179,6 +234,8 @@ export const PersistentAudioPlayer: React.FC = () => {
     };
   }, [
     isRepeat,
+    isAutoPlayNext,
+    playNextTrack,
     pause,
     setCurrentTime,
     setDuration,
@@ -427,6 +484,27 @@ export const PersistentAudioPlayer: React.FC = () => {
             ) : (
               <Play className="ml-0.5 h-4 w-4 fill-white" />
             )}
+          </button>
+
+          {/* Next Episode Button */}
+          <button
+            type="button"
+            data-track-click="audio_next_track"
+            data-track-category="audio_player"
+            onClick={(e) => {
+              e.stopPropagation();
+              trackAudioClick({
+                action: "next_track",
+                trackTitle: currentTrack.title,
+                trackId: currentTrack.id,
+              });
+              playNextTrack();
+            }}
+            aria-label="Bài tiếp theo"
+            title="Bài tiếp theo"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-amber-800 active:scale-95 cursor-pointer"
+          >
+            <SkipForward className="h-4 w-4" />
           </button>
         </aside>
       )}
