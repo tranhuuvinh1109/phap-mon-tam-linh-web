@@ -21,12 +21,13 @@ import toast from "react-hot-toast";
 import { useGetCategories, useGetCategoryTree } from "@/api/category";
 import type { CategoryItemType } from "@/api/category/category.type";
 import { useGetGroups } from "@/api/group";
-import { useDeletePost, useGetPosts } from "@/api/post";
+import { useDeletePost, useGetPosts, useGetPostsByCategory } from "@/api/post";
 import type { PostItemType, PostApprovalStatus } from "@/api/post/post.type";
 import { Button } from "@/components/ui";
 import { BACH_THOAI_PHAT_PHAP_ID, BACH_THOAI_PHAT_PHAP_SLUG } from "@/constants";
 import { ContentType } from "@/enums";
 import { trackSearch } from "@/lib/gtm";
+import { buildCategoryQueryParams, isUuid, resolveToCategoryId } from "../utils/category-resolver";
 import { isBachThoaiPhatPhap } from "../utils/content-type";
 import { ConfirmModal } from "./confirm-modal";
 import { PostFilterDrawer, type PostFilterState } from "./post-filter-drawer";
@@ -53,10 +54,14 @@ export const AdminPostView: React.FC = () => {
     setCurrentPage(p > 0 ? p : 1);
   }, [searchParams]);
 
+  // Initial category resolution: prioritize known IDs (e.g. BACH_THOAI_PHAT_PHAP_ID)
+  const initialResolvedCategory =
+    resolveToCategoryId(categoryParam || undefined) || categoryParam || undefined;
+
   // Advanced Filters State
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
   const [filters, setFilters] = useState<PostFilterState>({
-    categoryId: categoryParam || undefined,
+    categoryId: initialResolvedCategory,
     groupId: undefined,
     status: "APPROVED",
     type: "ALL",
@@ -64,35 +69,24 @@ export const AdminPostView: React.FC = () => {
     endDate: undefined,
   });
 
-  // Helper to test if a string is a standard UUID
-  const isUuid = (val?: string): boolean =>
-    Boolean(
-      val &&
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
-    );
-
   // Keep search input synced if URL search changes externally
   useEffect(() => {
     setSearchQuery(urlSearch);
     setDebouncedSearch(urlSearch);
   }, [urlSearch]);
 
-  // Sync categoryParam from URL when URL changes
-  useEffect(() => {
-    setFilters((prev) => ({
-      ...prev,
-      categoryId: categoryParam || undefined,
-      groupId: undefined,
-    }));
-  }, [categoryParam]);
-
   // Fetch categories and groups for badge labels
-  const { data: categories = [] } = useGetCategories();
-  const { data: categoryTree = [] } = useGetCategoryTree();
-  const { data: groups = [] } = useGetGroups();
+  const categoriesQuery = useGetCategories();
+  const categoryTreeQuery = useGetCategoryTree();
+  const groupsQuery = useGetGroups();
+
+  const categories = categoriesQuery.data;
+  const categoryTree = categoryTreeQuery.data;
+  const groups = groupsQuery.data || [];
 
   // Flatten and unify all categories for robust lookup (id/slug)
   const allFlatCategories = useMemo<CategoryItemType[]>(() => {
+    if (!categoryTree && !categories) return [];
     const map = new Map<string, CategoryItemType>();
     if (categoryTree && Array.isArray(categoryTree)) {
       categoryTree.forEach((root) => {
@@ -126,6 +120,23 @@ export const AdminPostView: React.FC = () => {
   // State for Delete Confirmation Modal
   const [deletingPost, setDeletingPost] = useState<PostItemType | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // Sync categoryParam from URL when URL or allFlatCategories change
+  useEffect(() => {
+    const resolvedId = resolveToCategoryId(categoryParam || undefined, allFlatCategories);
+    const nextCategoryId = resolvedId || categoryParam || undefined;
+
+    setFilters((prev) => {
+      if (prev.categoryId === nextCategoryId && prev.groupId === undefined) {
+        return prev;
+      }
+      return {
+        ...prev,
+        categoryId: nextCategoryId,
+        groupId: undefined,
+      };
+    });
+  }, [categoryParam, allFlatCategories]);
 
   const isBachThoaiTab = useMemo(() => {
     const targetCat = filters.categoryId || categoryParam;
@@ -218,34 +229,85 @@ export const AdminPostView: React.FC = () => {
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
-  // Request parameters for backend pagination
-  const queryParams = useMemo(() => {
-    const targetCategory = filters.categoryId;
-    const isTargetUuid = isUuid(targetCategory);
+  // Resolve category ID prioritizing UUID, static constants (e.g. BACH_THOAI_PHAT_PHAP_ID), and allFlatCategories
+  const targetCategoryInput = filters.categoryId || categoryParam || undefined;
+  const resolvedCategoryId = useMemo(() => {
+    return resolveToCategoryId(targetCategoryInput, allFlatCategories);
+  }, [targetCategoryInput, allFlatCategories]);
+
+  const isSearching = Boolean(debouncedSearch);
+  const isCategoryMode = Boolean(resolvedCategoryId || targetCategoryInput);
+
+  // 1. Query by category via GET /posts/category (useGetPostsByCategory)
+  // When category is active and not searching
+  const categoryQueryParams = useMemo(() => {
+    return {
+      categoryId: resolvedCategoryId,
+      category_id: resolvedCategoryId,
+      category_name: !resolvedCategoryId ? targetCategoryInput : undefined,
+      page: currentPage,
+      limit: PAGE_SIZE,
+      status: filters.status || "APPROVED",
+      groupId: filters.groupId || undefined,
+      type: filters.type === "ALL" ? undefined : filters.type,
+    };
+  }, [
+    resolvedCategoryId,
+    targetCategoryInput,
+    currentPage,
+    filters.status,
+    filters.groupId,
+    filters.type,
+  ]);
+
+  const categoryPostsQuery = useGetPostsByCategory(categoryQueryParams, {
+    enabled: isCategoryMode && !isSearching,
+  });
+
+  // 2. Query all posts or search via GET /posts (useGetPosts)
+  // When no category is specified or when searching
+  const allQueryParams = useMemo(() => {
+    const catParams = buildCategoryQueryParams(
+      targetCategoryInput,
+      allFlatCategories
+    );
 
     return {
       page: currentPage,
       limit: PAGE_SIZE,
       search: debouncedSearch || undefined,
-      // If targetCategory is a slug (e.g. "niem-kinh", "khai-thi"), send `category`
-      category: !isTargetUuid ? targetCategory : undefined,
-      // If targetCategory is a UUID, send `categoryId`
-      categoryId: isTargetUuid ? targetCategory : undefined,
+      categoryId: catParams.categoryId,
+      category: catParams.category,
       groupId: filters.groupId || undefined,
       type: filters.type === "ALL" ? undefined : filters.type,
       status: filters.status || "APPROVED",
       startDate: filters.startDate || undefined,
       endDate: filters.endDate || undefined,
     };
-  }, [currentPage, debouncedSearch, filters]);
+  }, [
+    currentPage,
+    debouncedSearch,
+    targetCategoryInput,
+    allFlatCategories,
+    filters.groupId,
+    filters.type,
+    filters.status,
+    filters.startDate,
+    filters.endDate,
+  ]);
 
-  // Main query via GET /posts
+  const allPostsQuery = useGetPosts(allQueryParams, {
+    enabled: !isCategoryMode || isSearching,
+  });
+
+  // Active query based on current viewing mode
+  const activeQuery = isCategoryMode && !isSearching ? categoryPostsQuery : allPostsQuery;
   const {
     data: postsData,
     isLoading,
     isFetching,
     refetch,
-  } = useGetPosts(queryParams);
+  } = activeQuery;
 
   const posts: PostItemType[] = useMemo(() => {
     const rawPosts = postsData?.data || [];
@@ -264,8 +326,10 @@ export const AdminPostView: React.FC = () => {
       const matchCat = allFlatCategories.find(
         (c) => c.id === filters.categoryId || c.slug === filters.categoryId
       );
+      const resolvedUrlId = resolveToCategoryId(categoryParam || undefined, allFlatCategories);
       const isSameAsUrl =
         filters.categoryId === categoryParam ||
+        filters.categoryId === resolvedUrlId ||
         matchCat?.slug === categoryParam ||
         matchCat?.id === categoryParam;
       if (!isSameAsUrl) count++;
@@ -416,7 +480,12 @@ export const AdminPostView: React.FC = () => {
           <div className="flex items-center gap-2 text-xs sm:text-sm">
             <span className="text-neutral-500 font-medium">Đang xem chuyên mục:</span>
             <span className="font-bold text-amber-900 bg-amber-100/80 px-2.5 py-0.5 rounded-lg">
-              {categoryParam}
+              {allFlatCategories.find(
+                (c) => c.slug === categoryParam || c.id === categoryParam
+              )?.name ||
+                (categoryParam === "bach-thoai-phat-phap" || categoryParam === BACH_THOAI_PHAT_PHAP_SLUG
+                  ? "Bạch thoại Phật pháp"
+                  : categoryParam)}
             </span>
           </div>
           <Link
@@ -487,7 +556,10 @@ export const AdminPostView: React.FC = () => {
                     (c) =>
                       c.id === filters.categoryId ||
                       c.slug === filters.categoryId
-                  )?.name || filters.categoryId}
+                  )?.name ||
+                    (filters.categoryId === BACH_THOAI_PHAT_PHAP_ID
+                      ? "Bạch thoại Phật pháp"
+                      : filters.categoryId)}
                 </span>
                 <button
                   type="button"

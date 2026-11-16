@@ -220,6 +220,7 @@ export interface GetPostsResponse {
 }
 
 export interface GetPostsByCategoryParams {
+  categoryId?: string;
   category_id?: string;
   category_name?: string;
   groupId?: string;

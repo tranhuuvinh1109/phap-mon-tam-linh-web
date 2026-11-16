@@ -65,6 +65,9 @@ export const useCreatePost = (
       queryClient.invalidateQueries({
         queryKey: [QueryKeyEnum.GET_POSTS],
       });
+      queryClient.invalidateQueries({
+        queryKey: [QueryKeyEnum.GET_POSTS_BY_CATEGORY],
+      });
       options?.onSuccess?.(...args);
     },
   });
@@ -275,6 +278,9 @@ export const useUpdatePost = (
         queryKey: [QueryKeyEnum.GET_POSTS],
       });
       queryClient.invalidateQueries({
+        queryKey: [QueryKeyEnum.GET_POSTS_BY_CATEGORY],
+      });
+      queryClient.invalidateQueries({
         queryKey: ["posts-search"],
       });
       queryClient.invalidateQueries({
@@ -313,6 +319,9 @@ export const useDeletePost = (
     onSuccess: (...args) => {
       queryClient.invalidateQueries({
         queryKey: [QueryKeyEnum.GET_POSTS],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QueryKeyEnum.GET_POSTS_BY_CATEGORY],
       });
       queryClient.invalidateQueries({
         queryKey: [QueryKeyEnum.GET_PENDING_POSTS_COUNT],
@@ -375,6 +384,7 @@ export const useApprovePost = (
     ...options,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_POSTS] });
+      queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_POSTS_BY_CATEGORY] });
       queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_PENDING_POSTS_COUNT] });
       queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_REJECTED_POSTS_COUNT] });
       queryClient.invalidateQueries({ queryKey: ["posts-search"] });
@@ -399,6 +409,7 @@ export const useRejectPost = (
     ...options,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_POSTS] });
+      queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_POSTS_BY_CATEGORY] });
       queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_PENDING_POSTS_COUNT] });
       queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_REJECTED_POSTS_COUNT] });
       queryClient.invalidateQueries({ queryKey: ["posts-search"] });
@@ -423,6 +434,7 @@ export const useVerifyPost = (
     ...options,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_POSTS] });
+      queryClient.invalidateQueries({ queryKey: [QueryKeyEnum.GET_POSTS_BY_CATEGORY] });
       queryClient.invalidateQueries({ queryKey: ["posts-search"] });
       options?.onSuccess?.(...args);
     },
