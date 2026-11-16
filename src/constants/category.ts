@@ -10,6 +10,7 @@ export const DEFAULT_POST_THUMBNAIL = '/images/lotus-thumb.jpg';
 
 export const NIEM_KINH_ID = 'e723dd56-cfdc-4b5a-8538-b017384f4d55';
 export const NIEM_KINH_SLUG = 'niem-kinh';
+export const DEFAULT_NIEM_KINH_POST_ID = 'af1b1452-14d3-4326-b2a5-5533c6cc0c2a';
 
 export const NGOI_NHA_NHO_SLUG = 'ngoi-nha-nho';
 export const NGOI_NHA_NHO_ID = '62dfaf2f-24ba-43f2-bdd3-e9ad1d6d1da0';

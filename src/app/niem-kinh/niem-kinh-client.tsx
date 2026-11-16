@@ -17,19 +17,33 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import React, { useMemo, useState } from "react";
 
-import { useGetNiemKinhPosts } from "@/api/post";
+import { useGetNiemKinhPosts, useGetPostById } from "@/api/post";
 import type { PostItemType } from "@/api/post/post.type";
 import { DEFAULT_NIEM_KINH_DATA, parseNiemKinhContent } from "@/app/admin/post/types";
 import { MainLayout } from "@/components/layout";
 import { NiemKinhAccordion } from "@/components/post";
 import { NiemKinhSkeleton } from "@/components/skeletons";
+import { DEFAULT_NIEM_KINH_POST_ID } from "@/constants";
 import { useFavoritesStore, useIsFavorite } from "@/stores";
 
 export const NiemKinhClient: React.FC = () => {
   const searchParams = useSearchParams();
   const selectedSlugOrId = searchParams.get("post");
 
-  // 1. Call API endpoint: GET /posts/niem-kinh
+  // Determine active post ID to fetch details (defaults to target Niem Kinh post ID)
+  const [activePostId, setActivePostId] = useState<string | null>(null);
+  const currentPostId = activePostId || selectedSlugOrId || DEFAULT_NIEM_KINH_POST_ID;
+
+  // 1. Call API get post by ID: GET /posts/:id
+  const {
+    data: postDetail,
+    isLoading: isPostDetailLoading,
+    isError: isPostDetailError,
+    error: postDetailError,
+    refetch: refetchPostDetail,
+  } = useGetPostById(currentPostId);
+
+  // 2. Call API endpoint: GET /posts/niem-kinh for list switcher (if multiple posts exist)
   const {
     data: niemKinhResponse,
     isLoading: isNiemKinhLoading,
@@ -46,11 +60,11 @@ export const NiemKinhClient: React.FC = () => {
     return [];
   }, [niemKinhResponse]);
 
-  // Determine active post to display details (default to first element from API)
-  const [activePostId, setActivePostId] = useState<string | null>(null);
-
   const displayPost: PostItemType | null = useMemo(() => {
-    // If user clicked a specific post from the list
+    // Priority: direct result from getPostById
+    if (postDetail) return postDetail;
+
+    // Fallback if cached or found in list
     if (activePostId) {
       const found = niemKinhPosts.find((p) => p.id === activePostId);
       if (found) return found;
@@ -63,9 +77,8 @@ export const NiemKinhClient: React.FC = () => {
       if (found) return found;
     }
 
-    // Default to first element returned from /posts/niem-kinh API
-    return niemKinhPosts[0] || null;
-  }, [activePostId, selectedSlugOrId, niemKinhPosts]);
+    return niemKinhPosts.find((p) => p.id === DEFAULT_NIEM_KINH_POST_ID) || niemKinhPosts[0] || null;
+  }, [postDetail, activePostId, selectedSlugOrId, niemKinhPosts]);
 
   // Favorites
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
@@ -107,7 +120,8 @@ export const NiemKinhClient: React.FC = () => {
     return DEFAULT_NIEM_KINH_DATA;
   }, [displayPost]);
 
-  const isLoading = isNiemKinhLoading && !displayPost;
+  const isLoading = (isPostDetailLoading || isNiemKinhLoading) && !displayPost;
+  const isError = (isPostDetailError || isNiemKinhError) && !displayPost;
 
   return (
     <MainLayout activeId="practice">
@@ -149,20 +163,21 @@ export const NiemKinhClient: React.FC = () => {
             {isLoading && <NiemKinhSkeleton />}
 
             {/* Error State */}
-            {!isLoading && isNiemKinhError && !displayPost && (
+            {!isLoading && isError && (
               <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm text-red-700 flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
                   <div>
                     <h3 className="font-bold">Không thể tải bài viết Niệm Kinh</h3>
                     <p className="text-xs text-red-600/90 mt-1">
-                      {niemKinhError?.message || "Vui lòng kiểm tra lại kết nối mạng hoặc thử lại."}
+                      {postDetailError?.message || niemKinhError?.message || "Vui lòng kiểm tra lại kết nối mạng hoặc thử lại."}
                     </p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
+                    refetchPostDetail();
                     refetchNiemKinh();
                   }}
                   className="rounded-xl bg-red-100 px-3.5 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-200 flex items-center gap-1.5 shrink-0 transition cursor-pointer"
@@ -174,7 +189,7 @@ export const NiemKinhClient: React.FC = () => {
             )}
 
             {/* Empty State */}
-            {!isLoading && !displayPost && !isNiemKinhError && (
+            {!isLoading && !displayPost && !isError && (
               <div className="flex flex-col items-center justify-center rounded-3xl border border-[#EDE5D8]/90 bg-white/95 p-12 text-center shadow-xs">
                 <BookOpen className="h-10 w-10 text-neutral-300 mb-3" />
                 <h3 className="text-base font-bold text-neutral-800">
@@ -196,40 +211,6 @@ export const NiemKinhClient: React.FC = () => {
             {/* Post Content when displayPost exists */}
             {displayPost && (
               <>
-                {/* Multiple Niệm Kinh Posts Switcher (if more than 1 post exists) */}
-                {niemKinhPosts.length > 1 && (
-                  <div className="rounded-2xl border border-amber-200/90 bg-[#FDFBF7] p-3 sm:p-4 shadow-2xs">
-                    <div className="flex items-center justify-between mb-2.5">
-                      <span className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
-                        <BookOpen className="h-3.5 w-3.5 text-amber-700" />
-                        <span>Các bài Niệm Kinh ({niemKinhPosts.length} bài)</span>
-                      </span>
-                      <span className="text-[11px] text-neutral-400">
-                        Chọn bài để xem chi tiết
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                      {niemKinhPosts.map((post) => {
-                        const isCurrent = displayPost?.id === post.id;
-                        return (
-                          <button
-                            key={post.id}
-                            type="button"
-                            onClick={() => setActivePostId(post.id)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${isCurrent
-                              ? "bg-amber-700 text-white shadow-2xs"
-                              : "bg-white text-neutral-700 border border-neutral-200 hover:border-amber-300 hover:bg-amber-50"
-                              }`}
-                          >
-                            {post.title}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
                 {/* Post Detail Card */}
                 <article className="overflow-hidden rounded-3xl border border-[#EDE5D8]/90 bg-white/95 p-5 shadow-xs sm:p-8 space-y-6">
                   {/* Category Badges & Social Actions */}

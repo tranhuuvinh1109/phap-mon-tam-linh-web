@@ -21,6 +21,7 @@ import {
   getNextAudioPost,
   getHomeBachThoaiPosts,
   getHomeKhaiThiPosts,
+  getPostById,
   getPostBySlug,
   getPosts,
   getPostsByCategory,
@@ -90,6 +91,26 @@ export const useGetPosts = (
   return useQuery({
     queryKey: [QueryKeyEnum.GET_POSTS, params],
     queryFn: () => getPosts(params),
+    ...options,
+  });
+};
+
+export type UseGetPostByIdOptions = Omit<
+  UseQueryOptions<PostItemType, AxiosError>,
+  "queryKey" | "queryFn"
+>;
+
+/**
+ * Query hook to fetch a single post by ID via GET /posts/:id
+ */
+export const useGetPostById = (
+  id?: string,
+  options?: UseGetPostByIdOptions
+): UseQueryResult<PostItemType, AxiosError> => {
+  return useQuery({
+    queryKey: [QueryKeyEnum.GET_POST_DETAIL, id],
+    queryFn: () => getPostById(id!),
+    enabled: !!id,
     ...options,
   });
 };

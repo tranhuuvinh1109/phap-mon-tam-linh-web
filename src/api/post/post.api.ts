@@ -169,6 +169,22 @@ export const getHomeKhaiThiPosts = async (): Promise<GetPostsResponse> => {
 };
 
 /**
+ * API call to get a single post by ID via GET /posts/:id
+ */
+export const getPostById = async (id: string): Promise<PostItemType> => {
+  const response = await apiClient.get<PostItemType | { data: PostItemType }>(
+    API_URL.postById(id)
+  );
+
+  const data = response.data;
+  if (data && typeof data === "object" && "data" in data) {
+    return (data as { data: PostItemType }).data;
+  }
+
+  return data as PostItemType;
+};
+
+/**
  * API call to get a single post by slug via GET /posts/slug/:slug
  */
 export const getPostBySlug = async (slug: string): Promise<PostItemType> => {
