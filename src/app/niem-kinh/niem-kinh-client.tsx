@@ -211,6 +211,38 @@ export const NiemKinhClient: React.FC = () => {
             {/* Post Content when displayPost exists */}
             {displayPost && (
               <>
+                {niemKinhPosts.length > 1 && (
+                  <div className="rounded-2xl border border-amber-200/90 bg-[#FDFBF7] p-3 sm:p-4 shadow-2xs">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <BookOpen className="h-3.5 w-3.5 text-amber-700" />
+                        <span>Các bài Niệm Kinh ({niemKinhPosts.length} bài)</span>
+                      </span>
+                      <span className="text-[11px] text-neutral-400">
+                        Chọn bài để xem chi tiết
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                      {niemKinhPosts.map((post) => {
+                        const isCurrent = displayPost?.id === post.id;
+                        return (
+                          <button
+                            key={post.id}
+                            type="button"
+                            onClick={() => setActivePostId(post.id)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${isCurrent
+                              ? "bg-amber-700 text-white shadow-2xs"
+                              : "bg-white text-neutral-700 border border-neutral-200 hover:border-amber-300 hover:bg-amber-50"
+                              }`}
+                          >
+                            {post.title}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 {/* Post Detail Card */}
                 <article className="overflow-hidden rounded-3xl border border-[#EDE5D8]/90 bg-white/95 p-5 shadow-xs sm:p-8 space-y-6">
                   {/* Category Badges & Social Actions */}

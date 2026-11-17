@@ -374,6 +374,11 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
     );
   }, [categoryId, selectedCategory, post]);
 
+  // Allow editing origin for Khai Thi or any post that has existing origin data
+  const shouldShowOrigin = useMemo(() => {
+    return isKhaiThiPost || Boolean(post?.origin?.trim()) || Boolean(origin.trim());
+  }, [isKhaiThiPost, post?.origin, origin]);
+
   const groupQueryParams = useMemo(() => {
     if (isBachThoai) {
       return { isSupportForBachThoaiPhatPhap: true };
@@ -671,14 +676,16 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       });
     }
 
-    // If origin is entered, prepend formatted origin tag to the beginning of content for payload
-    const originVal = isKhaiThiPost ? origin.trim() : "";
-    if (originVal) {
-      const originHtml = `<p><strong style="background-color: rgb(255, 255, 255); color: rgb(41, 41, 41);">${originVal}</strong></p>`;
+    // If origin is allowed, update or prepend/remove formatted origin tag in content
+    const originVal = shouldShowOrigin ? origin.trim() : "";
+    if (shouldShowOrigin) {
+      const originHtml = originVal
+        ? `<p><strong style="background-color: rgb(255, 255, 255); color: rgb(41, 41, 41);">${originVal}</strong></p>`
+        : "";
       const originPattern = /^<p><strong style="background-color: rgb\(255, 255, 255\); color: rgb\(41, 41, 41\);">.*?<\/strong><\/p>/;
       if (finalContent && originPattern.test(finalContent)) {
         finalContent = finalContent.replace(originPattern, originHtml);
-      } else {
+      } else if (originHtml) {
         finalContent = finalContent ? `${originHtml}${finalContent}` : originHtml;
       }
     }
@@ -689,7 +696,7 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
       categoryId: categoryId || undefined,
       groupId: isGroupSupported ? (groupId || null) : undefined,
       type,
-      ...(isKhaiThiPost ? { origin: origin.trim() || null } : {}),
+      ...(shouldShowOrigin ? { origin: origin.trim() || null } : {}),
       thumbnailUrl: thumbnailUrl.trim() || undefined,
       content: finalContent,
       ...(shouldApprove
@@ -996,8 +1003,8 @@ export const UpdatePostModal: React.FC<UpdatePostModalProps> = ({
                     )}
                   </div>
 
-                  {/* 2.5 Origin Field (Only for Khai Thị category or child) */}
-                  {isKhaiThiPost && (
+                  {/* 2.5 Origin Field (Shown for Khai Thị or any post with existing origin) */}
+                  {shouldShowOrigin && (
                     <div>
                       <label className="block text-xs sm:text-sm font-semibold text-neutral-800 mb-1.5">
                         Nguồn bài viết <span className="text-xs font-normal text-neutral-400">(tùy chọn)</span>

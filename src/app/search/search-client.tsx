@@ -11,7 +11,6 @@ import {
   Volume2,
   X,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
@@ -284,9 +283,19 @@ export function SearchClient() {
                 key={idx}
                 className="animate-pulse rounded-2xl border border-[#EDE5D8] bg-white p-4 space-y-3"
               >
-                <div className="h-40 w-full rounded-xl bg-neutral-200/70" />
-                <div className="h-4 w-3/4 rounded bg-neutral-200/70" />
-                <div className="h-3 w-1/2 rounded bg-neutral-200/50" />
+                <div className="flex items-center justify-between">
+                  <div className="h-3 w-20 rounded bg-neutral-200/70" />
+                  <div className="h-4 w-16 rounded-full bg-neutral-200/50" />
+                </div>
+                <div className="h-4 w-5/6 rounded bg-neutral-200/70" />
+                <div className="space-y-1.5">
+                  <div className="h-3 w-full rounded bg-neutral-200/50" />
+                  <div className="h-3 w-4/5 rounded bg-neutral-200/40" />
+                </div>
+                <div className="pt-2 flex items-center justify-between border-t border-[#EDE5D8]/50">
+                  <div className="h-3 w-16 rounded bg-neutral-200/40" />
+                  <div className="h-3 w-20 rounded bg-neutral-200/40" />
+                </div>
               </div>
             ))}
           </div>
@@ -312,7 +321,7 @@ export function SearchClient() {
             {posts.map((post) => {
               const hasAudio = Boolean(post.audio?.audioUrl);
               const postLink = getPostLink(post);
-              const snippet = getSnippetWithContext(post.content, debouncedSearch, 130);
+              const snippet = getSnippetWithContext(post.content, debouncedSearch, 140);
               const isStepPost =
                 isPostStepType(
                   post.categoryId || post.category?.id,
@@ -327,67 +336,49 @@ export function SearchClient() {
                   href={postLink}
                   className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#EDE5D8] bg-white shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-md"
                 >
-                  <div>
-                    {/* Thumbnail */}
-                    <div className="relative aspect-video w-full overflow-hidden bg-neutral-100">
-                      {post.thumbnailUrl ? (
-                        <Image
-                          src={post.thumbnailUrl}
-                          alt={post.title}
-                          fill
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                          className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-amber-50 to-amber-100/60 text-amber-800">
-                          <BookOpen className="h-8 w-8 opacity-40" />
-                        </div>
-                      )}
-
-                      {/* Content Type Badge */}
-                      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                        {isStepPost ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-900/85 px-2 py-0.5 text-[10px] font-bold text-white shadow backdrop-blur-xs">
-                            <BookOpen className="h-3 w-3" />
-                            <span>Theo bước</span>
-                          </span>
-                        ) : hasAudio ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-sky-900/85 px-2 py-0.5 text-[10px] font-bold text-white shadow backdrop-blur-xs">
-                            <Headphones className="h-3 w-3" />
-                            <span>Audio</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-900/85 px-2 py-0.5 text-[10px] font-bold text-white shadow backdrop-blur-xs">
-                            <BookOpen className="h-3 w-3" />
-                            <span>Bài đọc</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Meta info & title */}
-                    <div className="p-4 space-y-1.5">
-                      {/* Category Badge */}
-                      {post.category?.name && (
-                        <span className="inline-block text-[11px] font-semibold text-amber-800 uppercase tracking-wide">
+                  <div className="p-4 space-y-2.5">
+                    {/* Header Row: Category Badge & Content Type Badge */}
+                    <div className="flex items-center justify-between gap-2">
+                      {post.category?.name ? (
+                        <span className="inline-block text-[11px] font-semibold text-amber-800 uppercase tracking-wide truncate max-w-[65%]">
                           {post.category.name}
                         </span>
+                      ) : (
+                        <span />
                       )}
 
-                      <h4
-                        className="line-clamp-2 text-sm sm:text-base font-bold text-neutral-900 group-hover:text-amber-900 transition-colors"
-                        style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-                      >
-                        <HighlightedText text={post.title} highlight={debouncedSearch} />
-                      </h4>
-
-                      {/* Content Snippet */}
-                      {snippet ? (
-                        <p className="line-clamp-2 text-xs text-neutral-600 leading-relaxed font-normal">
-                          <HighlightedText text={snippet} highlight={debouncedSearch} />
-                        </p>
-                      ) : null}
+                      {isStepPost ? (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900 border border-amber-200">
+                          <BookOpen className="h-3 w-3" />
+                          <span>Theo bước</span>
+                        </span>
+                      ) : hasAudio ? (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-900 border border-sky-200">
+                          <Headphones className="h-3 w-3" />
+                          <span>Audio</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200">
+                          <BookOpen className="h-3 w-3" />
+                          <span>Bài đọc</span>
+                        </span>
+                      )}
                     </div>
+
+                    {/* Title */}
+                    <h4
+                      className="line-clamp-2 text-sm sm:text-base font-bold text-neutral-900 group-hover:text-amber-900 transition-colors"
+                      style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                    >
+                      <HighlightedText text={post.title} highlight={debouncedSearch} />
+                    </h4>
+
+                    {/* Content Snippet */}
+                    {snippet ? (
+                      <p className="line-clamp-3 text-xs text-neutral-600 leading-relaxed font-normal">
+                        <HighlightedText text={snippet} highlight={debouncedSearch} />
+                      </p>
+                    ) : null}
                   </div>
 
                   {/* Footer date & author */}
