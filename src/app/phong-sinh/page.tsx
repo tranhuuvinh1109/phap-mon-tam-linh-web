@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import React, { Suspense } from "react";
 
 import { SingleCategoryPostView } from "@/components/post";
-import { DEFAULT_META_IMAGE, PHONG_SINH_SLUG, createOpenGraphMetadata } from "@/constants";
+import { DEFAULT_META_IMAGE, PHONG_SINH_ID, createOpenGraphMetadata } from "@/constants";
 
 export const metadata: Metadata = {
   title: "Phóng Sanh | Nghi thức và ý nghĩa phóng sinh | Phật Pháp",
@@ -26,9 +26,8 @@ export default function PhongSinhPage() {
       }
     >
       <SingleCategoryPostView
-        categorySlug={PHONG_SINH_SLUG}
-        categoryTitle="Phóng sinh"
-      />
+        categoryId={PHONG_SINH_ID}
+        categoryTitle="Phóng sinh" categorySlug={""} />
     </Suspense>
   );
 }

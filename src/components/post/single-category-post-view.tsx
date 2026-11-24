@@ -50,6 +50,7 @@ export const SingleCategoryPostView: React.FC<SingleCategoryPostViewProps> = ({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const selectedSlugOrId = searchParams?.get("post");
+  console.log("1111")
 
   // Call get posts by category API
   const {
@@ -278,8 +279,8 @@ export const SingleCategoryPostView: React.FC<SingleCategoryPostViewProps> = ({
                           type="button"
                           onClick={() => setActivePostId(p.id)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shrink-0 cursor-pointer ${isCurrent
-                              ? "bg-amber-700 text-white shadow-2xs"
-                              : "bg-white text-neutral-700 border border-neutral-200 hover:border-amber-300 hover:bg-amber-50"
+                            ? "bg-amber-700 text-white shadow-2xs"
+                            : "bg-white text-neutral-700 border border-neutral-200 hover:border-amber-300 hover:bg-amber-50"
                             }`}
                         >
                           {p.title}
@@ -312,8 +313,8 @@ export const SingleCategoryPostView: React.FC<SingleCategoryPostViewProps> = ({
                       onClick={handleToggleFavorite}
                       title={isBookmarked ? "Bỏ lưu bài viết" : "Lưu vào yêu thích"}
                       className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition shadow-2xs cursor-pointer ${isBookmarked
-                          ? "border-amber-400 bg-amber-100/90 text-amber-900 font-bold"
-                          : "border-[#EDE5D8] bg-white text-neutral-600 hover:bg-[#FAF7F0] hover:text-amber-800"
+                        ? "border-amber-400 bg-amber-100/90 text-amber-900 font-bold"
+                        : "border-[#EDE5D8] bg-white text-neutral-600 hover:bg-[#FAF7F0] hover:text-amber-800"
                         }`}
                     >
                       <Bookmark
