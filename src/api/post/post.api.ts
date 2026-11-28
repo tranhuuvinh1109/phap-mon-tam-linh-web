@@ -5,6 +5,7 @@ import {
   CreatePostPayloadType,
   GetPostsByCategoryParams,
   GetPostsResponse,
+  GetPostsOrderByChapterResponse,
   NextAudioTrackType,
   PendingPostsCountResponse,
   RejectedPostsCountResponse,
@@ -58,6 +59,29 @@ export const getPosts = async (
   }
 
   return { data: [], meta: { total: 0, limit: 10, nextCursor: null, hasNextPage: false } };
+};
+
+/**
+ * API call to get posts ordered by chapter via GET /posts/category/order-by-chapter
+ */
+export const getPostsCategoryOrderByChapter = async (
+  params?: GetPostsByCategoryParams
+): Promise<GetPostsOrderByChapterResponse> => {
+  const response = await apiClient.get<GetPostsOrderByChapterResponse>(
+    API_URL.postsCategoryOrderByChapter,
+    { params }
+  );
+
+  const data = response.data;
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (data && typeof data === "object" && "data" in data && Array.isArray((data as any).data)) {
+    return (data as any).data;
+  }
+
+  return [];
 };
 
 /**

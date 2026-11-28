@@ -25,6 +25,7 @@ import {
   getPostBySlug,
   getPosts,
   getPostsByCategory,
+  getPostsCategoryOrderByChapter,
   rejectPost,
   searchPostBySlug,
   searchPosts,
@@ -36,6 +37,7 @@ import {
   CreatePostPayloadType,
   GetPostsByCategoryParams,
   GetPostsResponse,
+  GetPostsOrderByChapterResponse,
   NextAudioTrackType,
   PendingPostsCountResponse,
   PostItemType,
@@ -171,6 +173,25 @@ export const useGetPostsByCategory = (
   return useQuery({
     queryKey: [QueryKeyEnum.GET_POSTS_BY_CATEGORY, params],
     queryFn: () => getPostsByCategory(params),
+    ...options,
+  });
+};
+
+export type UseGetPostsCategoryOrderByChapterOptions = Omit<
+  UseQueryOptions<GetPostsOrderByChapterResponse, AxiosError>,
+  "queryKey" | "queryFn"
+>;
+
+/**
+ * Query hook to fetch posts ordered by chapter via GET /posts/category/order-by-chapter
+ */
+export const useGetPostsCategoryOrderByChapter = (
+  params?: GetPostsByCategoryParams,
+  options?: UseGetPostsCategoryOrderByChapterOptions
+): UseQueryResult<GetPostsOrderByChapterResponse, AxiosError> => {
+  return useQuery({
+    queryKey: [QueryKeyEnum.GET_POSTS_BY_CATEGORY_ORDER_BY_CHAPTER, params],
+    queryFn: () => getPostsCategoryOrderByChapter(params),
     ...options,
   });
 };

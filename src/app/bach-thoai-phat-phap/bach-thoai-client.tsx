@@ -1,15 +1,11 @@
 "use client";
 
 import {
-  ArrowLeft,
   BookOpen,
   ChevronRight,
-  FolderTree,
   Home,
-  Layers,
   RefreshCw,
   Search,
-  Sparkles,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -19,8 +15,8 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { useGetCategories, useGetCategoryTree } from "@/api/category";
 import type { CategoryItemType } from "@/api/category/category.type";
-import { useGetPostsByCategory, useSearchPosts } from "@/api/post";
-import type { PostItemType } from "@/api/post/post.type";
+import { useGetPostsCategoryOrderByChapter, useSearchPosts } from "@/api/post";
+import type { CategoryChapterGroupType, PostItemType } from "@/api/post/post.type";
 import { BachThoaiDisplayItem, BachThoaiItem } from "@/components/home";
 import { MainLayout } from "@/components/layout";
 import { BachThoaiSkeleton } from "@/components/skeletons";
@@ -30,7 +26,7 @@ import { getCategoryBadgeStyle } from "@/lib/color-badge";
 import { trackSearch } from "@/lib/gtm";
 import { formatTime, slugify, stripHtml } from "@/lib/utils";
 
-import { Pagination } from "./components";
+import { ChapterBookGrid, Pagination } from "./components";
 
 const PAGE_SIZE = 12;
 
@@ -54,6 +50,13 @@ export const BachThoaiClient: React.FC = () => {
     const p = parseInt(searchParams.get("page") || "1", 10);
     return isNaN(p) || p < 1 ? 1 : p;
   }, [searchParams]);
+
+  const urlChapterParam = searchParams.get("chapter") || searchParams.get("chap") || null;
+  const currentChapter = useMemo(() => {
+    if (!urlChapterParam || urlChapterParam === "ALL") return null;
+    const parsed = parseInt(urlChapterParam, 10);
+    return isNaN(parsed) || parsed < 1 ? null : parsed;
+  }, [urlChapterParam]);
 
   // Local state for search input debounce
   const [searchQuery, setSearchQuery] = useState<string>(urlSearch);
@@ -143,6 +146,7 @@ export const BachThoaiClient: React.FC = () => {
     page?: number;
     categorySlug?: string | null;
     search?: string | null;
+    chapter?: number | null;
   }) => {
     const params = new URLSearchParams(searchParams.toString());
 
@@ -168,6 +172,16 @@ export const BachThoaiClient: React.FC = () => {
       params.delete("subCategory");
       params.delete("group");
       params.delete("groupId");
+    }
+
+    // Update chapter
+    if (updates.chapter !== undefined) {
+      if (updates.chapter !== null && updates.chapter > 0) {
+        params.set("chapter", String(updates.chapter));
+      } else {
+        params.delete("chapter");
+        params.delete("chap");
+      }
     }
 
     // Update page
@@ -199,20 +213,33 @@ export const BachThoaiClient: React.FC = () => {
 
   const isSearching = Boolean(debouncedSearch);
 
-  // 1. Regular category posts query with offset pagination
-  const categoryPostsQuery = useGetPostsByCategory(
+  // 1. Regular category posts query with chapter order and offset pagination
+  const categoryPostsQuery = useGetPostsCategoryOrderByChapter(
     {
       ...(selectedCategoryObj
         ? {
-            category_name: selectedCategoryObj.slug || undefined,
-            categoryId: selectedCategoryObj.id,
-          }
+          category_name: selectedCategoryObj.slug || undefined,
+          categoryId: selectedCategoryObj.id,
+        }
         : { category_name: BACH_THOAI_PHAT_PHAP_SLUG }),
+      chapter: currentChapter || undefined,
       limit: PAGE_SIZE,
       page: currentPage,
     },
     { enabled: !isSearching }
   );
+
+  const categoryGroups = useMemo<CategoryChapterGroupType[]>(() => {
+    return Array.isArray(categoryPostsQuery.data) ? categoryPostsQuery.data : [];
+  }, [categoryPostsQuery.data]);
+
+  const totalAllChapters = useMemo(() => {
+    return categoryGroups.reduce((acc, g) => acc + (g.data?.length || 0), 0);
+  }, [categoryGroups]);
+
+  const totalAllPosts = useMemo(() => {
+    return categoryGroups.reduce((acc, g) => acc + (g.total || 0), 0);
+  }, [categoryGroups]);
 
   // 2. Search query within Bach Thoai category with offset pagination
   const searchPostsQuery = useSearchPosts(
@@ -226,10 +253,14 @@ export const BachThoaiClient: React.FC = () => {
     { enabled: isSearching }
   );
 
-  const activeQuery = isSearching ? searchPostsQuery : categoryPostsQuery;
-  const { isLoading, isError, error, refetch, isFetching } = activeQuery;
-  const rawPosts: PostItemType[] = activeQuery.data?.data || [];
-  const meta = activeQuery.data?.meta;
+  const isLoading = isSearching ? searchPostsQuery.isLoading : categoryPostsQuery.isLoading;
+  const isError = isSearching ? searchPostsQuery.isError : categoryPostsQuery.isError;
+  const error = isSearching ? searchPostsQuery.error : categoryPostsQuery.error;
+  const refetch = isSearching ? searchPostsQuery.refetch : categoryPostsQuery.refetch;
+  const isFetching = isSearching ? searchPostsQuery.isFetching : categoryPostsQuery.isFetching;
+
+  const rawPosts: PostItemType[] = isSearching ? searchPostsQuery.data?.data || [] : [];
+  const meta = isSearching ? searchPostsQuery.data?.meta : undefined;
 
   // Transform API posts to display item format
   const displayItems = useMemo<BachThoaiDisplayItem[]>(() => {
@@ -257,6 +288,8 @@ export const BachThoaiClient: React.FC = () => {
         groupName: post.group?.name,
         categoryId: post.categoryId || post.category?.id,
         categoryName: post.category?.name,
+        chapter: post.audio?.chapter,
+        chapterTitle: post.audio?.chapterTitle,
       };
     });
   }, [rawPosts]);
@@ -306,11 +339,6 @@ export const BachThoaiClient: React.FC = () => {
   const hasNextPage = Boolean(meta?.hasNextPage || (meta?.total && currentPage < totalPages));
   const hasPrevPage = currentPage > 1;
 
-  const handleSelectCategory = (targetCategorySlug: string) => {
-    updateUrlParams({ categorySlug: targetCategorySlug, page: 1 });
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   const handleNextPage = () => {
     if (!hasNextPage) return;
     updateUrlParams({ page: currentPage + 1 });
@@ -354,98 +382,19 @@ export const BachThoaiClient: React.FC = () => {
           <span className="font-semibold text-amber-900">Bạch thoại Phật pháp</span>
         </nav>
 
-        {/* 2. Hero Banner Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-amber-900/10 shadow-sm">
-          <div className="relative h-48 w-full sm:h-60">
-            <Image
-              src="/images/phap-mon-tam-linh-hero-banner.jpg"
-              alt="Bạch thoại Phật pháp"
-              fill
-              priority
-              className="object-cover object-center"
-            />
-          </div>
-        </div>
-
-        {/* 3. Category Filter Pills */}
-        <div className="space-y-2.5 rounded-2xl border border-amber-900/10 bg-white/80 p-3.5 shadow-2xs backdrop-blur-xs sm:p-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-neutral-800 sm:text-sm">
-              <Layers className="h-4 w-4 text-amber-700" />
-              <span>Xem theo danh mục:</span>
-            </div>
-            {selectedCategoryObj && (
-              <button
-                type="button"
-                onClick={() => handleSelectCategory("ALL")}
-                className="cursor-pointer text-xs font-semibold text-amber-800 underline hover:text-amber-950"
-              >
-                Xem tất cả danh mục
-              </button>
-            )}
+        {/* 2. Header matching UI mockup , will be opened in the future*/}
+        <div className="hidden flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2C180E] font-serif tracking-tight">
+              Bạch Thoại Phật Pháp
+            </h1>
+            <p className="text-xs sm:text-sm font-medium text-neutral-500">
+              {isLoading
+                ? "Đang tải dữ liệu..."
+                : `Tổng cộng ${totalAllChapters} quyển • ${totalAllPosts} bài giảng`}
+            </p>
           </div>
 
-          <div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-            <button
-              type="button"
-              onClick={() => handleSelectCategory("ALL")}
-              title="Tất cả danh mục"
-              className={`flex h-12 max-w-[150px] min-w-[120px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs leading-tight font-semibold transition sm:h-14 sm:max-w-[180px] ${
-                !selectedCategoryObj
-                  ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
-                  : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
-              }`}
-            >
-              <Sparkles className="h-4 w-4 shrink-0" />
-              <span
-                className="line-clamp-2 leading-tight break-words"
-                style={{
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                }}
-              >
-                Tất cả danh mục
-              </span>
-            </button>
-
-            {childCategories.map((cat) => {
-              const catSlug = cat.slug || cat.id;
-              const isSelected =
-                selectedCategoryObj?.id === cat.id || selectedCategoryObj?.slug === cat.slug;
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => handleSelectCategory(catSlug)}
-                  title={cat.name}
-                  className={`flex h-12 max-w-[150px] min-w-[120px] shrink-0 cursor-pointer items-center gap-2 rounded-xl px-3 py-1.5 text-left text-xs leading-tight font-semibold transition sm:h-14 sm:max-w-[180px] ${
-                    isSelected
-                      ? "bg-gradient-to-r from-amber-700 to-amber-800 text-white shadow-xs"
-                      : "border border-neutral-200/80 bg-white text-neutral-700 hover:border-amber-300 hover:bg-amber-50/60"
-                  }`}
-                >
-                  <FolderTree className="h-4 w-4 shrink-0 opacity-70" />
-                  <span
-                    className="line-clamp-2 leading-tight break-words"
-                    style={{
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {cat.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 4. Search Bar & Filter Tabs */}
-        <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
           {/* Quick Search */}
           <div className="relative w-full shrink-0 sm:w-72">
             <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-neutral-400" />
@@ -470,203 +419,141 @@ export const BachThoaiClient: React.FC = () => {
           </div>
         </div>
 
-        {/* 5. List Status Info */}
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
-          <div className="flex items-center gap-2 font-medium text-neutral-600">
-            <span className="flex h-2 w-2 rounded-full bg-amber-500" />
-            <span>
-              {isLoading ? "Đang tải danh sách..." : `Hiển thị ${filteredItems.length} bài viết`}
-            </span>
-            {meta?.total ? (
-              <span className="text-neutral-400">• Tổng cộng {meta.total} bài</span>
-            ) : null}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {isFetching && !isLoading && (
-              <span className="inline-flex items-center gap-1.5 text-xs text-amber-700">
-                <RefreshCw className="h-3 w-3 animate-spin" />
-                <span>Đang đồng bộ...</span>
-              </span>
-            )}
-            <span className="rounded-full border border-neutral-200/60 bg-white px-3 py-1 font-semibold text-neutral-700 shadow-2xs">
-              Trang {currentPage} {totalPages > 1 ? `/ ${totalPages}` : ""}
-            </span>
-          </div>
-        </div>
-
-        {/* 6. Content Grid */}
-        {isLoading ? (
-          <BachThoaiSkeleton count={PAGE_SIZE} />
-        ) : isError ? (
-          /* Error State */
-          <div className="flex flex-col items-center justify-center rounded-3xl border border-rose-200/80 bg-rose-50/50 p-8 text-center shadow-2xs sm:p-12">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
-              <BookOpen className="h-6 w-6" />
-            </div>
-            <h3 className="text-base font-bold text-neutral-900 sm:text-lg">
-              Không thể tải danh sách bài viết
-            </h3>
-            <p className="mt-1 max-w-md text-xs text-neutral-600 sm:text-sm">
-              {(error as Error)?.message ||
-                "Đã có lỗi xảy ra khi kết nối máy chủ. Vui lòng thử lại sau."}
-            </p>
-            <button
-              onClick={() => refetch()}
-              className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-amber-800 px-4 py-2 text-xs font-semibold text-white shadow-2xs transition hover:bg-amber-900"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              <span>Thử lại</span>
-            </button>
-          </div>
-        ) : filteredItems.length === 0 ? (
-          /* Empty State */
-          <div className="flex flex-col items-center justify-center rounded-3xl border border-[#EDE5D8] bg-white/70 p-12 text-center shadow-2xs">
-            <div className="mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-200/60 bg-amber-50 text-amber-800">
-              <Sparkles className="h-7 w-7 text-amber-700" />
-            </div>
-            <h3 className="text-base font-bold text-neutral-900 sm:text-lg">
-              {debouncedSearch || selectedCategoryObj
-                ? "Không tìm thấy bài viết phù hợp"
-                : "Chưa có bài viết Bạch thoại Phật pháp nào"}
-            </h3>
-            <p className="mt-1.5 max-w-sm text-xs text-neutral-500 sm:text-sm">
-              {debouncedSearch
-                ? `Không có kết quả nào cho "${debouncedSearch}". Hãy thử tìm kiếm với từ khóa khác.`
-                : selectedCategoryObj
-                  ? `Chưa có bài viết nào thuộc danh mục "${selectedCategoryName}".`
-                  : "Các bài giảng sẽ sớm được cập nhật. Kính mong quý Phật tử hoan hỷ đón đọc."}
-            </p>
-            {debouncedSearch || selectedCategoryObj ? (
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                {debouncedSearch && (
-                  <button
-                    onClick={handleClearSearch}
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-neutral-300 bg-white px-4 py-2 text-xs font-medium text-neutral-700 shadow-2xs hover:bg-neutral-50"
-                  >
-                    <span>Xóa từ khóa tìm kiếm</span>
-                  </button>
-                )}
-                {selectedCategoryObj && (
-                  <button
-                    onClick={() => handleSelectCategory("ALL")}
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-amber-800 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-amber-900"
-                  >
-                    <span>Xem tất cả danh mục</span>
-                  </button>
-                )}
-              </div>
-            ) : (
-              <Link
-                href="/"
-                className="mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-amber-800 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-amber-900"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                <span>Quay về trang chủ</span>
-              </Link>
-            )}
-          </div>
-        ) : !selectedCategoryObj && groupedItems.length > 1 ? (
-          /* Sectioned by Category View when viewing ALL categories */
-          <div className="space-y-8">
-            {groupedItems.map(([catTitle, items]) => (
-              <div key={catTitle} className="space-y-3.5">
-                <div className="flex items-center justify-between border-b border-amber-900/10 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-800 shadow-2xs">
-                      <FolderTree className="h-4 w-4" />
-                    </div>
-                    <h3 className="text-sm font-bold text-neutral-900 sm:text-base">{catTitle}</h3>
-                    <span
-                      className={`inline-block rounded-md border px-2 py-0.5 text-xs font-semibold ${getCategoryBadgeStyle(
-                        catTitle
-                      )}`}
-                    >
-                      {items.length} bài
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const matchCat = childCategories.find((c) => c.name === catTitle);
-                      if (matchCat) {
-                        handleSelectCategory(matchCat.slug || matchCat.id);
-                      }
-                    }}
-                    className="flex cursor-pointer items-center gap-0.5 text-xs font-semibold text-amber-800 hover:text-amber-950 hover:underline"
-                  >
-                    <span>Chỉ xem danh mục này</span>
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3.5 sm:gap-4 md:grid-cols-2">
-                  {items.map((item) => (
-                    <BachThoaiItem
-                      key={item.id}
-                      item={item}
-                      searchQuery={debouncedSearch}
-                      playlist={items}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          /* Filtered by single category or single category result */
+        {/* 3. Main Content Area */}
+        {isSearching ? (
+          /* Search Results View */
           <div className="space-y-4">
-            {selectedCategoryName && (
-              <div className="flex items-center justify-between rounded-xl border border-amber-200/80 bg-amber-50/80 px-4 py-2.5">
-                <div className="flex items-center gap-2">
-                  <FolderTree className="h-4 w-4 text-amber-800" />
-                  <span className="text-xs text-neutral-600">Đang lọc theo danh mục:</span>
-                  <span
-                    className={`inline-block rounded-md border px-2.5 py-0.5 text-xs font-bold ${getCategoryBadgeStyle(
-                      selectedCategoryName
-                    )}`}
-                  >
-                    {selectedCategoryName}
-                  </span>
-                </div>
+            <div className="flex items-center justify-between rounded-xl border border-amber-200/80 bg-amber-50/70 px-4 py-2.5">
+              <span className="text-xs sm:text-sm font-medium text-neutral-700">
+                Kết quả tìm kiếm cho:{" "}
+                <strong className="text-amber-900">"{debouncedSearch}"</strong> (
+                {meta?.total || filteredItems.length} kết quả)
+              </span>
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="cursor-pointer text-xs font-semibold text-amber-800 underline hover:text-amber-950"
+              >
+                Đóng tìm kiếm (Xem kệ sách)
+              </button>
+            </div>
 
+            {isLoading ? (
+              <BachThoaiSkeleton count={PAGE_SIZE} />
+            ) : filteredItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-3xl border border-[#EDE5D8] bg-white/70 p-12 text-center shadow-2xs">
+                <p className="text-sm font-semibold text-neutral-700">
+                  Không tìm thấy bài giảng nào khớp với từ khóa "{debouncedSearch}"
+                </p>
                 <button
-                  type="button"
-                  onClick={() => handleSelectCategory("ALL")}
-                  className="cursor-pointer text-xs font-semibold text-amber-800 underline hover:text-amber-950"
+                  onClick={handleClearSearch}
+                  className="mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-amber-800 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-amber-900"
                 >
-                  Bỏ lọc danh mục
+                  Xóa tìm kiếm
                 </button>
               </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3.5 sm:gap-4 md:grid-cols-2">
+                {filteredItems.map((item) => (
+                  <BachThoaiItem
+                    key={item.id}
+                    item={item}
+                    searchQuery={debouncedSearch}
+                    playlist={filteredItems}
+                  />
+                ))}
+              </div>
             )}
 
-            <div className="grid grid-cols-1 gap-3.5 sm:gap-4 md:grid-cols-2">
-              {filteredItems.map((item) => (
-                <BachThoaiItem
-                  key={item.id}
-                  item={item}
-                  searchQuery={debouncedSearch}
-                  playlist={filteredItems}
-                />
-              ))}
-            </div>
+            {/* Pagination Controls for search */}
+            {!isLoading && filteredItems.length > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={meta?.total}
+                hasPrevPage={hasPrevPage}
+                hasNextPage={hasNextPage}
+                isFetching={isFetching}
+                onPrevPage={handlePrevPage}
+                onNextPage={handleNextPage}
+                onGoToPage={handleGoToPage}
+              />
+            )}
           </div>
-        )}
+        ) : (
+          /* 3D Bookshelf Grid View */
+          <div className="space-y-6">
+            {isError ? (
+              <div className="flex flex-col items-center justify-center rounded-3xl border border-rose-200/80 bg-rose-50/50 p-8 text-center shadow-2xs sm:p-12">
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+                  <BookOpen className="h-6 w-6" />
+                </div>
+                <h3 className="text-base font-bold text-neutral-900 sm:text-lg">
+                  Không thể tải danh sách Bạch Thoại Phật Pháp
+                </h3>
+                <p className="mt-1 max-w-md text-xs text-neutral-600 sm:text-sm">
+                  {(error as Error)?.message ||
+                    "Đã có lỗi xảy ra khi kết nối máy chủ. Vui lòng thử lại sau."}
+                </p>
+                <button
+                  onClick={() => refetch()}
+                  className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-amber-800 px-4 py-2 text-xs font-semibold text-white shadow-2xs transition hover:bg-amber-900"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span>Thử lại</span>
+                </button>
+              </div>
+            ) : isLoading ? (
+              <ChapterBookGrid
+                chapters={[]}
+                categoryName="Bạch Thoại Phật Pháp"
+                isLoading={true}
+                onSelectChapter={() => { }}
+              />
+            ) : categoryGroups.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-3xl border border-[#EDE5D8] bg-white/70 p-12 text-center shadow-2xs">
+                <p className="text-sm font-semibold text-neutral-700">
+                  Chưa có dữ liệu bài giảng Bạch Thoại Phật Pháp.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-10">
+                {categoryGroups
+                  .filter((group) => group.data && group.data.length > 0)
+                  .map((group) => (
+                    <div key={group.categoryId} className="space-y-3.5">
+                      {/* Subcategory Section Header */}
+                      <div className="border-b border-amber-900/10 pb-2">
+                        <h2 className="text-base sm:text-lg md:text-xl font-bold text-[#2C180E] font-serif">
+                          {group.category}
+                        </h2>
+                        <p className="text-xs sm:text-sm font-medium text-neutral-500">
+                          {group.data.length} quyển • {group.total} bài giảng
+                        </p>
+                      </div>
 
-        {/* 7. Pagination Controls */}
-        {!isLoading && !isError && rawPosts.length > 0 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={meta?.total}
-            hasPrevPage={hasPrevPage}
-            hasNextPage={hasNextPage}
-            isFetching={isFetching}
-            onPrevPage={handlePrevPage}
-            onNextPage={handleNextPage}
-            onGoToPage={handleGoToPage}
-          />
+                      <ChapterBookGrid
+                        chapters={group.data}
+                        categoryName={group.category}
+                        totalAllPosts={group.total}
+                        selectedChapter={null}
+                        onSelectChapter={(chapterNum) => {
+                          router.push(
+                            `/bach-thoai-phat-phap/quyen/${chapterNum}?category=${group.categorySlug}`
+                          );
+                        }}
+                        onPlayChapter={(chapterNum) => {
+                          router.push(
+                            `/bach-thoai-phat-phap/quyen/${chapterNum}?category=${group.categorySlug}`
+                          );
+                        }}
+                        isLoading={false}
+                      />
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </MainLayout>
