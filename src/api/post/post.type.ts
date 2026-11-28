@@ -11,6 +11,10 @@ export interface CreatePostAudioPayloadType {
   duration?: number;
   fileSize?: number;
   mimeType?: string;
+  chapter?: number;
+  chapterTitle?: string;
+  chap?: number;
+  chapTitle?: string;
 }
 
 /**
@@ -84,6 +88,8 @@ export interface PostAudioType {
   duration?: number | null;
   fileSize?: number | null;
   mimeType?: string | null;
+  chapter?: number | null;
+  chapterTitle?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -232,10 +238,27 @@ export interface GetPostsResponse {
   meta?: GetPostsMetaType;
 }
 
+export interface ChapterSummaryItemType {
+  chapter: number;
+  chapterTitle?: string | null;
+  count: number;
+}
+
+export interface CategoryChapterGroupType {
+  category: string;
+  categoryId: string;
+  categorySlug: string;
+  total: number;
+  data: ChapterSummaryItemType[];
+}
+
+export type GetPostsOrderByChapterResponse = CategoryChapterGroupType[];
+
 export interface GetPostsByCategoryParams {
   categoryId?: string;
   category_id?: string;
   category_name?: string;
+  categoryName?: string;
   groupId?: string;
   group_id?: string;
   status?: PostApprovalStatus | "ALL";
@@ -243,6 +266,9 @@ export interface GetPostsByCategoryParams {
   limit?: number;
   cursor?: string | null;
   page?: number;
+  chapter?: number;
+  search?: string;
+  q?: string;
   [key: string]: any;
 }
 

@@ -29,6 +29,8 @@ export interface BachThoaiDisplayItem {
   groupName?: string;
   categoryId?: string;
   categoryName?: string;
+  chapter?: number | null;
+  chapterTitle?: string | null;
 }
 
 export interface BachThoaiItemProps {
@@ -135,6 +137,12 @@ export const BachThoaiItem: React.FC<BachThoaiItemProps> = ({ item, searchQuery,
       <div className="min-w-0 flex-1 space-y-1.5">
         {/* Meta badges row */}
         <div className="flex items-center gap-2 flex-wrap">
+          {item.chapter && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100/90 border border-amber-350 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-amber-900 shadow-2xs">
+              <span>{item.chapterTitle || `Quyển ${item.chapter}`}</span>
+            </span>
+          )}
+
           {item.groupName &&
             item.groupName.toLowerCase() !== "undefined" &&
             item.groupName.toLowerCase() !== "không xác định" && (

@@ -17,6 +17,7 @@ export const API_URL = {
   postReject: (id: string) => `/posts/${id}/reject`,
   postVerify: (id: string) => `/posts/${id}/verify`,
   postsCategory: "/posts/category",
+  postsCategoryOrderByChapter: "/posts/category/order-by-chapter",
   postBySlug: (slug: string) => `/posts/slug/${slug}`,
   nextAudioPost: (slug: string) => `/posts/slug/${slug}/next`,
   nextAudioPostById: (id: string) => `/posts/${id}/next`,
